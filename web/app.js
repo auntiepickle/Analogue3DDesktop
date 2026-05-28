@@ -464,6 +464,10 @@ const handlers = {
     if (!confirm("Delete all SD backups except the most recent? This can't be undone.")) return;
     run("Cleaning old backups", () => api().clean_old_backups());
   },
+  cleanMemBackups() {
+    if (!confirm("Delete all archived save states except the newest of each game? This can't be undone.")) return;
+    run("Cleaning archived save states", () => api().clean_old_memory_backups());
+  },
   backupMem() { const r = needRoot(); if (r) run("Backing up save states", () => api().backup_memories(r)); },
   restoreMem() {
     const r = needRoot(); if (!r) return;

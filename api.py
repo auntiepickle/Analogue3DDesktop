@@ -341,6 +341,32 @@ class Api:
             print(f"Kept the newest backup, deleted {removed} older one(s).")
         return _run(task)
 
+    def clean_old_memory_backups(self):
+        def task():
+            backups = savestates.list_backups()
+            if not backups:
+                print("No archived save states to clean.")
+                return
+
+            def _ts(p):
+                m = re.search(r"(\d{14})", os.path.basename(p))
+                return m.group(1) if m else ""
+
+            removed = 0
+            for cart_id, paths in backups.items():
+                for p in sorted(paths, key=_ts, reverse=True)[1:]:  # keep newest per game
+                    try:
+                        os.remove(p)
+                        removed += 1
+                        print("  deleted " + os.path.basename(p))
+                    except OSError:
+                        pass
+            if removed:
+                print(f"Kept the newest archived state per game; deleted {removed} older one(s).")
+            else:
+                print("Nothing to clean - only the latest per game is kept.")
+        return _run(task)
+
     def delete_memory_backup(self, cart_id, name):
         def task():
             p = os.path.join(savestates._backup_dir(),

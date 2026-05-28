@@ -316,6 +316,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   align-items: center;
   gap: 10px;
   margin-top: 10px;
+  flex-wrap: wrap;
 }
 .mem-restore label { color: var(--dim); font-size: 12px; white-space: nowrap; }
 
