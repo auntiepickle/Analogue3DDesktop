@@ -9,3 +9,4 @@ venv/
 download/
 *.dat
 labels.db
+a3d_os_*.bin
