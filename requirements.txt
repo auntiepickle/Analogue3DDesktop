@@ -1,0 +1,7 @@
+pywebview>=5.0
+
+# The engine. For end users (once the core is published):
+analogue3d @ git+https://github.com/auntiepickle/Analogue3DUtility.git
+
+# For local development against a checkout next door, instead run:
+#   pip install -e ../Analogue3DUtility

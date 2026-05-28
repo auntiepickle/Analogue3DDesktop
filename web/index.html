@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analogue 3D Studio</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- Header -->
+    <header class="topbar">
+      <div class="dots" aria-hidden="true">
+        <span class="dot red"></span><span class="dot gold"></span><span class="dot green"></span>
+      </div>
+      <div class="wordmark">
+        <span class="gold">ANALOGUE&nbsp;3D</span><span class="thin">STUDIO</span>
+      </div>
+      <div class="ver" id="version">v0.0</div>
+    </header>
+
+    <!-- Status strip -->
+    <section class="status">
+      <div class="stat" id="sdStat">
+        <span class="led off" id="sdLed"></span>
+        <div class="stat-body">
+          <div class="stat-label">SD CARD</div>
+          <div class="stat-value" id="sdValue">scanning&hellip;</div>
+        </div>
+      </div>
+      <div class="stat" id="padStat">
+        <span class="led off" id="padLed"></span>
+        <div class="stat-body">
+          <div class="stat-label">CONTROLLER</div>
+          <div class="stat-value" id="padValue">&mdash;</div>
+        </div>
+      </div>
+      <button class="ghost" id="refreshBtn" title="Re-scan drives and controllers">Refresh</button>
+    </section>
+
+    <!-- SD picker (revealed when there's a choice / manual entry) -->
+    <section class="picker" id="picker">
+      <label for="sdSelect">Target SD card</label>
+      <select id="sdSelect"></select>
+      <input type="text" id="manualPath" class="hidden" placeholder="e.g. H:\ or /Volumes/ANALOGUE 3D" />
+    </section>
+
+    <!-- Hero: Auto -->
+    <section class="hero" id="autoCard">
+      <div class="hero-text">
+        <h2>Auto &mdash; do everything</h2>
+        <p>Back up the card, update console firmware, install the art pack, and update every connected controller.</p>
+      </div>
+      <button class="primary" data-action="auto">Run Auto</button>
+    </section>
+
+    <!-- Action grid -->
+    <section class="grid">
+      <article class="card">
+        <h3>Back up SD card</h3>
+        <p>Zip up Library, Settings and Memories (save states).</p>
+        <button class="action" data-action="backup">Back up</button>
+      </article>
+
+      <article class="card">
+        <h3>Update console firmware</h3>
+        <p>Fetch the latest Analogue 3D firmware onto the card.</p>
+        <button class="action" data-action="firmware">Update firmware</button>
+      </article>
+
+      <article class="card">
+        <h3>Cartridge art pack</h3>
+        <p>Install box art for your N64 carts.</p>
+        <select id="artSource" class="mini">
+          <option value="community">RetroGameCorps community pack</option>
+          <option value="url">Custom URL&hellip;</option>
+        </select>
+        <input type="text" id="artUrl" class="hidden mini-input" placeholder="https://.../labels.db" />
+        <button class="action" data-action="art">Install art</button>
+      </article>
+
+      <article class="card">
+        <h3>Update controllers</h3>
+        <p>Flash every connected 8BitDo 64 to the latest firmware.</p>
+        <button class="action" data-action="controllers">Update controllers</button>
+      </article>
+
+      <article class="card span2">
+        <h3>Restore a backup</h3>
+        <p>Overwrite Library / Settings / Memories from a saved zip.</p>
+        <div class="restore-row">
+          <select id="backupSelect" class="grow"><option value="">No backups found</option></select>
+          <button class="action danger" data-action="restore">Restore</button>
+        </div>
+      </article>
+    </section>
+
+    <!-- Console -->
+    <section class="console-wrap">
+      <div class="console-head">
+        <span>Console</span>
+        <button class="ghost sm" id="clearBtn">Clear</button>
+      </div>
+      <pre id="console" class="console" aria-live="polite"></pre>
+    </section>
+
+    <div class="busy hidden" id="busy"><span class="spin"></span><span id="busyText">Working&hellip;</span></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
