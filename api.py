@@ -273,6 +273,11 @@ class Api:
                     "name": os.path.basename(p),
                     "bytes": os.path.getsize(p) if os.path.isfile(p) else 0,
                 })
+
+        def _ts(item):  # the YYYYMMDDHHMMSS stamp in the filename
+            m = re.search(r"(\d{14})", item["name"])
+            return m.group(1) if m else ""
+        out.sort(key=_ts, reverse=True)  # newest first
         return out
 
     def restore_memory(self, root, cart_id, name):
