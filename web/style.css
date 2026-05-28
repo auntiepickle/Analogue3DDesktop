@@ -313,12 +313,13 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 
 .mem-restore {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 10px;
   margin-top: 10px;
-  flex-wrap: wrap;
 }
-.mem-restore label { color: var(--dim); font-size: 12px; white-space: nowrap; }
+.mem-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mem-restore label,
+.mem-restore .muted { color: var(--dim); font-size: 12px; white-space: nowrap; }
 
 /* ---------- console ---------- */
 .console-wrap {
