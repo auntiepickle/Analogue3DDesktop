@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.svg" alt="Analogue 3D Studio" width="100%">
+</p>
+
 # Analogue 3D Studio
 
 A desktop GUI for the Analogue 3D — a point-and-click, black-and-gold interface
