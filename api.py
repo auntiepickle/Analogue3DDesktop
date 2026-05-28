@@ -33,7 +33,7 @@ _FW_RE = re.compile(r"a3d_os_(\d+)_(\d+)_(\d+)\.bin$", re.IGNORECASE)
 
 
 def _backup_dir():
-    return os.path.join(os.path.dirname(sdcard.__file__), "backups")
+    return config.backup_dir("backups")  # honor the configured backup location
 
 
 def _labels_db(root):
@@ -214,7 +214,7 @@ class Api:
 
     def auto(self, root):
         def task():
-            steps = ["Back up SD card", "Update console firmware",
+            steps = ["Back up SD card (incl. save states)", "Update console firmware",
                      "Install cartridge art pack", "Update controllers"]
             self._steps_init(steps)
             print("=== Auto: backup -> firmware -> art pack -> controllers ===")
