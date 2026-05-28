@@ -267,10 +267,20 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 }
 .game-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 10px;
+  cursor: pointer;
+}
+.game-head .chev {
+  color: var(--dim); width: 12px; flex: none;
+  transition: transform .15s ease; display: inline-block;
+}
+.game.expanded .game-head .chev { transform: rotate(90deg); }
+.game-head .cover {
+  width: 34px; height: 40px; flex: none;
+  object-fit: cover; border-radius: 4px;
+  border: 1px solid var(--border); background: #0a0a0c;
 }
 .game-title { font-weight: 600; color: var(--text); font-size: 14px; }
 .game-id { font-family: var(--mono); color: var(--gold-dim); font-size: 12px; }
@@ -281,10 +291,12 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .cap-warn { color: var(--gold); }
 
 .thumbs {
-  display: grid;
+  display: none;
   grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
   gap: 10px;
+  margin-top: 10px;
 }
+.game.expanded .thumbs { display: grid; }
 .thumb {
   border: 1px solid var(--border);
   border-radius: 8px;

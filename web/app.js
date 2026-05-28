@@ -256,12 +256,15 @@ function renderMemories(m, root) {
     return;
   }
   const limit = m.limit || 20;
+  const autoExpand = m.games.length === 1;  // a lone game can just be open
   m.games.forEach((g) => {
     const overCap = g.count >= limit;
     const game = document.createElement("div");
-    game.className = "game";
+    game.className = "game" + (autoExpand ? " expanded" : "");
     game.innerHTML = `
       <div class="game-head">
+        <span class="chev">&#9656;</span>
+        <img class="cover" alt="" />
         <span class="game-title"></span>
         <span class="game-id"></span>
         <span class="game-meta">${g.count} state${g.count === 1 ? "" : "s"} &middot; ${humanSize(g.total_bytes)}${overCap ? ' &middot; <span class="cap-warn">at the ' + limit + ' cap</span>' : ""}</span>
@@ -275,6 +278,11 @@ function renderMemories(m, root) {
     game.querySelector(".game-title").textContent = g.title;
     game.querySelector(".game-id").textContent = "[" + g.cart_id + "]";
     game.querySelector("[data-mem-action='trim']").dataset.folder = g.folder;
+    const cover = game.querySelector(".cover");
+    if (g.states.length) {
+      cover.dataset.folder = g.folder;
+      cover.dataset.name = g.states[0].name;
+    }
     const thumbs = game.querySelector(".thumbs");
     g.states.forEach((s, i) => {
       const t = document.createElement("div");
@@ -305,18 +313,27 @@ function renderMemories(m, root) {
       thumbs.appendChild(t);
     });
     el.memContent.appendChild(game);
+    if (autoExpand) loadGameThumbs(game, root);
   });
-  lazyThumbs(root);
+  loadCovers(root);  // just one small cover per game; full strips load on expand
 }
 
-async function lazyThumbs(root) {
-  const imgs = [...el.memContent.querySelectorAll("img[data-name]")];
+async function _loadThumbs(imgs, root) {
   for (const img of imgs) {
+    if (img.dataset.loaded) continue;
     try {
       const url = await api().memory_thumbnail(root, img.dataset.folder, img.dataset.name);
-      if (url) img.src = url;
+      if (url) { img.src = url; img.dataset.loaded = "1"; }
     } catch (e) { /* skip a bad thumbnail */ }
   }
+}
+
+function loadCovers(root) {
+  return _loadThumbs([...el.memContent.querySelectorAll("img.cover[data-name]")], root);
+}
+
+function loadGameThumbs(game, root) {
+  return _loadThumbs([...game.querySelectorAll(".thumbs img[data-name]")], root);
 }
 
 let snapshots = [];
@@ -590,6 +607,14 @@ function init() {
       const folder = delBtn.dataset.folder, name = delBtn.dataset.name;
       if (!confirm(`Delete this save state?\n${name}\nA full snapshot is saved first, then it's removed from the card.`)) return;
       run("Deleting save state", () => api().delete_memory(r, folder, name));
+      return;
+    }
+    const head = e.target.closest(".game-head");
+    if (head && !e.target.closest(".game-actions")) {
+      const game = head.parentElement;
+      const expanding = !game.classList.contains("expanded");
+      game.classList.toggle("expanded");
+      if (expanding) loadGameThumbs(game, getRoot());
     }
   });
   el.sdSelect.addEventListener("change", () => { syncManual(); refresh(); });
