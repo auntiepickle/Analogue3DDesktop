@@ -625,6 +625,10 @@ const handlers = {
     if (!confirm(`Delete snapshot ${name}? This can't be undone.`)) return;
     run("Deleting snapshot", () => api().delete_snapshot(name));
   },
+  cleanSnapshots() {
+    if (!confirm("Delete all snapshots except the most recent? This can't be undone.")) return;
+    run("Cleaning old snapshots", () => api().clean_old_snapshots());
+  },
 };
 
 function init() {

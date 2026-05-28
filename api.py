@@ -333,6 +333,20 @@ class Api:
                 print("Snapshot not found: " + name)
         return _run(task)
 
+    def clean_old_snapshots(self):
+        def task():
+            snaps = savestates.list_snapshots()  # newest first
+            if len(snaps) <= 1:
+                print("Nothing to clean - 1 or 0 snapshots.")
+                return
+            removed = 0
+            for s in snaps[1:]:
+                if savestates.delete_snapshot(s["name"]):
+                    removed += 1
+                    print("  deleted " + s["name"])
+            print(f"Kept the newest snapshot, deleted {removed} older one(s).")
+        return _run(task)
+
     # ---------- backup cleaning ----------
     def delete_backup(self, name):
         def task():
