@@ -188,7 +188,7 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
 .art-cap { font-size: 11px; color: var(--text); text-align: center; line-height: 1.25; }
 .art-id { font-family: var(--mono); font-size: 10px; color: var(--gold-dim); }
 
-/* delete button on save-state thumbnails */
+/* delete button on save-state thumbnails (always visible, brighter on hover) */
 .thumb { position: relative; }
 .thumb .del {
   position: absolute; top: 4px; right: 4px;
@@ -196,10 +196,15 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
   border-radius: 50%; border: 1px solid var(--border);
   background: rgba(10, 10, 12, .82); color: var(--dim);
   font-size: 13px; cursor: pointer; padding: 0;
-  opacity: 0; transition: opacity .12s;
+  opacity: .7; transition: opacity .12s, color .12s, border-color .12s;
 }
 .thumb:hover .del { opacity: 1; }
 .thumb .del:hover { color: var(--red); border-color: var(--red); }
+.thumb .newest-tag {
+  position: absolute; top: 4px; left: 4px;
+  font-size: 9px; letter-spacing: .5px; text-transform: uppercase; font-weight: 600;
+  background: var(--gold); color: #1a1500; border-radius: 4px; padding: 1px 5px;
+}
 
 /* ---------- buttons ---------- */
 button {
@@ -362,6 +367,16 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   z-index: 10;
   backdrop-filter: blur(2px);
 }
+.busy-box { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.busy-row { display: flex; align-items: center; gap: 12px; }
+.progress {
+  width: 320px; height: 10px;
+  background: rgba(232, 185, 35, .15);
+  border: 1px solid var(--gold-dim);
+  border-radius: 999px; overflow: hidden;
+}
+.progbar { height: 100%; width: 0%; background: var(--gold); transition: width .15s ease; }
+.prog-label { font-size: 12px; color: var(--gold-soft); }
 .spin {
   width: 22px; height: 22px;
   border: 3px solid rgba(232,185,35,.25);

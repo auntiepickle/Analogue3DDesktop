@@ -61,6 +61,28 @@ def _run(task):
 
 
 class Api:
+    def __init__(self):
+        self._window = None
+
+    def attach_window(self, window):
+        self._window = window
+
+    def _emit(self, js):
+        """Push a line of JS into the webview (used for live progress)."""
+        w = self._window
+        if w is not None:
+            try:
+                w.evaluate_js(js)
+            except Exception:
+                pass
+
+    def _progress_cb(self):
+        """A flash() progress callback that streams percent to the UI."""
+        def cb(written, total, block, nblocks):
+            pct = min(100, written * 100 // total) if total else 0
+            self._emit(f"window.studioProgress&&studioProgress({pct},{block},{nblocks})")
+        return cb
+
     # ---------- read-only state ----------
     def version(self):
         return analogue3d.__version__
@@ -116,7 +138,7 @@ class Api:
                 print(f"Flashing a controller {controller.format_version(cur)} "
                       f"-> {controller.format_version(tgt)} (do not unplug)...")
 
-            s = controller.update_all(announce=announce)
+            s = controller.update_all(progress=self._progress_cb(), announce=announce)
             if s.get("note") and not s.get("updated"):
                 print(s["note"])
             parts = [f"{s.get('updated', 0)} updated", f"{s.get('already', 0)} already current"]
@@ -145,9 +167,10 @@ class Api:
                 print("Firmware step did not complete.")
             sdcard.install_labels(root)
             if controller.connected_count():
-                controller.update_all(announce=lambda c, t: print(
-                    f"Flashing a controller {controller.format_version(c)} "
-                    f"-> {controller.format_version(t)}..."))
+                controller.update_all(progress=self._progress_cb(),
+                    announce=lambda c, t: print(
+                        f"Flashing a controller {controller.format_version(c)} "
+                        f"-> {controller.format_version(t)}..."))
             print("\nAll done. Safely eject the card.")
         return _run(task)
 
@@ -265,6 +288,26 @@ class Api:
                 return
             os.remove(p)
             print("Deleted backup: " + os.path.basename(name))
+        return _run(task)
+
+    def clean_old_backups(self):
+        def task():
+            d = _backup_dir()
+            zips = sorted([f for f in os.listdir(d)
+                           if f.startswith("analogue3d_backup_") and f.endswith(".zip")],
+                          reverse=True) if os.path.isdir(d) else []
+            if len(zips) <= 1:
+                print("Nothing to clean - 1 or 0 backups.")
+                return
+            removed = 0
+            for name in zips[1:]:
+                try:
+                    os.remove(os.path.join(d, name))
+                    removed += 1
+                    print("  deleted " + name)
+                except OSError:
+                    pass
+            print(f"Kept the newest backup, deleted {removed} older one(s).")
         return _run(task)
 
     def delete_memory_backup(self, cart_id, name):
@@ -398,7 +441,7 @@ class Api:
                 print(f"  a controller {controller.format_version(cur)} -> "
                       f"{controller.format_version(target)}...")
 
-            s = controller.update_all_to(meta, announce=announce)
+            s = controller.update_all_to(meta, progress=self._progress_cb(), announce=announce)
             if s.get("note") and not s.get("updated"):
                 print(s["note"])
             parts = [f"{s.get('updated', 0)} changed", f"{s.get('already', 0)} already on {tgt}"]

@@ -31,13 +31,15 @@ def main():
 
     here = os.path.dirname(os.path.abspath(__file__))
     index = os.path.join(here, "web", "index.html")
-    webview.create_window(
+    studio = Api()
+    window = webview.create_window(
         "Analogue 3D Studio",
         index,
-        js_api=Api(),
+        js_api=studio,
         width=1000, height=760, min_size=(860, 640),
         background_color="#0d0d0f",
     )
+    studio.attach_window(window)  # lets actions push live progress to the UI
     webview.start()
 
 

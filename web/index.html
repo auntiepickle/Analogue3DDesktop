@@ -95,6 +95,7 @@
             <button class="action" data-action="restore">Restore</button>
             <button class="action danger" data-action="deleteBackup">Delete</button>
           </div>
+          <button class="action danger sm" data-action="cleanBackups">Delete all but the latest</button>
         </article>
       </div>
     </section>
@@ -146,7 +147,13 @@
       <pre id="console" class="console" aria-live="polite"></pre>
     </section>
 
-    <div class="busy hidden" id="busy"><span class="spin"></span><span id="busyText">Working&hellip;</span></div>
+    <div class="busy hidden" id="busy">
+      <div class="busy-box">
+        <div class="busy-row"><span class="spin" id="busySpin"></span><span id="busyText">Working&hellip;</span></div>
+        <div class="progress hidden" id="busyProg"><div class="progbar" id="busyBar"></div></div>
+        <div class="prog-label hidden" id="busyProgLabel"></div>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>

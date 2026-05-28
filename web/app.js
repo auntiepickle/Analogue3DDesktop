@@ -17,7 +17,8 @@ const el = {
   memRestore: $("memRestore"),
   memBackupSelect: $("memBackupSelect"),
   console: $("console"),
-  busy: $("busy"), busyText: $("busyText"),
+  busy: $("busy"), busyText: $("busyText"), busySpin: $("busySpin"),
+  busyProg: $("busyProg"), busyBar: $("busyBar"), busyProgLabel: $("busyProgLabel"),
 };
 
 const MANUAL = "__manual__";
@@ -38,12 +39,34 @@ function log(text, cls) {
   el.console.scrollTop = el.console.scrollHeight;
 }
 
-/* ---------- busy state ---------- */
+/* ---------- busy state + live progress ---------- */
+let consoleUpToDate = false;
+
+function applyGating() {
+  const fw = document.querySelector("[data-action='firmware']");
+  if (fw) fw.disabled = consoleUpToDate;
+}
+
 function setBusy(on, text) {
   el.busyText.textContent = text || "Working…";
   el.busy.classList.toggle("hidden", !on);
+  if (on) {
+    el.busyProg.classList.add("hidden");
+    el.busyProgLabel.classList.add("hidden");
+    el.busySpin.classList.remove("hidden");
+    el.busyBar.style.width = "0%";
+  }
   document.querySelectorAll("button, select, input").forEach((n) => { n.disabled = on; });
+  if (!on) applyGating();
 }
+
+window.studioProgress = function (pct, block, nblocks) {
+  el.busyProg.classList.remove("hidden");
+  el.busyProgLabel.classList.remove("hidden");
+  el.busySpin.classList.add("hidden");
+  el.busyBar.style.width = pct + "%";
+  el.busyProgLabel.textContent = `${pct}%  (block ${block}/${nblocks})`;
+};
 
 /* ---------- SD target ---------- */
 function getRoot() {
@@ -198,6 +221,12 @@ function renderMemories(m, root) {
       t.appendChild(img);
       t.appendChild(cap);
       t.appendChild(del);
+      if (i === 0) {
+        const tag = document.createElement("span");
+        tag.className = "newest-tag";
+        tag.textContent = "newest";
+        t.appendChild(tag);
+      }
       thumbs.appendChild(t);
     });
     el.memContent.appendChild(game);
@@ -255,6 +284,8 @@ async function refreshVersions() {
   el.ctrlVer.innerHTML = v.controllers
     ? verLine(v.ctrl_current, v.ctrl_latest, v.ctrl_update, "unknown")
     : '<span class="muted">no controller connected</span>';
+  consoleUpToDate = !!(v.console_current && v.console_latest && !v.console_update);
+  applyGating();
   await populateCtrlVersions();
 }
 
@@ -332,7 +363,7 @@ async function lazyArt(root) {
 }
 
 /* ---------- run an action ---------- */
-async function run(busyText, fn) {
+async function run(busyText, fn, refreshVer) {
   setBusy(true, busyText);
   log("\n> " + busyText, "sys");
   try {
@@ -347,6 +378,7 @@ async function run(busyText, fn) {
   } finally {
     setBusy(false);
     await refresh();
+    if (refreshVer) await refreshVersions();
   }
 }
 
@@ -361,9 +393,9 @@ function needRoot() {
 
 /* ---------- wire up ---------- */
 const handlers = {
-  auto() { const r = needRoot(); if (r) run("Auto - doing everything", () => api().auto(r)); },
+  auto() { const r = needRoot(); if (r) run("Auto - doing everything", () => api().auto(r), true); },
   backup() { const r = needRoot(); if (r) run("Backing up SD card", () => api().backup(r)); },
-  firmware() { const r = needRoot(); if (r) run("Updating console firmware", () => api().update_firmware(r)); },
+  firmware() { const r = needRoot(); if (r) run("Updating console firmware", () => api().update_firmware(r), true); },
   art() {
     const r = needRoot(); if (!r) return;
     const source = el.artSource.value === "url" ? el.artUrl.value.trim() : null;
@@ -372,10 +404,10 @@ const handlers = {
   },
   flashCtrl() {
     const vi = el.ctrlVersionSelect.value;
-    if (!vi) { run("Updating controllers to latest", () => api().update_controllers()); return; }
+    if (!vi) { run("Updating controllers to latest", () => api().update_controllers(), true); return; }
     const label = el.ctrlVersionSelect.selectedOptions[0].textContent;
     if (!confirm(`Flash every connected controller to ${label}?\n(Downgrades are allowed.)`)) return;
-    run("Flashing controllers to " + label, () => api().flash_controllers(parseInt(vi, 10)));
+    run("Flashing controllers to " + label, () => api().flash_controllers(parseInt(vi, 10)), true);
   },
   restore() {
     const r = needRoot(); if (!r) return;
@@ -388,6 +420,10 @@ const handlers = {
     if (!name) { log("No backup selected.", "err"); return; }
     if (!confirm(`Delete backup ${name}? This can't be undone.`)) return;
     run("Deleting " + name, () => api().delete_backup(name));
+  },
+  cleanBackups() {
+    if (!confirm("Delete all SD backups except the most recent? This can't be undone.")) return;
+    run("Cleaning old backups", () => api().clean_old_backups());
   },
   backupMem() { const r = needRoot(); if (r) run("Backing up save states", () => api().backup_memories(r)); },
   restoreMem() {
