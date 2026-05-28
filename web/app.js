@@ -545,6 +545,7 @@ async function refreshSettings() {
   try {
     const s = await api().settings();
     el.backupRoot.value = s.backup_root + (s.is_custom ? "" : "   (default)");
+    el.backupRoot.title = s.backup_root;  // hover shows the full path when truncated
     return s;
   } catch (e) { return null; }
 }
