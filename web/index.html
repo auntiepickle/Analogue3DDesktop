@@ -113,6 +113,13 @@
           <button class="action" data-action="art">Install art pack</button>
         </div>
       </div>
+      <div class="mem-controls hidden" id="artControls">
+        <input type="text" id="artSearch" class="mini-input" placeholder="Filter games by name or ID&hellip;" />
+        <span class="grow"></span>
+        <button class="ghost sm" id="artPrev">&lsaquo; Prev</button>
+        <span id="artPageInfo" class="muted"></span>
+        <button class="ghost sm" id="artNext">Next &rsaquo;</button>
+      </div>
       <div id="artGallery" class="art-gallery">
         <p class="muted pad">Select a card to see its cartridge art.</p>
       </div>
@@ -126,6 +133,13 @@
           <button class="action" data-action="archiveMem">Archive all</button>
           <button class="ghost sm" id="memRefresh">Refresh</button>
         </div>
+      </div>
+      <div class="mem-controls hidden" id="memControls">
+        <input type="text" id="memSearch" class="mini-input" placeholder="Filter games by name or ID&hellip;" />
+        <span class="grow"></span>
+        <button class="ghost sm" id="memPrev">&lsaquo; Prev</button>
+        <span id="memPageInfo" class="muted"></span>
+        <button class="ghost sm" id="memNext">Next &rsaquo;</button>
       </div>
       <div id="memContent" class="mem-content">
         <p class="muted pad">Select a card to see its save states.</p>

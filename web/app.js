@@ -249,73 +249,102 @@ async function refreshMemories() {
   await refreshSnapshots();
 }
 
+let memGames = [];
+let memLimit = 20;
+let memPage = 0;
+const MEM_PAGE_SIZE = 8;
+
 function renderMemories(m, root) {
-  el.memContent.innerHTML = "";
-  if (!m.available) {
+  memGames = m.available ? m.games : [];
+  memLimit = m.limit || 20;
+  if (!memGames.length) {
     el.memContent.innerHTML = '<p class="muted pad">No save states on this card.</p>';
+    $("memControls").classList.add("hidden");
     return;
   }
-  const limit = m.limit || 20;
-  const autoExpand = m.games.length === 1;  // a lone game can just be open
-  m.games.forEach((g) => {
-    const overCap = g.count >= limit;
-    const game = document.createElement("div");
-    game.className = "game" + (autoExpand ? " expanded" : "");
-    game.innerHTML = `
-      <div class="game-head">
-        <span class="chev">&#9656;</span>
-        <img class="cover" alt="" />
-        <span class="game-title"></span>
-        <span class="game-id"></span>
-        <span class="game-meta">${g.count} state${g.count === 1 ? "" : "s"} &middot; ${humanSize(g.total_bytes)}${overCap ? ' &middot; <span class="cap-warn">at the ' + limit + ' cap</span>' : ""}</span>
-        <span class="game-actions">
-          <label>keep latest</label>
-          <input type="number" class="keep-input" min="0" value="${limit}" />
-          <button class="action" data-mem-action="trim">Trim &amp; archive</button>
-        </span>
-      </div>
-      <div class="thumbs"></div>`;
-    game.querySelector(".game-title").textContent = g.title;
-    game.querySelector(".game-id").textContent = "[" + g.cart_id + "]";
-    game.querySelector("[data-mem-action='trim']").dataset.folder = g.folder;
-    const cover = game.querySelector(".cover");
-    if (g.states.length) {
-      cover.dataset.folder = g.folder;
-      cover.dataset.name = g.states[0].name;
+  $("memControls").classList.remove("hidden");
+  renderMemPage(root);
+}
+
+function filteredMemGames() {
+  const q = $("memSearch").value.trim().toLowerCase();
+  if (!q) return memGames;
+  return memGames.filter((g) => g.title.toLowerCase().includes(q) || g.cart_id.includes(q));
+}
+
+function renderMemPage(root) {
+  const games = filteredMemGames();
+  const pages = Math.max(1, Math.ceil(games.length / MEM_PAGE_SIZE));
+  memPage = Math.min(Math.max(memPage, 0), pages - 1);
+  const start = memPage * MEM_PAGE_SIZE;
+  const slice = games.slice(start, start + MEM_PAGE_SIZE);
+  const autoExpand = slice.length === 1;
+  el.memContent.innerHTML = "";
+  slice.forEach((g) => el.memContent.appendChild(buildGameRow(g, root, autoExpand)));
+  $("memPageInfo").textContent =
+    `${games.length} game${games.length === 1 ? "" : "s"}  ·  page ${memPage + 1}/${pages}`;
+  $("memPrev").disabled = memPage <= 0;
+  $("memNext").disabled = memPage >= pages - 1;
+  loadCovers(root);  // one small cover per visible game; full strips load on expand
+}
+
+function buildGameRow(g, root, autoExpand) {
+  const overCap = g.count >= memLimit;
+  const game = document.createElement("div");
+  game.className = "game" + (autoExpand ? " expanded" : "");
+  game.innerHTML = `
+    <div class="game-head">
+      <span class="chev">&#9656;</span>
+      <img class="cover" alt="" />
+      <span class="game-title"></span>
+      <span class="game-id"></span>
+      <span class="game-meta">${g.count} state${g.count === 1 ? "" : "s"} &middot; ${humanSize(g.total_bytes)}${overCap ? ' &middot; <span class="cap-warn">at the ' + memLimit + ' cap</span>' : ""}</span>
+      <span class="game-actions">
+        <label>keep latest</label>
+        <input type="number" class="keep-input" min="0" value="${memLimit}" />
+        <button class="action" data-mem-action="trim">Trim &amp; archive</button>
+      </span>
+    </div>
+    <div class="thumbs"></div>`;
+  game.querySelector(".game-title").textContent = g.title;
+  game.querySelector(".game-id").textContent = "[" + g.cart_id + "]";
+  game.querySelector("[data-mem-action='trim']").dataset.folder = g.folder;
+  const cover = game.querySelector(".cover");
+  if (g.states.length) {
+    cover.dataset.folder = g.folder;
+    cover.dataset.name = g.states[0].name;
+  }
+  const thumbs = game.querySelector(".thumbs");
+  g.states.forEach((s, i) => {
+    const t = document.createElement("div");
+    t.className = "thumb" + (i === 0 ? " newest" : "");
+    const img = document.createElement("img");
+    img.alt = s.when;
+    img.dataset.folder = g.folder;
+    img.dataset.name = s.name;
+    const cap = document.createElement("div");
+    cap.className = "cap";
+    cap.textContent = s.when;
+    const del = document.createElement("button");
+    del.className = "del";
+    del.title = "Delete this save state";
+    del.textContent = "×";
+    del.dataset.memAction = "del";
+    del.dataset.folder = g.folder;
+    del.dataset.name = s.name;
+    t.appendChild(img);
+    t.appendChild(cap);
+    t.appendChild(del);
+    if (i === 0) {
+      const tag = document.createElement("span");
+      tag.className = "newest-tag";
+      tag.textContent = "newest";
+      t.appendChild(tag);
     }
-    const thumbs = game.querySelector(".thumbs");
-    g.states.forEach((s, i) => {
-      const t = document.createElement("div");
-      t.className = "thumb" + (i === 0 ? " newest" : "");
-      const img = document.createElement("img");
-      img.alt = s.when;
-      img.dataset.folder = g.folder;
-      img.dataset.name = s.name;
-      const cap = document.createElement("div");
-      cap.className = "cap";
-      cap.textContent = s.when;
-      const del = document.createElement("button");
-      del.className = "del";
-      del.title = "Delete this save state";
-      del.textContent = "×";
-      del.dataset.memAction = "del";
-      del.dataset.folder = g.folder;
-      del.dataset.name = s.name;
-      t.appendChild(img);
-      t.appendChild(cap);
-      t.appendChild(del);
-      if (i === 0) {
-        const tag = document.createElement("span");
-        tag.className = "newest-tag";
-        tag.textContent = "newest";
-        t.appendChild(tag);
-      }
-      thumbs.appendChild(t);
-    });
-    el.memContent.appendChild(game);
-    if (autoExpand) loadGameThumbs(game, root);
+    thumbs.appendChild(t);
   });
-  loadCovers(root);  // just one small cover per game; full strips load on expand
+  if (autoExpand) loadGameThumbs(game, root);
+  return game;
 }
 
 async function _loadThumbs(imgs, root) {
@@ -416,49 +445,76 @@ async function populateCtrlVersions() {
 }
 
 /* ---------- cartridge art ---------- */
+let artGames = [];
+let artPage = 0;
+const ART_PAGE_SIZE = 18;
+
 async function refreshArt() {
   const root = getRoot();
+  const hideControls = () => $("artControls").classList.add("hidden");
   if (!root) {
     el.artGallery.innerHTML = '<p class="muted pad">Select a card to see its cartridge art.</p>';
-    return;
+    hideControls(); return;
   }
   let data;
   try { data = await api().cart_art_games(root); }
-  catch (e) { el.artGallery.innerHTML = '<p class="muted pad">Could not read cartridge art.</p>'; return; }
+  catch (e) { el.artGallery.innerHTML = '<p class="muted pad">Could not read cartridge art.</p>'; hideControls(); return; }
   if (!data.db_present) {
     el.artGallery.innerHTML = '<p class="muted pad">No art pack installed yet - use "Install art pack" above.</p>';
-    return;
+    hideControls(); return;
   }
-  if (!data.games.length) {
+  artGames = data.games || [];
+  if (!artGames.length) {
     el.artGallery.innerHTML = '<p class="muted pad">No recognizable games on this card yet.</p>';
-    return;
+    hideControls(); return;
   }
+  $("artControls").classList.remove("hidden");
+  renderArtPage(root);
+}
+
+function filteredArtGames() {
+  const q = $("artSearch").value.trim().toLowerCase();
+  if (!q) return artGames;
+  return artGames.filter((g) => g.title.toLowerCase().includes(q) || g.cart_id.includes(q));
+}
+
+function renderArtPage(root) {
+  const games = filteredArtGames();
+  const pages = Math.max(1, Math.ceil(games.length / ART_PAGE_SIZE));
+  artPage = Math.min(Math.max(artPage, 0), pages - 1);
+  const start = artPage * ART_PAGE_SIZE;
   el.artGallery.innerHTML = "";
-  data.games.forEach((g) => {
-    const tile = document.createElement("div");
-    tile.className = "art-tile";
-    const img = document.createElement("img");
-    img.className = "art-img";
-    img.alt = g.title;
-    img.dataset.cart = g.cart_id;
-    const cap = document.createElement("div");
-    cap.className = "art-cap";
-    cap.textContent = g.title;
-    const id = document.createElement("div");
-    id.className = "art-id";
-    id.textContent = g.cart_id;
-    const setb = document.createElement("button");
-    setb.className = "action sm setart";
-    setb.textContent = "Set art";
-    setb.dataset.artAction = "set";
-    setb.dataset.cart = g.cart_id;
-    tile.appendChild(img);
-    tile.appendChild(cap);
-    tile.appendChild(id);
-    tile.appendChild(setb);
-    el.artGallery.appendChild(tile);
-  });
+  games.slice(start, start + ART_PAGE_SIZE).forEach((g) => el.artGallery.appendChild(buildArtTile(g)));
+  $("artPageInfo").textContent =
+    `${games.length} game${games.length === 1 ? "" : "s"}  ·  page ${artPage + 1}/${pages}`;
+  $("artPrev").disabled = artPage <= 0;
+  $("artNext").disabled = artPage >= pages - 1;
   lazyArt(root);
+}
+
+function buildArtTile(g) {
+  const tile = document.createElement("div");
+  tile.className = "art-tile";
+  const img = document.createElement("img");
+  img.className = "art-img";
+  img.alt = g.title;
+  img.dataset.cart = g.cart_id;
+  const cap = document.createElement("div");
+  cap.className = "art-cap";
+  cap.textContent = g.title;
+  const id = document.createElement("div");
+  id.className = "art-id";
+  id.textContent = g.cart_id;
+  const setb = document.createElement("button");
+  setb.className = "action sm setart";
+  setb.textContent = "Set art";
+  setb.dataset.artAction = "set";
+  setb.dataset.cart = g.cart_id;
+  tile.appendChild(img);
+  tile.appendChild(cap);
+  tile.appendChild(id);
+  tile.appendChild(setb);
+  return tile;
 }
 
 async function lazyArt(root) {
@@ -580,6 +636,12 @@ function init() {
   $("memRefresh").addEventListener("click", refreshMemories);
   $("checkUpdates").addEventListener("click", refreshVersions);
   el.memSnapshotSelect.addEventListener("change", fillSnapshotGames);
+  $("memSearch").addEventListener("input", () => { memPage = 0; renderMemPage(getRoot()); });
+  $("memPrev").addEventListener("click", () => { memPage--; renderMemPage(getRoot()); });
+  $("memNext").addEventListener("click", () => { memPage++; renderMemPage(getRoot()); });
+  $("artSearch").addEventListener("input", () => { artPage = 0; renderArtPage(getRoot()); });
+  $("artPrev").addEventListener("click", () => { artPage--; renderArtPage(getRoot()); });
+  $("artNext").addEventListener("click", () => { artPage++; renderArtPage(getRoot()); });
   el.artGallery.addEventListener("click", (e) => {
     const b = e.target.closest("[data-art-action='set']");
     if (!b) return;

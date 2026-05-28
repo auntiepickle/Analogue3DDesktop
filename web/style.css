@@ -258,6 +258,11 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .muted { color: var(--dim); }
 .pad { padding: 8px 2px; margin: 0; }
 
+.mem-controls { display: flex; align-items: center; gap: 10px; }
+.mem-controls .grow { flex: 1; }
+.mem-controls #memSearch, .mem-controls #artSearch { max-width: 280px; }
+.mem-controls #memPageInfo, .mem-controls #artPageInfo { font-size: 12px; white-space: nowrap; }
+
 .mem-content { display: flex; flex-direction: column; gap: 12px; }
 .game {
   background: var(--panel);
