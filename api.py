@@ -361,6 +361,38 @@ class Api:
         _art_cache[key] = url
         return url
 
+    def set_cart_art(self, root, cart_id):
+        def task():
+            db = _labels_db(root)
+            if not os.path.isfile(db):
+                print("No labels.db on the card - install an art pack first.")
+                return
+            w = self._window
+            if w is None:
+                print("No window for the file picker.")
+                return
+            try:
+                import webview
+                picked = w.create_file_dialog(
+                    webview.OPEN_DIALOG, allow_multiple=False,
+                    file_types=("Images (*.png;*.jpg;*.jpeg;*.bmp;*.webp)", "All files (*.*)"))
+            except Exception as e:
+                print("Could not open the file picker: " + str(e))
+                return
+            if not picked:
+                print("No image chosen.")
+                return
+            image_path = picked[0] if isinstance(picked, (list, tuple)) else picked
+            try:
+                result = labels.set_label(db, cart_id, image_path)
+            except Exception as e:
+                print("Failed: " + str(e))
+                return
+            verb = "Updated" if result == "updated" else "Added"
+            print(f"{verb} art for cart {cart_id} from {os.path.basename(image_path)}. "
+                  f"It resizes to 74x86 and shows on the console next boot.")
+        return _run(task)
+
     # ---------- firmware versions ----------
     def versions(self, root):
         out = {"console_current": None, "console_latest": None,

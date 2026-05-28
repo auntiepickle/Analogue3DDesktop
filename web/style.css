@@ -187,6 +187,7 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
 }
 .art-cap { font-size: 11px; color: var(--text); text-align: center; line-height: 1.25; }
 .art-id { font-family: var(--mono); font-size: 10px; color: var(--gold-dim); }
+.art-tile .setart { width: 100%; align-self: stretch; }
 
 /* delete button on save-state thumbnails (always visible, brighter on hover) */
 .thumb { position: relative; }

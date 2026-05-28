@@ -337,9 +337,15 @@ async function refreshArt() {
     const id = document.createElement("div");
     id.className = "art-id";
     id.textContent = g.cart_id;
+    const setb = document.createElement("button");
+    setb.className = "action sm setart";
+    setb.textContent = "Set art";
+    setb.dataset.artAction = "set";
+    setb.dataset.cart = g.cart_id;
     tile.appendChild(img);
     tile.appendChild(cap);
     tile.appendChild(id);
+    tile.appendChild(setb);
     el.artGallery.appendChild(tile);
   });
   lazyArt(root);
@@ -452,6 +458,13 @@ function init() {
   $("clearBtn").addEventListener("click", () => { el.console.innerHTML = ""; });
   $("memRefresh").addEventListener("click", refreshMemories);
   $("checkUpdates").addEventListener("click", refreshVersions);
+  el.artGallery.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-art-action='set']");
+    if (!b) return;
+    const r = getRoot();
+    if (!r) { log("Select a card first.", "err"); return; }
+    run("Setting cart art", () => api().set_cart_art(r, b.dataset.cart));
+  });
   el.memContent.addEventListener("click", (e) => {
     const trimBtn = e.target.closest("[data-mem-action='trim']");
     if (trimBtn) {
