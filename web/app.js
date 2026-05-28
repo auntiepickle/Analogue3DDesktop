@@ -206,6 +206,7 @@ async function pollStatus() {
   try { data = await api().detect(); } catch (e) { return; }
 
   const n = data.controllers || 0;
+  const controllerChanged = n !== controllerCount;
   controllerCount = n;
   el.padLed.className = n > 0 ? "led on" : "led off";
   el.padValue.textContent = n === 0 ? "none connected" : `${n} connected`;
@@ -213,6 +214,10 @@ async function pollStatus() {
   const cardSig = (data.cards || []).map((c) => c.path).join(",");
   if (lastCardSig !== null && cardSig !== lastCardSig) {
     await refresh();
+  }
+  // a controller was plugged/unplugged: refresh the Updates section's version line
+  if (controllerChanged) {
+    await refreshVersions();
   }
 }
 
