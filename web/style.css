@@ -362,7 +362,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .busy {
   position: fixed;
   inset: 0;
-  background: rgba(8,8,10,.6);
+  background: rgba(6, 6, 8, .82);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -370,9 +370,17 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   font-family: var(--mono);
   color: var(--gold);
   z-index: 10;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(3px);
 }
-.busy-box { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.busy-box {
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  background: #15151a;
+  border: 1px solid var(--gold-dim);
+  border-radius: 14px;
+  padding: 24px 32px;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, .55);
+}
+#busyText { color: var(--gold-soft); font-size: 15px; }
 .busy-row { display: flex; align-items: center; gap: 12px; }
 .steps {
   list-style: none; margin: 0; padding: 12px 16px;

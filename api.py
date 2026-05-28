@@ -238,18 +238,15 @@ class Api:
         _thumb_cache[key] = url
         return url
 
-    def backup_memories(self, root):
+    def archive_memories(self, root):
         def task():
-            games = savestates.find_game_states(root)
-            if not games:
-                print("No save states found on this card.")
+            path, n = savestates.archive_all(root)
+            if not path:
+                print("No save states on this card to archive.")
                 return
-            total = 0
-            for g in games:
-                n = savestates.backup_game(g)
-                total += n
-                print(f"  {g['title']} [{g['cart_id']}]: backed up {n} state(s)")
-            print(f"Done: archived {total} save state(s).")
+            size = os.path.getsize(path)
+            print(f"Archived {n} save state(s) into {os.path.basename(path)} "
+                  f"({size // (1024 * 1024)} MB).")
         return _run(task)
 
     def trim_memory(self, root, folder, keep):
@@ -258,42 +255,12 @@ class Api:
             if not g:
                 print("Game not found on card: " + folder)
                 return
-            removed, kept = savestates.trim_to_latest(g, keep=max(0, int(keep)),
-                                                      backup_first=True)
-            print(f"{g['title']} [{g['cart_id']}]: archived and removed {removed} older "
-                  f"state(s); kept the newest {kept} on the card.")
-        return _run(task)
-
-    def list_memory_backups(self):
-        out = []
-        for cart_id, paths in savestates.list_backups().items():
-            for p in paths:
-                out.append({
-                    "cart_id": cart_id,
-                    "name": os.path.basename(p),
-                    "bytes": os.path.getsize(p) if os.path.isfile(p) else 0,
-                })
-
-        def _ts(item):  # the YYYYMMDDHHMMSS stamp in the filename
-            m = re.search(r"(\d{14})", item["name"])
-            return m.group(1) if m else ""
-        out.sort(key=_ts, reverse=True)  # newest first
-        return out
-
-    def restore_memory(self, root, cart_id, name):
-        def task():
-            backup_path = os.path.join(savestates._backup_dir(),
-                                       os.path.basename(cart_id), os.path.basename(name))
-            if not os.path.isfile(backup_path):
-                print("Backup not found: " + name)
-                return
-            target = next((x for x in savestates.find_game_states(root)
-                           if x["cart_id"] == cart_id), None)
-            if not target:
-                print("That game isn't on the card now, so there's nowhere to restore it.")
-                return
-            dest = savestates.restore_state(backup_path, target["path"])
-            print(f"Restored {os.path.basename(name)} into {target['title']}.")
+            snap, _ = savestates.archive_all(root)  # safety snapshot first
+            if snap:
+                print("Snapshot saved: " + os.path.basename(snap))
+            removed, kept = savestates.trim_to_latest(g, keep=max(0, int(keep)))
+            print(f"{g['title']} [{g['cart_id']}]: removed {removed} older state(s); "
+                  f"kept the newest {kept} on the card.")
         return _run(task)
 
     def delete_memory(self, root, folder, name):
@@ -303,11 +270,53 @@ class Api:
             if not os.path.isfile(path):
                 print("Save state not found: " + name)
                 return
-            m = re.search(r"([0-9a-fA-F]{8})\s*$", folder)
-            cart_id = m.group(1).lower() if m else "????????"
-            savestates.backup_state(path, cart_id, os.path.basename(name))  # archive first
-            os.remove(path)
-            print(f"Archived and deleted: {os.path.basename(name)}")
+            snap, _ = savestates.archive_all(root)  # safety snapshot first
+            if snap:
+                print("Snapshot saved: " + os.path.basename(snap))
+            savestates.delete_state(path)
+            print("Deleted from card: " + os.path.basename(name))
+        return _run(task)
+
+    # ---------- archive snapshots ----------
+    def list_snapshots(self):
+        out = []
+        for s in savestates.list_snapshots():
+            m = re.search(r"(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})", s["name"])
+            when = (f"{m.group(1)}-{m.group(2)}-{m.group(3)} {m.group(4)}:{m.group(5)}"
+                    if m else s["name"])
+            out.append({
+                "name": s["name"], "when": when, "bytes": s["bytes"],
+                "count": sum(g["count"] for g in s["games"]), "games": s["games"],
+            })
+        return out
+
+    def restore_memories(self, root, name):
+        def task():
+            try:
+                n = savestates.restore_snapshot(root, name)
+            except FileNotFoundError:
+                print("Snapshot not found: " + name)
+                return
+            print(f"Restored all {n} save state(s) from {name} onto the card.")
+        return _run(task)
+
+    def restore_memories_game(self, root, name, cart_id):
+        def task():
+            try:
+                n = savestates.restore_snapshot(root, name, cart_id=cart_id)
+            except FileNotFoundError:
+                print("Snapshot not found: " + name)
+                return
+            print(f"Restored {n} save state(s) for [{cart_id}] from {name}."
+                  if n else "That game isn't in this snapshot.")
+        return _run(task)
+
+    def delete_snapshot(self, name):
+        def task():
+            if savestates.delete_snapshot(name):
+                print("Deleted snapshot: " + os.path.basename(name))
+            else:
+                print("Snapshot not found: " + name)
         return _run(task)
 
     # ---------- backup cleaning ----------
@@ -339,43 +348,6 @@ class Api:
                 except OSError:
                     pass
             print(f"Kept the newest backup, deleted {removed} older one(s).")
-        return _run(task)
-
-    def clean_old_memory_backups(self):
-        def task():
-            backups = savestates.list_backups()
-            if not backups:
-                print("No archived save states to clean.")
-                return
-
-            def _ts(p):
-                m = re.search(r"(\d{14})", os.path.basename(p))
-                return m.group(1) if m else ""
-
-            removed = 0
-            for cart_id, paths in backups.items():
-                for p in sorted(paths, key=_ts, reverse=True)[1:]:  # keep newest per game
-                    try:
-                        os.remove(p)
-                        removed += 1
-                        print("  deleted " + os.path.basename(p))
-                    except OSError:
-                        pass
-            if removed:
-                print(f"Kept the newest archived state per game; deleted {removed} older one(s).")
-            else:
-                print("Nothing to clean - only the latest per game is kept.")
-        return _run(task)
-
-    def delete_memory_backup(self, cart_id, name):
-        def task():
-            p = os.path.join(savestates._backup_dir(),
-                             os.path.basename(cart_id), os.path.basename(name))
-            if not os.path.isfile(p):
-                print("Archived state not found: " + name)
-                return
-            os.remove(p)
-            print("Deleted archived state: " + os.path.basename(name))
         return _run(task)
 
     # ---------- cartridge art ----------

@@ -123,7 +123,7 @@
       <div class="section-head">
         <h2>Save states <span class="muted">/ Memories</span></h2>
         <div class="row-tools">
-          <button class="action" data-action="backupMem">Back up all</button>
+          <button class="action" data-action="archiveMem">Archive all</button>
           <button class="ghost sm" id="memRefresh">Refresh</button>
         </div>
       </div>
@@ -131,11 +131,13 @@
         <p class="muted pad">Select a card to see its save states.</p>
       </div>
       <div id="memRestore" class="mem-restore hidden">
-        <label for="memBackupSelect">Archived save states</label>
-        <select id="memBackupSelect" class="grow"></select>
-        <button class="action" data-action="restoreMem">Restore</button>
-        <button class="action danger" data-action="deleteMemBackup">Delete</button>
-        <button class="action danger sm" data-action="cleanMemBackups">Delete all but the latest</button>
+        <label>Archive (snapshot)</label>
+        <select id="memSnapshotSelect" class="grow" title="Snapshot"></select>
+        <button class="action" data-action="restoreAll">Restore all</button>
+        <span class="muted">one game:</span>
+        <select id="memArchiveGame" title="Game in this snapshot"></select>
+        <button class="action" data-action="restoreGame">Restore game</button>
+        <button class="action danger sm" data-action="deleteSnapshot">Delete snapshot</button>
       </div>
     </section>
 

@@ -15,7 +15,8 @@ const el = {
   ctrlVersionSelect: $("ctrlVersionSelect"),
   memContent: $("memContent"),
   memRestore: $("memRestore"),
-  memBackupSelect: $("memBackupSelect"),
+  memSnapshotSelect: $("memSnapshotSelect"),
+  memArchiveGame: $("memArchiveGame"),
   console: $("console"),
   busy: $("busy"), busyText: $("busyText"), busySpin: $("busySpin"),
   busySteps: $("busySteps"),
@@ -42,6 +43,9 @@ function log(text, cls) {
 
 /* ---------- busy state + live progress ---------- */
 let consoleUpToDate = false;
+let controllerCount = 0;
+let busyNow = false;
+let lastCardSig = null;
 
 function applyGating() {
   const fw = document.querySelector("[data-action='firmware']");
@@ -49,6 +53,7 @@ function applyGating() {
 }
 
 function setBusy(on, text) {
+  busyNow = on;
   el.busyText.textContent = text || "Working…";
   el.busy.classList.toggle("hidden", !on);
   if (on) {
@@ -126,6 +131,7 @@ async function refresh() {
 
   // SD cards
   const cards = data.cards || [];
+  lastCardSig = cards.map((c) => c.path).join(",");
   const prev = getRoot();
   el.sdSelect.innerHTML = "";
   cards.forEach((c) => {
@@ -165,12 +171,32 @@ async function refresh() {
   }
 
   const n = data.controllers || 0;
+  controllerCount = n;
   el.padLed.className = n > 0 ? "led on" : "led off";
   el.padValue.textContent = n === 0 ? "none connected" : `${n} connected`;
 
   await refreshBackups();
   await refreshMemories();
   await refreshArt();
+}
+
+/* Lightweight background poll: keep the status strip (controllers / SD) live
+   without rebuilding the whole UI. A full refresh only runs if the set of cards
+   actually changed (memories/art depend on the card). Skipped while busy. */
+async function pollStatus() {
+  if (busyNow) return;
+  let data;
+  try { data = await api().detect(); } catch (e) { return; }
+
+  const n = data.controllers || 0;
+  controllerCount = n;
+  el.padLed.className = n > 0 ? "led on" : "led off";
+  el.padValue.textContent = n === 0 ? "none connected" : `${n} connected`;
+
+  const cardSig = (data.cards || []).map((c) => c.path).join(",");
+  if (lastCardSig !== null && cardSig !== lastCardSig) {
+    await refresh();
+  }
 }
 
 async function refreshBackups() {
@@ -204,7 +230,7 @@ async function refreshMemories() {
   try { m = await api().list_memories(root); }
   catch (e) { el.memContent.innerHTML = '<p class="muted pad">Could not read save states.</p>'; return; }
   renderMemories(m, root);
-  await refreshMemBackups();
+  await refreshSnapshots();
 }
 
 function renderMemories(m, root) {
@@ -277,17 +303,35 @@ async function lazyThumbs(root) {
   }
 }
 
-async function refreshMemBackups() {
-  let list = [];
-  try { list = await api().list_memory_backups(); } catch (e) {}
-  if (!list.length) { el.memRestore.classList.add("hidden"); return; }
+let snapshots = [];
+
+async function refreshSnapshots() {
+  try { snapshots = await api().list_snapshots(); } catch (e) { snapshots = []; }
+  if (!snapshots.length) { el.memRestore.classList.add("hidden"); return; }
   el.memRestore.classList.remove("hidden");
-  el.memBackupSelect.innerHTML = "";
-  list.forEach((b) => {
+  const prev = el.memSnapshotSelect.value;
+  el.memSnapshotSelect.innerHTML = "";
+  snapshots.forEach((s) => {
     const o = document.createElement("option");
-    o.value = b.cart_id + "|" + b.name;
-    o.textContent = `[${b.cart_id}] ${b.name}  (${humanSize(b.bytes)})`;
-    el.memBackupSelect.appendChild(o);
+    o.value = s.name;
+    o.textContent = `${s.when}  -  ${s.count} states, ${humanSize(s.bytes)}`;
+    el.memSnapshotSelect.appendChild(o);
+  });
+  if (prev && [...el.memSnapshotSelect.options].some((o) => o.value === prev)) {
+    el.memSnapshotSelect.value = prev;
+  }
+  fillSnapshotGames();
+}
+
+function fillSnapshotGames() {
+  const s = snapshots.find((x) => x.name === el.memSnapshotSelect.value) || snapshots[0];
+  el.memArchiveGame.innerHTML = "";
+  if (!s) return;
+  s.games.forEach((g) => {
+    const o = document.createElement("option");
+    o.value = g.cart_id;
+    o.textContent = `${g.title} (${g.count})`;
+    el.memArchiveGame.appendChild(o);
   });
 }
 
@@ -442,11 +486,13 @@ const handlers = {
     run("Installing cartridge art", () => api().install_art(r, source));
   },
   flashCtrl() {
+    const noun = controllerCount === 1 ? "controller" : "controllers";
     const vi = el.ctrlVersionSelect.value;
-    if (!vi) { run("Updating controllers to latest", () => api().update_controllers(), true); return; }
+    if (!vi) { run(`Updating ${noun} to latest`, () => api().update_controllers(), true); return; }
     const label = el.ctrlVersionSelect.selectedOptions[0].textContent;
-    if (!confirm(`Flash every connected controller to ${label}?\n(Downgrades are allowed.)`)) return;
-    run("Flashing controllers to " + label, () => api().flash_controllers(parseInt(vi, 10)), true);
+    const which = controllerCount === 1 ? "the connected controller" : `all ${controllerCount} connected controllers`;
+    if (!confirm(`Flash ${which} to ${label}?\n(Downgrades are allowed.)`)) return;
+    run(`Flashing ${noun} to ${label}`, () => api().flash_controllers(parseInt(vi, 10)), true);
   },
   restore() {
     const r = needRoot(); if (!r) return;
@@ -464,26 +510,31 @@ const handlers = {
     if (!confirm("Delete all SD backups except the most recent? This can't be undone.")) return;
     run("Cleaning old backups", () => api().clean_old_backups());
   },
-  cleanMemBackups() {
-    if (!confirm("Delete all archived save states except the newest of each game? This can't be undone.")) return;
-    run("Cleaning archived save states", () => api().clean_old_memory_backups());
+  archiveMem() {
+    const r = needRoot();
+    if (r) run("Archiving all save states", () => api().archive_memories(r));
   },
-  backupMem() { const r = needRoot(); if (r) run("Backing up save states", () => api().backup_memories(r)); },
-  restoreMem() {
+  restoreAll() {
     const r = needRoot(); if (!r) return;
-    const v = el.memBackupSelect.value;
-    if (!v) { log("No archived save state selected.", "err"); return; }
-    const sep = v.indexOf("|");
-    const cart = v.slice(0, sep), name = v.slice(sep + 1);
-    run("Restoring save state", () => api().restore_memory(r, cart, name));
+    const name = el.memSnapshotSelect.value;
+    if (!name) { log("No snapshot selected.", "err"); return; }
+    if (!confirm("Restore ALL save states from this snapshot onto the card?\nFiles with the same name are overwritten.")) return;
+    run("Restoring whole snapshot", () => api().restore_memories(r, name));
   },
-  deleteMemBackup() {
-    const v = el.memBackupSelect.value;
-    if (!v) { log("No archived save state selected.", "err"); return; }
-    const sep = v.indexOf("|");
-    const cart = v.slice(0, sep), name = v.slice(sep + 1);
-    if (!confirm(`Delete archived save state?\n${name}\nThis can't be undone.`)) return;
-    run("Deleting archived state", () => api().delete_memory_backup(cart, name));
+  restoreGame() {
+    const r = needRoot(); if (!r) return;
+    const name = el.memSnapshotSelect.value;
+    const cart = el.memArchiveGame.value;
+    if (!name || !cart) { log("Pick a snapshot and a game.", "err"); return; }
+    const game = el.memArchiveGame.selectedOptions[0] ? el.memArchiveGame.selectedOptions[0].textContent : cart;
+    if (!confirm(`Restore ${game} from this snapshot onto the card?`)) return;
+    run("Restoring one game", () => api().restore_memories_game(r, name, cart));
+  },
+  deleteSnapshot() {
+    const name = el.memSnapshotSelect.value;
+    if (!name) { log("No snapshot selected.", "err"); return; }
+    if (!confirm(`Delete snapshot ${name}? This can't be undone.`)) return;
+    run("Deleting snapshot", () => api().delete_snapshot(name));
   },
 };
 
@@ -495,6 +546,7 @@ function init() {
   $("clearBtn").addEventListener("click", () => { el.console.innerHTML = ""; });
   $("memRefresh").addEventListener("click", refreshMemories);
   $("checkUpdates").addEventListener("click", refreshVersions);
+  el.memSnapshotSelect.addEventListener("change", fillSnapshotGames);
   el.artGallery.addEventListener("click", (e) => {
     const b = e.target.closest("[data-art-action='set']");
     if (!b) return;
@@ -511,7 +563,7 @@ function init() {
       if (isNaN(keep) || keep < 0) { log("Enter a valid 'keep latest' number.", "err"); return; }
       const r = getRoot();
       if (!r) { log("Select a card first.", "err"); return; }
-      if (!confirm(`Trim this game to its newest ${keep} save state(s)?\nThe rest are archived locally first, then removed from the card.`)) return;
+      if (!confirm(`Trim this game to its newest ${keep} save state(s)?\nA full snapshot is saved first, then the older ones are removed from the card.`)) return;
       run(`Trimming to newest ${keep}`, () => api().trim_memory(r, folder, keep));
       return;
     }
@@ -520,7 +572,7 @@ function init() {
       const r = getRoot();
       if (!r) { log("Select a card first.", "err"); return; }
       const folder = delBtn.dataset.folder, name = delBtn.dataset.name;
-      if (!confirm(`Delete this save state?\n${name}\nIt's archived locally first, then removed from the card.`)) return;
+      if (!confirm(`Delete this save state?\n${name}\nA full snapshot is saved first, then it's removed from the card.`)) return;
       run("Deleting save state", () => api().delete_memory(r, folder, name));
     }
   });
@@ -533,6 +585,7 @@ function init() {
   api().version().then((v) => { el.version.textContent = "v" + v; }).catch(() => {});
   log("Analogue 3D Studio ready.", "sys");
   refresh().then(refreshVersions);
+  setInterval(pollStatus, 2500);  // keep the status strip live (plug/unplug)
 }
 
 if (window.pywebview && window.pywebview.api) {

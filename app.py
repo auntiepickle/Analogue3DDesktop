@@ -31,6 +31,18 @@ def main():
 
     here = os.path.dirname(os.path.abspath(__file__))
     index = os.path.join(here, "web", "index.html")
+    icon = os.path.join(here, "assets", "icon.ico")
+
+    if sys.platform == "win32":
+        # Give the process its own taskbar identity so Windows shows our icon,
+        # not the generic Python one.
+        try:
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                "auntiepickle.analogue3dstudio")
+        except Exception:
+            pass
+
     studio = Api()
     window = webview.create_window(
         "Analogue 3D Studio",
@@ -40,7 +52,11 @@ def main():
         background_color="#0d0d0f",
     )
     studio.attach_window(window)  # lets actions push live progress to the UI
-    webview.start()
+
+    start_kwargs = {}
+    if os.path.isfile(icon):
+        start_kwargs["icon"] = icon
+    webview.start(**start_kwargs)
 
 
 if __name__ == "__main__":
