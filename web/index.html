@@ -96,6 +96,25 @@
       </article>
     </section>
 
+    <!-- Save states (Memories) -->
+    <section class="memories-wrap">
+      <div class="section-head">
+        <h2>Save states <span class="muted">/ Memories</span></h2>
+        <div class="row-tools">
+          <button class="action" data-action="backupMem">Back up all</button>
+          <button class="ghost sm" id="memRefresh">Refresh</button>
+        </div>
+      </div>
+      <div id="memContent" class="mem-content">
+        <p class="muted pad">Select a card to see its save states.</p>
+      </div>
+      <div id="memRestore" class="mem-restore hidden">
+        <label for="memBackupSelect">Restore an archived save state</label>
+        <select id="memBackupSelect" class="grow"></select>
+        <button class="action" data-action="restoreMem">Restore</button>
+      </div>
+    </section>
+
     <!-- Console -->
     <section class="console-wrap">
       <div class="console-head">

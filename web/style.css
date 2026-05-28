@@ -187,6 +187,80 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .ghost.sm, .sm { padding: 4px 10px; font-size: 12px; }
 .status .ghost { margin-left: auto; }
 
+/* ---------- memories ---------- */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+.section-head h2 { margin: 0; font-size: 16px; color: var(--gold); }
+.section-head .muted { color: var(--dim); font-weight: 400; font-size: 13px; }
+.row-tools { display: flex; gap: 8px; align-items: center; }
+.muted { color: var(--dim); }
+.pad { padding: 8px 2px; margin: 0; }
+
+.mem-content { display: flex; flex-direction: column; gap: 12px; }
+.game {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.game-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.game-title { font-weight: 600; color: var(--text); font-size: 14px; }
+.game-id { font-family: var(--mono); color: var(--gold-dim); font-size: 12px; }
+.game-meta { color: var(--dim); font-size: 12px; }
+.game-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.game-actions label { color: var(--dim); font-size: 12px; }
+.keep-input { width: 54px; text-align: center; }
+.cap-warn { color: var(--gold); }
+
+.thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 10px;
+}
+.thumb {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+}
+.thumb.newest { border-color: var(--gold); }
+.thumb img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: #0a0a0c;
+}
+.thumb .cap {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--dim);
+  padding: 4px 6px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.thumb.newest .cap { color: var(--gold-soft); }
+
+.mem-restore {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.mem-restore label { color: var(--dim); font-size: 12px; white-space: nowrap; }
+
 /* ---------- console ---------- */
 .console-wrap {
   display: flex;

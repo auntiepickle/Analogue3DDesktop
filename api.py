@@ -8,12 +8,13 @@ methods run an engine task, capture everything it prints, and return
 
 import io
 import os
+import base64
 import zipfile
 import contextlib
 import threading
 
 import analogue3d
-from analogue3d import sdcard, controller, ui
+from analogue3d import sdcard, controller, savestates, ui
 
 # The GUI does its own confirmations; the engine must never block on a terminal
 # prompt (there's no stdin behind a webview).
@@ -21,6 +22,9 @@ ui.ASSUME_YES = True
 
 # stdout redirection is process-global, so only one action may run at a time.
 _lock = threading.Lock()
+
+# (path, mtime) -> base64 data URL, so we don't re-decode a 9 MB PNG every render.
+_thumb_cache = {}
 
 
 def _backup_dir():
@@ -132,4 +136,95 @@ class Api:
                     f"Flashing a controller {controller.format_version(c)} "
                     f"-> {controller.format_version(t)}..."))
             print("\nAll done. Safely eject the card.")
+        return _run(task)
+
+    # ---------- save states (Memories) ----------
+    def list_memories(self, root):
+        try:
+            games = savestates.find_game_states(root)
+        except Exception:
+            games = []
+        out = []
+        for g in games:
+            out.append({
+                "title": g["title"],
+                "cart_id": g["cart_id"],
+                "folder": g["folder"],
+                "count": g["count"],
+                "total_bytes": g["total_bytes"],
+                "states": [{"name": s["name"], "when": s["when"], "bytes": s["bytes"]}
+                           for s in g["states"]],
+            })
+        return {"available": bool(out), "limit": savestates.DEFAULT_KEEP, "games": out}
+
+    def memory_thumbnail(self, root, folder, name):
+        base = savestates.memories_dir(root)
+        path = os.path.join(base, os.path.basename(folder), os.path.basename(name))
+        if not os.path.isfile(path):
+            return ""
+        try:
+            key = (path, os.path.getmtime(path))
+        except OSError:
+            return ""
+        if key in _thumb_cache:
+            return _thumb_cache[key]
+        try:
+            jpeg = savestates.thumbnail(path)
+        except Exception:
+            return ""
+        url = "data:image/jpeg;base64," + base64.b64encode(jpeg).decode("ascii")
+        _thumb_cache[key] = url
+        return url
+
+    def backup_memories(self, root):
+        def task():
+            games = savestates.find_game_states(root)
+            if not games:
+                print("No save states found on this card.")
+                return
+            total = 0
+            for g in games:
+                n = savestates.backup_game(g)
+                total += n
+                print(f"  {g['title']} [{g['cart_id']}]: backed up {n} state(s)")
+            print(f"Done: archived {total} save state(s).")
+        return _run(task)
+
+    def trim_memory(self, root, folder, keep):
+        def task():
+            g = savestates.find_game(root, folder)
+            if not g:
+                print("Game not found on card: " + folder)
+                return
+            removed, kept = savestates.trim_to_latest(g, keep=max(0, int(keep)),
+                                                      backup_first=True)
+            print(f"{g['title']} [{g['cart_id']}]: archived and removed {removed} older "
+                  f"state(s); kept the newest {kept} on the card.")
+        return _run(task)
+
+    def list_memory_backups(self):
+        out = []
+        for cart_id, paths in savestates.list_backups().items():
+            for p in paths:
+                out.append({
+                    "cart_id": cart_id,
+                    "name": os.path.basename(p),
+                    "bytes": os.path.getsize(p) if os.path.isfile(p) else 0,
+                })
+        return out
+
+    def restore_memory(self, root, cart_id, name):
+        def task():
+            backup_path = os.path.join(savestates._backup_dir(),
+                                       os.path.basename(cart_id), os.path.basename(name))
+            if not os.path.isfile(backup_path):
+                print("Backup not found: " + name)
+                return
+            target = next((x for x in savestates.find_game_states(root)
+                           if x["cart_id"] == cart_id), None)
+            if not target:
+                print("That game isn't on the card now, so there's nowhere to restore it.")
+                return
+            dest = savestates.restore_state(backup_path, target["path"])
+            print(f"Restored {os.path.basename(name)} into {target['title']}.")
         return _run(task)
