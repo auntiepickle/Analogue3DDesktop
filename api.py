@@ -8,13 +8,14 @@ methods run an engine task, capture everything it prints, and return
 
 import io
 import os
+import re
 import base64
 import zipfile
 import contextlib
 import threading
 
 import analogue3d
-from analogue3d import sdcard, controller, savestates, ui
+from analogue3d import sdcard, controller, savestates, labels, saves, ui
 
 # The GUI does its own confirmations; the engine must never block on a terminal
 # prompt (there's no stdin behind a webview).
@@ -25,10 +26,22 @@ _lock = threading.Lock()
 
 # (path, mtime) -> base64 data URL, so we don't re-decode a 9 MB PNG every render.
 _thumb_cache = {}
+_art_cache = {}
+
+_FW_RE = re.compile(r"a3d_os_(\d+)_(\d+)_(\d+)\.bin$", re.IGNORECASE)
 
 
 def _backup_dir():
     return os.path.join(os.path.dirname(sdcard.__file__), "backups")
+
+
+def _labels_db(root):
+    return os.path.join(root, "Library", "N64", "Images", "labels.db")
+
+
+def _fw_version_from_name(name):
+    m = _FW_RE.search(name or "")
+    return tuple(int(g) for g in m.groups()) if m else None
 
 
 def _run(task):
@@ -227,4 +240,169 @@ class Api:
                 return
             dest = savestates.restore_state(backup_path, target["path"])
             print(f"Restored {os.path.basename(name)} into {target['title']}.")
+        return _run(task)
+
+    def delete_memory(self, root, folder, name):
+        def task():
+            base = savestates.memories_dir(root)
+            path = os.path.join(base, os.path.basename(folder), os.path.basename(name))
+            if not os.path.isfile(path):
+                print("Save state not found: " + name)
+                return
+            m = re.search(r"([0-9a-fA-F]{8})\s*$", folder)
+            cart_id = m.group(1).lower() if m else "????????"
+            savestates.backup_state(path, cart_id, os.path.basename(name))  # archive first
+            os.remove(path)
+            print(f"Archived and deleted: {os.path.basename(name)}")
+        return _run(task)
+
+    # ---------- backup cleaning ----------
+    def delete_backup(self, name):
+        def task():
+            p = os.path.join(_backup_dir(), os.path.basename(name))
+            if not os.path.isfile(p):
+                print("Backup not found: " + name)
+                return
+            os.remove(p)
+            print("Deleted backup: " + os.path.basename(name))
+        return _run(task)
+
+    def delete_memory_backup(self, cart_id, name):
+        def task():
+            p = os.path.join(savestates._backup_dir(),
+                             os.path.basename(cart_id), os.path.basename(name))
+            if not os.path.isfile(p):
+                print("Archived state not found: " + name)
+                return
+            os.remove(p)
+            print("Deleted archived state: " + os.path.basename(name))
+        return _run(task)
+
+    # ---------- cartridge art ----------
+    def cart_art_games(self, root):
+        games = {}
+        try:
+            for g in savestates.find_game_states(root):
+                games.setdefault(g["cart_id"], g["title"])
+        except Exception:
+            pass
+        try:
+            for s in saves.find_game_saves(root):
+                games.setdefault(s["cart_id"], s["name"])
+        except Exception:
+            pass
+        items = [{"cart_id": cid, "title": title}
+                 for cid, title in sorted(games.items(), key=lambda kv: kv[1].lower())]
+        return {"db_present": os.path.isfile(_labels_db(root)), "games": items}
+
+    def cart_art(self, root, cart_id):
+        db = _labels_db(root)
+        if not os.path.isfile(db):
+            return ""
+        try:
+            key = (db, os.path.getmtime(db), cart_id)
+        except OSError:
+            return ""
+        if key in _art_cache:
+            return _art_cache[key]
+        try:
+            img = labels.read_label_image(db, cart_id)
+        except Exception:
+            img = None
+        if img is None:
+            _art_cache[key] = ""
+            return ""
+        buf = io.BytesIO()
+        img.convert("RGB").save(buf, "PNG")
+        url = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+        _art_cache[key] = url
+        return url
+
+    # ---------- firmware versions ----------
+    def versions(self, root):
+        out = {"console_current": None, "console_latest": None,
+               "console_update": False, "controllers": 0,
+               "ctrl_current": None, "ctrl_latest": None, "ctrl_update": False}
+        # console: what's staged on the card vs latest from analogue.co
+        cur = None
+        try:
+            for e in os.listdir(root):
+                v = _fw_version_from_name(e)
+                if v:
+                    cur = v
+                    break
+        except OSError:
+            pass
+        latest = None
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                _url, fname = sdcard.get_latest_firmware_url()
+            latest = _fw_version_from_name(fname or "")
+        except Exception:
+            pass
+        if cur:
+            out["console_current"] = "%d.%d.%d" % cur
+        if latest:
+            out["console_latest"] = "%d.%d.%d" % latest
+        if cur and latest:
+            out["console_update"] = latest > cur
+        # controller: read the connected pad vs latest from 8BitDo
+        try:
+            out["controllers"] = controller.connected_count()
+        except Exception:
+            pass
+        if out["controllers"]:
+            cur_int = None
+            try:
+                dev = controller.EightBitDo64().open()
+                try:
+                    cur_int = dev.read_version()
+                finally:
+                    dev.close()
+                out["ctrl_current"] = controller.format_version(cur_int)
+            except Exception:
+                pass
+            try:
+                top = controller.fetch_firmware_list()[0]
+                out["ctrl_latest"] = controller.format_version(top["version_int"])
+                if cur_int is not None:
+                    out["ctrl_update"] = top["version_int"] > cur_int
+            except Exception:
+                pass
+        return out
+
+    def controller_versions(self):
+        try:
+            vers = controller.fetch_firmware_list()
+        except Exception as e:
+            return {"ok": False, "versions": [], "error": str(e)}
+        return {"ok": True, "versions": [
+            {"version_int": e["version_int"], "label": controller.format_version(e["version_int"])}
+            for e in vers]}
+
+    def flash_controllers(self, version_int):
+        def task():
+            n = controller.connected_count()
+            if n == 0:
+                print("No 8BitDo 64 controller detected.")
+                return
+            vers = controller.fetch_firmware_list()
+            meta = next((e for e in vers if e["version_int"] == int(version_int)), None)
+            if meta is None:
+                print("Firmware version not found: " + str(version_int))
+                return
+            tgt = controller.format_version(meta["version_int"])
+            print(f"Flashing {n} controller(s) to {tgt} (do not unplug)...")
+
+            def announce(cur, target):
+                print(f"  a controller {controller.format_version(cur)} -> "
+                      f"{controller.format_version(target)}...")
+
+            s = controller.update_all_to(meta, announce=announce)
+            if s.get("note") and not s.get("updated"):
+                print(s["note"])
+            parts = [f"{s.get('updated', 0)} changed", f"{s.get('already', 0)} already on {tgt}"]
+            if s.get("failed"):
+                parts.append(f"{s['failed']} failed")
+            print("Done: " + ", ".join(parts) + ".")
         return _run(task)

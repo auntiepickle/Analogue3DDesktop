@@ -152,6 +152,55 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
 .mini { align-self: flex-start; }
 .mini-input { width: 100%; }
 
+/* ---------- blocks / sections ---------- */
+.block { display: flex; flex-direction: column; gap: 12px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.ver-line {
+  font-size: 13px; color: var(--text); flex: 1;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.ver-line .cur { font-family: var(--mono); color: var(--text); }
+.ver-line .arrow { color: var(--dim); }
+.ver-line .latest { font-family: var(--mono); color: var(--gold); }
+.badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); }
+.badge.ok { color: var(--green); border-color: rgba(61, 220, 132, .4); }
+.badge.upd { color: #1a1500; background: var(--gold); border-color: var(--gold); font-weight: 600; }
+
+/* ---------- cart art gallery ---------- */
+.art-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 14px; }
+.art-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.art-tile .art-img {
+  width: 100%;
+  aspect-ratio: 74 / 86;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  object-fit: cover;
+  background: #0a0a0c;
+  display: block;
+}
+.art-tile .noart {
+  width: 100%; aspect-ratio: 74 / 86;
+  border-radius: 8px; border: 1px dashed var(--border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--dim); font-size: 11px; background: #0a0a0c;
+}
+.art-cap { font-size: 11px; color: var(--text); text-align: center; line-height: 1.25; }
+.art-id { font-family: var(--mono); font-size: 10px; color: var(--gold-dim); }
+
+/* delete button on save-state thumbnails */
+.thumb { position: relative; }
+.thumb .del {
+  position: absolute; top: 4px; right: 4px;
+  width: 20px; height: 20px; line-height: 16px; text-align: center;
+  border-radius: 50%; border: 1px solid var(--border);
+  background: rgba(10, 10, 12, .82); color: var(--dim);
+  font-size: 13px; cursor: pointer; padding: 0;
+  opacity: 0; transition: opacity .12s;
+}
+.thumb:hover .del { opacity: 1; }
+.thumb .del:hover { color: var(--red); border-color: var(--red); }
+
 /* ---------- buttons ---------- */
 button {
   font-family: var(--sans);

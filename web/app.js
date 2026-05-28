@@ -9,7 +9,10 @@ const el = {
   padLed: $("padLed"), padValue: $("padValue"),
   sdSelect: $("sdSelect"), manualPath: $("manualPath"),
   artSource: $("artSource"), artUrl: $("artUrl"),
+  artGallery: $("artGallery"),
   backupSelect: $("backupSelect"),
+  consoleVer: $("consoleVer"), ctrlVer: $("ctrlVer"),
+  ctrlVersionSelect: $("ctrlVersionSelect"),
   memContent: $("memContent"),
   memRestore: $("memRestore"),
   memBackupSelect: $("memBackupSelect"),
@@ -111,6 +114,7 @@ async function refresh() {
 
   await refreshBackups();
   await refreshMemories();
+  await refreshArt();
 }
 
 async function refreshBackups() {
@@ -184,8 +188,16 @@ function renderMemories(m, root) {
       const cap = document.createElement("div");
       cap.className = "cap";
       cap.textContent = s.when;
+      const del = document.createElement("button");
+      del.className = "del";
+      del.title = "Delete this save state";
+      del.textContent = "×";
+      del.dataset.memAction = "del";
+      del.dataset.folder = g.folder;
+      del.dataset.name = s.name;
       t.appendChild(img);
       t.appendChild(cap);
+      t.appendChild(del);
       thumbs.appendChild(t);
     });
     el.memContent.appendChild(game);
@@ -215,6 +227,108 @@ async function refreshMemBackups() {
     o.textContent = `[${b.cart_id}] ${b.name}  (${humanSize(b.bytes)})`;
     el.memBackupSelect.appendChild(o);
   });
+}
+
+/* ---------- firmware versions ---------- */
+function verLine(cur, latest, update, emptyText) {
+  if (!cur && !latest) return `<span class="muted">${emptyText}</span>`;
+  let html = `<span class="cur">${cur || "unknown"}</span>`;
+  if (latest) {
+    if (update) html += ` <span class="arrow">&rarr;</span> <span class="latest">${latest}</span> <span class="badge upd">update available</span>`;
+    else html += ` <span class="badge ok">up to date</span>`;
+  }
+  return html;
+}
+
+async function refreshVersions() {
+  const root = getRoot();
+  el.consoleVer.innerHTML = '<span class="muted">checking&hellip;</span>';
+  el.ctrlVer.innerHTML = '<span class="muted">checking&hellip;</span>';
+  let v;
+  try { v = await api().versions(root); }
+  catch (e) {
+    el.consoleVer.innerHTML = '<span class="muted">check failed</span>';
+    el.ctrlVer.innerHTML = '<span class="muted">check failed</span>';
+    return;
+  }
+  el.consoleVer.innerHTML = verLine(v.console_current, v.console_latest, v.console_update, "no firmware on card");
+  el.ctrlVer.innerHTML = v.controllers
+    ? verLine(v.ctrl_current, v.ctrl_latest, v.ctrl_update, "unknown")
+    : '<span class="muted">no controller connected</span>';
+  await populateCtrlVersions();
+}
+
+async function populateCtrlVersions() {
+  let cv;
+  try { cv = await api().controller_versions(); } catch (e) { return; }
+  if (!cv.ok) return;
+  const sel = el.ctrlVersionSelect;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">latest</option>';
+  cv.versions.forEach((v) => {
+    const o = document.createElement("option");
+    o.value = String(v.version_int);
+    o.textContent = v.label;
+    sel.appendChild(o);
+  });
+  if (prev) sel.value = prev;
+}
+
+/* ---------- cartridge art ---------- */
+async function refreshArt() {
+  const root = getRoot();
+  if (!root) {
+    el.artGallery.innerHTML = '<p class="muted pad">Select a card to see its cartridge art.</p>';
+    return;
+  }
+  let data;
+  try { data = await api().cart_art_games(root); }
+  catch (e) { el.artGallery.innerHTML = '<p class="muted pad">Could not read cartridge art.</p>'; return; }
+  if (!data.db_present) {
+    el.artGallery.innerHTML = '<p class="muted pad">No art pack installed yet - use "Install art pack" above.</p>';
+    return;
+  }
+  if (!data.games.length) {
+    el.artGallery.innerHTML = '<p class="muted pad">No recognizable games on this card yet.</p>';
+    return;
+  }
+  el.artGallery.innerHTML = "";
+  data.games.forEach((g) => {
+    const tile = document.createElement("div");
+    tile.className = "art-tile";
+    const img = document.createElement("img");
+    img.className = "art-img";
+    img.alt = g.title;
+    img.dataset.cart = g.cart_id;
+    const cap = document.createElement("div");
+    cap.className = "art-cap";
+    cap.textContent = g.title;
+    const id = document.createElement("div");
+    id.className = "art-id";
+    id.textContent = g.cart_id;
+    tile.appendChild(img);
+    tile.appendChild(cap);
+    tile.appendChild(id);
+    el.artGallery.appendChild(tile);
+  });
+  lazyArt(root);
+}
+
+async function lazyArt(root) {
+  const imgs = [...el.artGallery.querySelectorAll("img[data-cart]")];
+  for (const img of imgs) {
+    try {
+      const url = await api().cart_art(root, img.dataset.cart);
+      if (url) {
+        img.src = url;
+      } else {
+        const ph = document.createElement("div");
+        ph.className = "noart";
+        ph.textContent = "no art";
+        img.replaceWith(ph);
+      }
+    } catch (e) { /* skip */ }
+  }
 }
 
 /* ---------- run an action ---------- */
@@ -256,12 +370,24 @@ const handlers = {
     if (el.artSource.value === "url" && !source) { log("Enter the art pack URL.", "err"); return; }
     run("Installing cartridge art", () => api().install_art(r, source));
   },
-  controllers() { run("Updating controllers", () => api().update_controllers()); },
+  flashCtrl() {
+    const vi = el.ctrlVersionSelect.value;
+    if (!vi) { run("Updating controllers to latest", () => api().update_controllers()); return; }
+    const label = el.ctrlVersionSelect.selectedOptions[0].textContent;
+    if (!confirm(`Flash every connected controller to ${label}?\n(Downgrades are allowed.)`)) return;
+    run("Flashing controllers to " + label, () => api().flash_controllers(parseInt(vi, 10)));
+  },
   restore() {
     const r = needRoot(); if (!r) return;
     const name = el.backupSelect.value;
     if (!name) { log("No backup selected.", "err"); return; }
     run("Restoring " + name, () => api().restore(r, name));
+  },
+  deleteBackup() {
+    const name = el.backupSelect.value;
+    if (!name) { log("No backup selected.", "err"); return; }
+    if (!confirm(`Delete backup ${name}? This can't be undone.`)) return;
+    run("Deleting " + name, () => api().delete_backup(name));
   },
   backupMem() { const r = needRoot(); if (r) run("Backing up save states", () => api().backup_memories(r)); },
   restoreMem() {
@@ -272,6 +398,14 @@ const handlers = {
     const cart = v.slice(0, sep), name = v.slice(sep + 1);
     run("Restoring save state", () => api().restore_memory(r, cart, name));
   },
+  deleteMemBackup() {
+    const v = el.memBackupSelect.value;
+    if (!v) { log("No archived save state selected.", "err"); return; }
+    const sep = v.indexOf("|");
+    const cart = v.slice(0, sep), name = v.slice(sep + 1);
+    if (!confirm(`Delete archived save state?\n${name}\nThis can't be undone.`)) return;
+    run("Deleting archived state", () => api().delete_memory_backup(cart, name));
+  },
 };
 
 function init() {
@@ -281,17 +415,28 @@ function init() {
   $("refreshBtn").addEventListener("click", refresh);
   $("clearBtn").addEventListener("click", () => { el.console.innerHTML = ""; });
   $("memRefresh").addEventListener("click", refreshMemories);
+  $("checkUpdates").addEventListener("click", refreshVersions);
   el.memContent.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-mem-action='trim']");
-    if (!btn) return;
-    const folder = btn.dataset.folder;
-    const input = btn.parentElement.querySelector(".keep-input");
-    const keep = parseInt(input.value, 10);
-    if (isNaN(keep) || keep < 0) { log("Enter a valid 'keep latest' number.", "err"); return; }
-    const r = getRoot();
-    if (!r) { log("Select a card first.", "err"); return; }
-    if (!confirm(`Trim this game to its newest ${keep} save state(s)?\nThe rest are archived locally first, then removed from the card.`)) return;
-    run(`Trimming to newest ${keep}`, () => api().trim_memory(r, folder, keep));
+    const trimBtn = e.target.closest("[data-mem-action='trim']");
+    if (trimBtn) {
+      const folder = trimBtn.dataset.folder;
+      const input = trimBtn.parentElement.querySelector(".keep-input");
+      const keep = parseInt(input.value, 10);
+      if (isNaN(keep) || keep < 0) { log("Enter a valid 'keep latest' number.", "err"); return; }
+      const r = getRoot();
+      if (!r) { log("Select a card first.", "err"); return; }
+      if (!confirm(`Trim this game to its newest ${keep} save state(s)?\nThe rest are archived locally first, then removed from the card.`)) return;
+      run(`Trimming to newest ${keep}`, () => api().trim_memory(r, folder, keep));
+      return;
+    }
+    const delBtn = e.target.closest("[data-mem-action='del']");
+    if (delBtn) {
+      const r = getRoot();
+      if (!r) { log("Select a card first.", "err"); return; }
+      const folder = delBtn.dataset.folder, name = delBtn.dataset.name;
+      if (!confirm(`Delete this save state?\n${name}\nIt's archived locally first, then removed from the card.`)) return;
+      run("Deleting save state", () => api().delete_memory(r, folder, name));
+    }
   });
   el.sdSelect.addEventListener("change", () => { syncManual(); refresh(); });
   el.manualPath.addEventListener("change", refresh);
@@ -301,7 +446,7 @@ function init() {
 
   api().version().then((v) => { el.version.textContent = "v" + v; }).catch(() => {});
   log("Analogue 3D Studio ready.", "sys");
-  refresh();
+  refresh().then(refreshVersions);
 }
 
 if (window.pywebview && window.pywebview.api) {
