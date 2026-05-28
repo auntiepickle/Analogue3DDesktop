@@ -114,7 +114,9 @@ class Api:
     # ---------- settings ----------
     def settings(self):
         return {"backup_root": config.get_backup_root(),
-                "is_custom": config.is_custom_backup_root()}
+                "is_custom": config.is_custom_backup_root(),
+                "default_root": config.default_backup_root(),
+                "legacy_root": config.legacy_backup_root()}
 
     def set_backup_location(self):
         def task():

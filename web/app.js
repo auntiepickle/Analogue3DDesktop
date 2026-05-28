@@ -540,8 +540,12 @@ async function refreshSettings() {
   try {
     const s = await api().settings();
     el.backupRoot.value = s.backup_root + (s.is_custom ? "" : "   (default)");
-  } catch (e) { /* ignore */ }
+    return s;
+  } catch (e) { return null; }
 }
+
+function openSettings() { refreshSettings(); $("settingsModal").classList.remove("hidden"); }
+function closeSettings() { $("settingsModal").classList.add("hidden"); }
 
 /* ---------- styled confirm modal ---------- */
 function confirmDialog(message, opts) {
@@ -694,6 +698,12 @@ function init() {
   $("artSearch").addEventListener("input", () => { artPage = 0; renderArtPage(getRoot()); });
   $("artPrev").addEventListener("click", () => { artPage--; renderArtPage(getRoot()); });
   $("artNext").addEventListener("click", () => { artPage++; renderArtPage(getRoot()); });
+  $("settingsBtn").addEventListener("click", openSettings);
+  $("settingsClose").addEventListener("click", closeSettings);
+  $("settingsModal").addEventListener("click", (e) => { if (e.target === $("settingsModal")) closeSettings(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && $("modal").classList.contains("hidden")) closeSettings();
+  });
   el.artGallery.addEventListener("click", (e) => {
     const b = e.target.closest("[data-art-action='set']");
     if (!b) return;
@@ -739,7 +749,11 @@ function init() {
 
   api().version().then((v) => { el.version.textContent = "v" + v; }).catch(() => {});
   log("Analogue 3D Studio ready.", "sys");
-  refreshSettings();
+  refreshSettings().then((s) => {
+    if (s && s.legacy_root && !s.is_custom) {
+      log(`Older backups remain at ${s.legacy_root}.\nNew backups now go to ${s.backup_root}.\nUse the settings cog (top right) to change the location.`, "sys");
+    }
+  });
   refresh().then(refreshVersions);
   setInterval(pollStatus, 2500);  // keep the status strip live (plug/unplug)
 }

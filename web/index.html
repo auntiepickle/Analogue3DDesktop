@@ -18,6 +18,7 @@
         <span class="gold">ANALOGUE&nbsp;3D</span><span class="thin">STUDIO</span>
       </div>
       <div class="ver" id="version">v0.0</div>
+      <button class="cog" id="settingsBtn" title="Settings" aria-label="Settings">&#9881;</button>
     </header>
 
     <!-- Status strip -->
@@ -160,20 +161,6 @@
       </div>
     </section>
 
-    <!-- SETTINGS -->
-    <section class="block">
-      <div class="section-head"><h2>Settings</h2></div>
-      <article class="card">
-        <h3>Backup location</h3>
-        <p>Where SD backups, save-state snapshots, and game-save backups are written.</p>
-        <div class="restore-row">
-          <input type="text" id="backupRoot" class="grow" readonly />
-          <button class="action" data-action="changeBackupLoc">Change&hellip;</button>
-          <button class="ghost" data-action="resetBackupLoc">Reset to default</button>
-        </div>
-      </article>
-    </section>
-
     <!-- Console -->
     <section class="console-wrap">
       <div class="console-head">
@@ -189,6 +176,24 @@
         <ul class="steps hidden" id="busySteps"></ul>
         <div class="progress hidden" id="busyProg"><div class="progbar" id="busyBar"></div></div>
         <div class="prog-label hidden" id="busyProgLabel"></div>
+      </div>
+    </div>
+
+    <div class="modal hidden" id="settingsModal">
+      <div class="modal-box settings-box">
+        <div class="modal-title">Settings</div>
+        <div class="settings-group">
+          <div class="settings-label">Backup location</div>
+          <div class="settings-desc">Where SD backups, save-state snapshots, and game-save backups are written.</div>
+          <div class="restore-row">
+            <input type="text" id="backupRoot" class="grow" readonly />
+            <button class="action" data-action="changeBackupLoc">Change&hellip;</button>
+            <button class="ghost" data-action="resetBackupLoc">Reset to default</button>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="primary" id="settingsClose">Close</button>
+        </div>
       </div>
     </div>
 
