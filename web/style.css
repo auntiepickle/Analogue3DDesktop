@@ -393,6 +393,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .steps li.active { color: var(--gold); }
 .steps li.done { color: var(--green); }
 .steps li.fail { color: var(--red); }
+.steps li .note { color: var(--dim); }
 .progress {
   width: 320px; height: 10px;
   background: rgba(232, 185, 35, .15);

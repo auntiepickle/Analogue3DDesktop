@@ -46,6 +46,7 @@ let consoleUpToDate = false;
 let controllerCount = 0;
 let busyNow = false;
 let lastCardSig = null;
+let flashTarget = null;
 
 function applyGating() {
   const fw = document.querySelector("[data-action='firmware']");
@@ -63,6 +64,7 @@ function setBusy(on, text) {
     el.busyBar.style.width = "0%";
     el.busySteps.classList.add("hidden");
     el.busySteps.innerHTML = "";
+    flashTarget = null;
   }
   document.querySelectorAll("button, select, input").forEach((n) => { n.disabled = on; });
   if (!on) applyGating();
@@ -73,7 +75,13 @@ window.studioProgress = function (pct, block, nblocks) {
   el.busyProgLabel.classList.remove("hidden");
   el.busySpin.classList.add("hidden");
   el.busyBar.style.width = pct + "%";
-  el.busyProgLabel.textContent = `${pct}%  (block ${block}/${nblocks})`;
+  const prefix = flashTarget && flashTarget.total > 1
+    ? `controller ${flashTarget.idx}/${flashTarget.total}  ·  ` : "";
+  el.busyProgLabel.textContent = `${prefix}${pct}%  (block ${block}/${nblocks})`;
+};
+
+window.studioFlashTarget = function (idx, total) {
+  flashTarget = { idx: idx, total: total };
 };
 
 window.studioSteps = function (labels) {
@@ -104,6 +112,14 @@ window.studioStepStatus = function (i, status) {
     el.busyProg.classList.add("hidden");
     el.busyProgLabel.classList.add("hidden");
   }
+};
+
+window.studioStepNote = function (i, note) {
+  const li = el.busySteps.children[i];
+  if (!li) return;
+  let n = li.querySelector(".note");
+  if (!n) { n = document.createElement("span"); n.className = "note"; li.appendChild(n); }
+  n.textContent = note ? "  - " + note : "";
 };
 
 /* ---------- SD target ---------- */

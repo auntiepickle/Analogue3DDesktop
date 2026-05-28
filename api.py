@@ -90,6 +90,23 @@ class Api:
     def _step(self, i, status):
         self._emit(f"window.studioStepStatus&&studioStepStatus({i},{json.dumps(status)})")
 
+    def _step_note(self, i, note):
+        self._emit(f"window.studioStepNote&&studioStepNote({i},{json.dumps(note)})")
+
+    def _flash_announce(self, total, step_index=None):
+        """An update_all/update_all_to announce callback that reports which
+        controller (of how many) is being flashed, to the progress UI + log."""
+        idx = [0]
+
+        def announce(cur, tgt):
+            idx[0] += 1
+            self._emit(f"window.studioFlashTarget&&studioFlashTarget({idx[0]},{total})")
+            if step_index is not None:
+                self._step_note(step_index, f"updating #{idx[0]} of {total}")
+            print(f"  controller {idx[0]} of {total}: "
+                  f"{controller.format_version(cur)} -> {controller.format_version(tgt)}...")
+        return announce
+
     # ---------- read-only state ----------
     def version(self):
         return analogue3d.__version__
@@ -140,12 +157,8 @@ class Api:
                 print("No 8BitDo 64 controller detected.")
                 return
             print(f"Found {n} controller(s). Updating to the latest firmware...")
-
-            def announce(cur, tgt):
-                print(f"Flashing a controller {controller.format_version(cur)} "
-                      f"-> {controller.format_version(tgt)} (do not unplug)...")
-
-            s = controller.update_all(progress=self._progress_cb(), announce=announce)
+            s = controller.update_all(progress=self._progress_cb(),
+                                      announce=self._flash_announce(n))
             if s.get("note") and not s.get("updated"):
                 print(s["note"])
             parts = [f"{s.get('updated', 0)} updated", f"{s.get('already', 0)} already current"]
@@ -187,13 +200,14 @@ class Api:
             sdcard.install_labels(root)
             self._step(2, "done")
 
-            if controller.connected_count():
+            n = controller.connected_count()
+            if n:
                 self._step(3, "active")
+                self._step_note(3, f"{n} connected")
                 controller.update_all(progress=self._progress_cb(),
-                    announce=lambda c, t: print(
-                        f"Flashing a controller {controller.format_version(c)} "
-                        f"-> {controller.format_version(t)}..."))
+                                      announce=self._flash_announce(n, step_index=3))
                 self._step(3, "done")
+                self._step_note(3, "")
             else:
                 self._step(3, "skip")
                 print("No controller connected - skipped.")
@@ -497,12 +511,8 @@ class Api:
                 return
             tgt = controller.format_version(meta["version_int"])
             print(f"Flashing {n} controller(s) to {tgt} (do not unplug)...")
-
-            def announce(cur, target):
-                print(f"  a controller {controller.format_version(cur)} -> "
-                      f"{controller.format_version(target)}...")
-
-            s = controller.update_all_to(meta, progress=self._progress_cb(), announce=announce)
+            s = controller.update_all_to(meta, progress=self._progress_cb(),
+                                         announce=self._flash_announce(n))
             if s.get("note") and not s.get("updated"):
                 print(s["note"])
             parts = [f"{s.get('updated', 0)} changed", f"{s.get('already', 0)} already on {tgt}"]
