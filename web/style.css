@@ -169,7 +169,7 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
 
 /* ---------- cart art gallery ---------- */
 .art-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 14px; }
-.art-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.art-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; }
 .art-tile .art-img {
   width: 100%;
   aspect-ratio: 74 / 86;
@@ -185,9 +185,12 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
   display: flex; align-items: center; justify-content: center;
   color: var(--dim); font-size: 11px; background: #0a0a0c;
 }
-.art-cap { font-size: 11px; color: var(--text); text-align: center; line-height: 1.25; }
+.art-cap {
+  font-size: 11px; color: var(--text); text-align: center; line-height: 1.25;
+  min-height: 2.5em; display: flex; align-items: center; justify-content: center;
+}
 .art-id { font-family: var(--mono); font-size: 10px; color: var(--gold-dim); }
-.art-tile .setart { width: 100%; align-self: stretch; }
+.art-tile .setart { width: 100%; align-self: stretch; margin-top: auto; }
 
 /* delete button on save-state thumbnails (always visible, brighter on hover) */
 .thumb { position: relative; }
@@ -370,6 +373,17 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 }
 .busy-box { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .busy-row { display: flex; align-items: center; gap: 12px; }
+.steps {
+  list-style: none; margin: 0; padding: 12px 16px;
+  display: flex; flex-direction: column; gap: 7px;
+  font-family: var(--mono); font-size: 13px; min-width: 260px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+}
+.steps li { display: flex; align-items: center; gap: 10px; color: var(--dim); }
+.steps li .mark { width: 16px; text-align: center; }
+.steps li.active { color: var(--gold); }
+.steps li.done { color: var(--green); }
+.steps li.fail { color: var(--red); }
 .progress {
   width: 320px; height: 10px;
   background: rgba(232, 185, 35, .15);

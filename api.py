@@ -9,6 +9,7 @@ methods run an engine task, capture everything it prints, and return
 import io
 import os
 import re
+import json
 import base64
 import zipfile
 import contextlib
@@ -82,6 +83,12 @@ class Api:
             pct = min(100, written * 100 // total) if total else 0
             self._emit(f"window.studioProgress&&studioProgress({pct},{block},{nblocks})")
         return cb
+
+    def _steps_init(self, labels):
+        self._emit("window.studioSteps&&studioSteps(" + json.dumps(labels) + ")")
+
+    def _step(self, i, status):
+        self._emit(f"window.studioStepStatus&&studioStepStatus({i},{json.dumps(status)})")
 
     # ---------- read-only state ----------
     def version(self):
@@ -161,16 +168,35 @@ class Api:
 
     def auto(self, root):
         def task():
+            steps = ["Back up SD card", "Update console firmware",
+                     "Install cartridge art pack", "Update controllers"]
+            self._steps_init(steps)
             print("=== Auto: backup -> firmware -> art pack -> controllers ===")
+
+            self._step(0, "active")
             sdcard.create_backup(root)
-            if not sdcard.install_firmware(root):
+            self._step(0, "done")
+
+            self._step(1, "active")
+            ok = sdcard.install_firmware(root)
+            if not ok:
                 print("Firmware step did not complete.")
+            self._step(1, "done" if ok else "fail")
+
+            self._step(2, "active")
             sdcard.install_labels(root)
+            self._step(2, "done")
+
             if controller.connected_count():
+                self._step(3, "active")
                 controller.update_all(progress=self._progress_cb(),
                     announce=lambda c, t: print(
                         f"Flashing a controller {controller.format_version(c)} "
                         f"-> {controller.format_version(t)}..."))
+                self._step(3, "done")
+            else:
+                self._step(3, "skip")
+                print("No controller connected - skipped.")
             print("\nAll done. Safely eject the card.")
         return _run(task)
 

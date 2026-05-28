@@ -18,6 +18,7 @@ const el = {
   memBackupSelect: $("memBackupSelect"),
   console: $("console"),
   busy: $("busy"), busyText: $("busyText"), busySpin: $("busySpin"),
+  busySteps: $("busySteps"),
   busyProg: $("busyProg"), busyBar: $("busyBar"), busyProgLabel: $("busyProgLabel"),
 };
 
@@ -55,6 +56,8 @@ function setBusy(on, text) {
     el.busyProgLabel.classList.add("hidden");
     el.busySpin.classList.remove("hidden");
     el.busyBar.style.width = "0%";
+    el.busySteps.classList.add("hidden");
+    el.busySteps.innerHTML = "";
   }
   document.querySelectorAll("button, select, input").forEach((n) => { n.disabled = on; });
   if (!on) applyGating();
@@ -66,6 +69,36 @@ window.studioProgress = function (pct, block, nblocks) {
   el.busySpin.classList.add("hidden");
   el.busyBar.style.width = pct + "%";
   el.busyProgLabel.textContent = `${pct}%  (block ${block}/${nblocks})`;
+};
+
+window.studioSteps = function (labels) {
+  el.busySteps.innerHTML = "";
+  labels.forEach((label) => {
+    const li = document.createElement("li");
+    const mark = document.createElement("span");
+    mark.className = "mark";
+    mark.textContent = "○";
+    const txt = document.createElement("span");
+    txt.textContent = label;
+    li.appendChild(mark);
+    li.appendChild(txt);
+    el.busySteps.appendChild(li);
+  });
+  el.busySteps.classList.remove("hidden");
+};
+
+window.studioStepStatus = function (i, status) {
+  const li = el.busySteps.children[i];
+  if (!li) return;
+  const marks = { active: "▸", done: "✓", skip: "–", fail: "✗", pending: "○" };
+  li.className = status;
+  const mark = li.querySelector(".mark");
+  if (mark) mark.textContent = marks[status] || "○";
+  // when a flash step starts, reset the bar; when it ends, hide it
+  if (status !== "active") {
+    el.busyProg.classList.add("hidden");
+    el.busyProgLabel.classList.add("hidden");
+  }
 };
 
 /* ---------- SD target ---------- */
