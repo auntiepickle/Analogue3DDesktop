@@ -13,6 +13,7 @@ const el = {
   backupSelect: $("backupSelect"),
   consoleVer: $("consoleVer"), ctrlVer: $("ctrlVer"),
   ctrlVersionSelect: $("ctrlVersionSelect"),
+  backupRoot: $("backupRoot"),
   memContent: $("memContent"),
   memRestore: $("memRestore"),
   memSnapshotSelect: $("memSnapshotSelect"),
@@ -534,6 +535,44 @@ async function lazyArt(root) {
   }
 }
 
+/* ---------- settings ---------- */
+async function refreshSettings() {
+  try {
+    const s = await api().settings();
+    el.backupRoot.value = s.backup_root + (s.is_custom ? "" : "   (default)");
+  } catch (e) { /* ignore */ }
+}
+
+/* ---------- styled confirm modal ---------- */
+function confirmDialog(message, opts) {
+  opts = opts || {};
+  return new Promise((resolve) => {
+    const modal = $("modal"), ok = $("modalOk"), cancel = $("modalCancel");
+    $("modalMsg").textContent = message;
+    $("modalTitle").textContent = opts.title || "Please confirm";
+    ok.textContent = opts.okText || "Confirm";
+    ok.classList.toggle("danger", !!opts.danger);
+    modal.classList.remove("hidden");
+    ok.focus();
+    const close = (val) => {
+      modal.classList.add("hidden");
+      ok.removeEventListener("click", onOk);
+      cancel.removeEventListener("click", onCancel);
+      document.removeEventListener("keydown", onKey);
+      resolve(val);
+    };
+    const onOk = () => close(true);
+    const onCancel = () => close(false);
+    const onKey = (e) => {
+      if (e.key === "Escape") close(false);
+      else if (e.key === "Enter") close(true);
+    };
+    ok.addEventListener("click", onOk);
+    cancel.addEventListener("click", onCancel);
+    document.addEventListener("keydown", onKey);
+  });
+}
+
 /* ---------- run an action ---------- */
 async function run(busyText, fn, refreshVer) {
   setBusy(true, busyText);
@@ -574,13 +613,13 @@ const handlers = {
     if (el.artSource.value === "url" && !source) { log("Enter the art pack URL.", "err"); return; }
     run("Installing cartridge art", () => api().install_art(r, source));
   },
-  flashCtrl() {
+  async flashCtrl() {
     const noun = controllerCount === 1 ? "controller" : "controllers";
     const vi = el.ctrlVersionSelect.value;
     if (!vi) { run(`Updating ${noun} to latest`, () => api().update_controllers(), true); return; }
     const label = el.ctrlVersionSelect.selectedOptions[0].textContent;
     const which = controllerCount === 1 ? "the connected controller" : `all ${controllerCount} connected controllers`;
-    if (!confirm(`Flash ${which} to ${label}?\n(Downgrades are allowed.)`)) return;
+    if (!(await confirmDialog(`Flash ${which} to ${label}?\nDowngrades are allowed.`, { okText: "Flash" }))) return;
     run(`Flashing ${noun} to ${label}`, () => api().flash_controllers(parseInt(vi, 10)), true);
   },
   restore() {
@@ -589,45 +628,54 @@ const handlers = {
     if (!name) { log("No backup selected.", "err"); return; }
     run("Restoring " + name, () => api().restore(r, name));
   },
-  deleteBackup() {
+  async deleteBackup() {
     const name = el.backupSelect.value;
     if (!name) { log("No backup selected.", "err"); return; }
-    if (!confirm(`Delete backup ${name}? This can't be undone.`)) return;
+    if (!(await confirmDialog(`Delete backup ${name}?\nThis can't be undone.`, { danger: true, okText: "Delete" }))) return;
     run("Deleting " + name, () => api().delete_backup(name));
   },
-  cleanBackups() {
-    if (!confirm("Delete all SD backups except the most recent? This can't be undone.")) return;
+  async cleanBackups() {
+    if (!(await confirmDialog("Delete all SD backups except the most recent?\nThis can't be undone.", { danger: true, okText: "Delete" }))) return;
     run("Cleaning old backups", () => api().clean_old_backups());
   },
   archiveMem() {
     const r = needRoot();
     if (r) run("Archiving all save states", () => api().archive_memories(r));
   },
-  restoreAll() {
+  async restoreAll() {
     const r = needRoot(); if (!r) return;
     const name = el.memSnapshotSelect.value;
     if (!name) { log("No snapshot selected.", "err"); return; }
-    if (!confirm("Restore ALL save states from this snapshot onto the card?\nFiles with the same name are overwritten.")) return;
+    if (!(await confirmDialog("Restore ALL save states from this snapshot onto the card?\nFiles with the same name are overwritten.", { okText: "Restore all" }))) return;
     run("Restoring whole snapshot", () => api().restore_memories(r, name));
   },
-  restoreGame() {
+  async restoreGame() {
     const r = needRoot(); if (!r) return;
     const name = el.memSnapshotSelect.value;
     const cart = el.memArchiveGame.value;
     if (!name || !cart) { log("Pick a snapshot and a game.", "err"); return; }
     const game = el.memArchiveGame.selectedOptions[0] ? el.memArchiveGame.selectedOptions[0].textContent : cart;
-    if (!confirm(`Restore ${game} from this snapshot onto the card?`)) return;
+    if (!(await confirmDialog(`Restore ${game} from this snapshot onto the card?`, { okText: "Restore game" }))) return;
     run("Restoring one game", () => api().restore_memories_game(r, name, cart));
   },
-  deleteSnapshot() {
+  async deleteSnapshot() {
     const name = el.memSnapshotSelect.value;
     if (!name) { log("No snapshot selected.", "err"); return; }
-    if (!confirm(`Delete snapshot ${name}? This can't be undone.`)) return;
+    if (!(await confirmDialog(`Delete snapshot ${name}?\nThis can't be undone.`, { danger: true, okText: "Delete" }))) return;
     run("Deleting snapshot", () => api().delete_snapshot(name));
   },
-  cleanSnapshots() {
-    if (!confirm("Delete all snapshots except the most recent? This can't be undone.")) return;
+  async cleanSnapshots() {
+    if (!(await confirmDialog("Delete all snapshots except the most recent?\nThis can't be undone.", { danger: true, okText: "Delete" }))) return;
     run("Cleaning old snapshots", () => api().clean_old_snapshots());
+  },
+  async changeBackupLoc() {
+    await run("Setting backup location", () => api().set_backup_location());
+    refreshSettings();
+  },
+  async resetBackupLoc() {
+    if (!(await confirmDialog("Reset the backup location to the default?\nExisting backups in the current location won't be moved.", { okText: "Reset" }))) return;
+    await run("Resetting backup location", () => api().reset_backup_location());
+    refreshSettings();
   },
 };
 
@@ -653,7 +701,7 @@ function init() {
     if (!r) { log("Select a card first.", "err"); return; }
     run("Setting cart art", () => api().set_cart_art(r, b.dataset.cart));
   });
-  el.memContent.addEventListener("click", (e) => {
+  el.memContent.addEventListener("click", async (e) => {
     const trimBtn = e.target.closest("[data-mem-action='trim']");
     if (trimBtn) {
       const folder = trimBtn.dataset.folder;
@@ -662,7 +710,7 @@ function init() {
       if (isNaN(keep) || keep < 0) { log("Enter a valid 'keep latest' number.", "err"); return; }
       const r = getRoot();
       if (!r) { log("Select a card first.", "err"); return; }
-      if (!confirm(`Trim this game to its newest ${keep} save state(s)?\nA full snapshot is saved first, then the older ones are removed from the card.`)) return;
+      if (!(await confirmDialog(`Trim this game to its newest ${keep} save state(s)?\nA full snapshot is saved first, then the older ones are removed from the card.`, { okText: "Trim" }))) return;
       run(`Trimming to newest ${keep}`, () => api().trim_memory(r, folder, keep));
       return;
     }
@@ -671,7 +719,7 @@ function init() {
       const r = getRoot();
       if (!r) { log("Select a card first.", "err"); return; }
       const folder = delBtn.dataset.folder, name = delBtn.dataset.name;
-      if (!confirm(`Delete this save state?\n${name}\nA full snapshot is saved first, then it's removed from the card.`)) return;
+      if (!(await confirmDialog(`Delete this save state?\n${name}\nA full snapshot is saved first, then it's removed from the card.`, { danger: true, okText: "Delete" }))) return;
       run("Deleting save state", () => api().delete_memory(r, folder, name));
       return;
     }
@@ -691,6 +739,7 @@ function init() {
 
   api().version().then((v) => { el.version.textContent = "v" + v; }).catch(() => {});
   log("Analogue 3D Studio ready.", "sys");
+  refreshSettings();
   refresh().then(refreshVersions);
   setInterval(pollStatus, 2500);  // keep the status strip live (plug/unplug)
 }

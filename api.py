@@ -16,7 +16,7 @@ import contextlib
 import threading
 
 import analogue3d
-from analogue3d import sdcard, controller, savestates, labels, saves, ui
+from analogue3d import sdcard, controller, savestates, labels, saves, config, ui
 
 # The GUI does its own confirmations; the engine must never block on a terminal
 # prompt (there's no stdin behind a webview).
@@ -110,6 +110,37 @@ class Api:
     # ---------- read-only state ----------
     def version(self):
         return analogue3d.__version__
+
+    # ---------- settings ----------
+    def settings(self):
+        return {"backup_root": config.get_backup_root(),
+                "is_custom": config.is_custom_backup_root()}
+
+    def set_backup_location(self):
+        def task():
+            w = self._window
+            if w is None:
+                print("No window for the folder picker.")
+                return
+            try:
+                import webview
+                picked = w.create_file_dialog(webview.FOLDER_DIALOG)
+            except Exception as e:
+                print("Could not open the folder picker: " + str(e))
+                return
+            if not picked:
+                print("No folder chosen.")
+                return
+            path = picked[0] if isinstance(picked, (list, tuple)) else picked
+            config.set_backup_root(path)
+            print("Backup location set to:\n  " + path)
+        return _run(task)
+
+    def reset_backup_location(self):
+        def task():
+            config.set_backup_root("")
+            print("Backup location reset to default:\n  " + config.get_backup_root())
+        return _run(task)
 
     def detect(self):
         cards = []
