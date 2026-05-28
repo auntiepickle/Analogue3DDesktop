@@ -16,6 +16,12 @@ const el = {
 
 const MANUAL = "__manual__";
 
+function humanSize(n) {
+  if (n < 1024) return n + " B";
+  if (n < 1024 * 1024) return (n / 1024).toFixed(0) + " KB";
+  return (n / (1024 * 1024)).toFixed(1) + " MB";
+}
+
 /* ---------- console helpers ---------- */
 function log(text, cls) {
   if (text == null || text === "") return;
@@ -116,7 +122,8 @@ async function refreshBackups() {
   list.forEach((b) => {
     const o = document.createElement("option");
     o.value = b.name;
-    o.textContent = `${b.name}  (${b.size_mb} MB)`;
+    const empty = b.bytes < 2048 ? "  - empty" : "";
+    o.textContent = `${b.name}  (${humanSize(b.bytes)})${empty}`;
     el.backupSelect.appendChild(o);
   });
 }

@@ -74,7 +74,7 @@ class Api:
             for name in sorted(os.listdir(d), reverse=True):
                 if name.startswith("analogue3d_backup_") and name.endswith(".zip"):
                     p = os.path.join(d, name)
-                    out.append({"name": name, "size_mb": os.path.getsize(p) // (1024 * 1024)})
+                    out.append({"name": name, "bytes": os.path.getsize(p)})
         return out
 
     # ---------- actions ----------
