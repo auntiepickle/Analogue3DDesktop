@@ -31,6 +31,18 @@ CLI: the shared `analogue3d` Python package does the real work, and this app is 
   `~/Documents/Analogue3D`), shared with the CLI.
 - Live device detection (plug/unplug), styled in-app dialogs, and an app icon.
 
+## Screenshots
+
+<p align="center">
+  <img src="assets/screenshots/main.png" alt="Main window: status, Auto, Updates, Backups" width="90%">
+</p>
+<p align="center">
+  <img src="assets/screenshots/cartart.png" alt="Cartridge art gallery" width="90%">
+</p>
+<p align="center">
+  <img src="assets/screenshots/savestates.png" alt="Save-state (Memories) manager and snapshots" width="90%">
+</p>
+
 ## Run from source
 
 ```sh
