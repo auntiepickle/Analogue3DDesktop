@@ -267,7 +267,9 @@ class Api:
             except Exception:
                 pass
             os._exit(0)
-        threading.Timer(0.6, bye).start()
+        # 1.0s so the bridge has time to return {restarting:true} to the UI before
+        # we hard-exit (the swap helper waits for the lock either way)
+        threading.Timer(1.0, bye).start()
 
     # ---------- settings ----------
     def settings(self):

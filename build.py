@@ -52,6 +52,7 @@ args = [
     "--collect-submodules", "analogue3d",
     "--collect-all", "webview",
     "--hidden-import", "hid",
+    "--hidden-import", "requests",  # used directly by the in-app updater download
     *platform_args,
     "app.py",
 ]
