@@ -51,8 +51,17 @@ Grab the build for your OS from the
 
 - **Windows** — `Analogue3DDesktop-windows.exe`. Uses the built-in **Edge WebView2 runtime**
   (ships with Windows 11 and current Windows 10).
-- **macOS** — `Analogue3DDesktop-macos.zip`; unzip and open the `.app` (it's unsigned, so the
-  first launch is right-click → Open).
+- **macOS** — download `Analogue3DDesktop-macos.dmg`, open it, and drag **Analogue 3D Desktop**
+  into your **Applications** folder. The app is ad-hoc signed (so it won't be flagged as
+  "damaged") but not yet notarized, so the **first** launch needs a one-time
+  **right-click → Open** — after that, just double-click. To skip the Gatekeeper prompt
+  entirely, download with `curl` instead of a browser (curl downloads aren't quarantined):
+  ```sh
+  curl -L -o ~/Downloads/Analogue3DDesktop.dmg \
+    https://github.com/auntiepickle/Analogue3DDesktop/releases/latest/download/Analogue3DDesktop-macos.dmg
+  ```
+  (Once installed, the app updates itself from within — it pulls
+  `Analogue3DDesktop-macos.zip` automatically.)
 - **Linux** — **run from source** (below). pywebview's GTK/WebKit backend doesn't bundle into
   a portable binary reliably, so there's no Linux download.
 
@@ -73,11 +82,12 @@ pip install pyinstaller
 python build.py
 ```
 
-This produces a single windowed executable in `dist/`
-(`Analogue3DDesktop.exe` on Windows). It bundles the engine, the web UI, the icon,
-and the pywebview backend, so it runs with nothing else installed — on Windows the
-target machine just needs the Microsoft Edge WebView2 Runtime (ships with Windows 11
-and current Windows 10).
+This produces `Analogue3DDesktop.exe` on Windows and a proper `Analogue3DDesktop.app`
+on macOS (built `--onedir` with the icon and bundle metadata). It bundles the engine,
+the web UI, the icon, and the pywebview backend, so it runs with nothing else installed —
+on Windows the target machine just needs the Microsoft Edge WebView2 Runtime (ships with
+Windows 11 and current Windows 10). The `.dmg`/`.zip` packaging and macOS signing happen
+in CI (see `.github/workflows/release.yml`).
 
 ## How it's wired
 

@@ -4,7 +4,11 @@ over a bold "3D". Each size is rendered natively (4x supersample -> LANCZOS) so
 small sizes stay crisp AND keep the dots, instead of being downscaled from one
 busy 256px master (which looked blocky in the title bar / taskbar).
 
-    python make_icon.py    # writes assets/icon.ico (+ assets/icon.png)
+    python make_icon.py    # writes assets/icon.ico, assets/icon.png, assets/icon.icns
+
+The .icns is the macOS app-bundle icon. It's written with Pillow; if Pillow's
+ICNS encoder isn't available, the .iconset/ folder of PNGs is still written so a
+Mac can finish the job with:  iconutil -c icns assets/icon.iconset -o assets/icon.icns
 """
 
 import os
@@ -13,6 +17,8 @@ from PIL import Image, ImageDraw, ImageFont
 HERE = os.path.dirname(os.path.abspath(__file__))
 ASSETS = os.path.join(HERE, "assets")
 SIZES = [16, 24, 32, 48, 64, 128, 256]
+# macOS icons go up to 1024 (512@2x) for crisp Retina rendering.
+ICNS_SIZES = [16, 32, 64, 128, 256, 512, 1024]
 
 GOLD = (244, 205, 1, 255)
 DARK = (12, 12, 14, 255)
@@ -61,6 +67,20 @@ def render(size):
     return img.resize((size, size), Image.LANCZOS)
 
 
+def _write_iconset(icns_imgs):
+    """Write assets/icon.iconset/ with Apple's required filenames, so a Mac can
+    run `iconutil -c icns assets/icon.iconset -o assets/icon.icns` if needed."""
+    iconset = os.path.join(ASSETS, "icon.iconset")
+    os.makedirs(iconset, exist_ok=True)
+    # (pixel size, Apple label) - @2x entries reuse the doubled-size render.
+    pairs = [(16, "16x16"), (32, "16x16@2x"), (32, "32x32"), (64, "32x32@2x"),
+             (128, "128x128"), (256, "128x128@2x"), (256, "256x256"),
+             (512, "256x256@2x"), (512, "512x512"), (1024, "512x512@2x")]
+    for px, label in pairs:
+        icns_imgs[px].save(os.path.join(iconset, f"icon_{label}.png"))
+    return iconset
+
+
 def main():
     imgs = [render(s) for s in SIZES]
     ico_path = os.path.join(ASSETS, "icon.ico")
@@ -68,6 +88,18 @@ def main():
                   sizes=[(s, s) for s in SIZES], append_images=imgs[:-1])
     imgs[-1].save(os.path.join(ASSETS, "icon.png"))
     print("wrote", ico_path, "sizes:", SIZES)
+
+    # macOS app-bundle icon. Always write the .iconset (iconutil fallback); try
+    # the Pillow ICNS encoder for a ready-to-use assets/icon.icns.
+    icns_imgs = {s: render(s) for s in ICNS_SIZES}
+    _write_iconset(icns_imgs)
+    icns_path = os.path.join(ASSETS, "icon.icns")
+    try:
+        icns_imgs[1024].save(icns_path, format="ICNS")
+        print("wrote", icns_path)
+    except Exception as e:
+        print(f"could not write .icns via Pillow ({e}); on a Mac run:")
+        print("  iconutil -c icns assets/icon.iconset -o assets/icon.icns")
 
 
 if __name__ == "__main__":

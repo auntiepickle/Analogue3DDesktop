@@ -4,10 +4,26 @@ name: release
 # Release whenever a version tag (vX.Y.Z) is pushed. Can also be run manually
 # (workflow_dispatch) to produce build artifacts without releasing.
 #
-# Windows (Edge WebView2) and macOS (Cocoa/WebKit) are built. Linux is NOT built:
-# pywebview's GTK/WebKit backend doesn't bundle into a portable one-file binary
-# reliably, so Linux users run from source (see the README). fail-fast is off so
-# one OS failing doesn't block the other's upload.
+# Windows (Edge WebView2): a single .exe.
+# macOS   (Cocoa/WebKit):  a proper .app, shipped two ways -
+#     Analogue3DDesktop-macos.dmg  drag-to-Applications installer (for humans)
+#     Analogue3DDesktop-macos.zip  the zipped .app (what the in-app updater grabs)
+# Linux is NOT built (pywebview's GTK/WebKit doesn't bundle reliably; run from
+# source - see the README). fail-fast is off so one OS failing doesn't block the
+# other's upload.
+#
+# macOS signing:
+#   By default the .app is ad-hoc signed (free) so it launches without the "is
+#   damaged" error; browser downloads still show a one-time Gatekeeper prompt
+#   (right-click -> Open) until the app is notarized.
+#   To switch to Developer ID signing + Apple notarization (zero-friction), add
+#   these repo secrets - the steps below activate automatically when
+#   APPLE_DEV_ID_CERT_P12 is present, and are skipped otherwise:
+#     APPLE_DEV_ID_CERT_P12       base64 of your Developer ID Application .p12
+#     APPLE_DEV_ID_CERT_PASSWORD  password for that .p12
+#     APPLE_TEAM_ID               your 10-char Apple Developer Team ID
+#     APPLE_NOTARY_APPLE_ID       Apple ID email for notarytool
+#     APPLE_NOTARY_PASSWORD       app-specific password for that Apple ID
 
 on:
   push:
@@ -21,16 +37,18 @@ jobs:
   build:
     name: build (${{ matrix.label }})
     runs-on: ${{ matrix.os }}
+    env:
+      # Surfaced so the signing/notarization steps can gate on `env.X != ''`
+      # (secrets can't be referenced directly in step `if:` conditions).
+      APPLE_DEV_ID_CERT_P12: ${{ secrets.APPLE_DEV_ID_CERT_P12 }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: windows-latest
             label: windows
-            asset: Analogue3DDesktop-windows.exe
           - os: macos-latest
             label: macos
-            asset: Analogue3DDesktop-macos.zip
     steps:
       - uses: actions/checkout@v4
 
@@ -46,27 +64,87 @@ jobs:
           if [ "${{ matrix.label }}" = "windows" ]; then pip install pywebview pythonnet; fi
           if [ "${{ matrix.label }}" = "macos" ]; then pip install pywebview; fi
 
-      - name: Build one-file binary
+      - name: Build
         run: python build.py
 
-      - name: Stage artifact
+      - name: Stage artifact (Windows)
+        if: matrix.label == 'windows'
         shell: bash
         run: |
           mkdir -p out
-          if [ "${{ matrix.label }}" = "windows" ]; then
-            cp "dist/Analogue3DDesktop.exe" "out/${{ matrix.asset }}"
-          else
-            ( cd dist && zip -r "../out/${{ matrix.asset }}" "Analogue3DDesktop.app" )
-          fi
+          cp "dist/Analogue3DDesktop.exe" "out/Analogue3DDesktop-windows.exe"
 
-      - name: Upload build artifact
+      - name: Code sign (macOS)
+        if: matrix.label == 'macos'
+        env:
+          CERT_P12: ${{ secrets.APPLE_DEV_ID_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.APPLE_DEV_ID_CERT_PASSWORD }}
+        run: |
+          set -e
+          APP="dist/Analogue3DDesktop.app"
+          if [ -n "$CERT_P12" ]; then
+            echo "Signing with Developer ID (hardened runtime)"
+            KC="$RUNNER_TEMP/build.keychain"
+            KCPW="$(openssl rand -base64 16)"
+            security create-keychain -p "$KCPW" "$KC"
+            security set-keychain-settings -lut 21600 "$KC"
+            security unlock-keychain -p "$KCPW" "$KC"
+            echo "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+            security import "$RUNNER_TEMP/cert.p12" -k "$KC" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KCPW" "$KC" >/dev/null
+            security list-keychains -d user -s "$KC" login.keychain
+            IDENTITY=$(security find-identity -v -p codesigning "$KC" | grep "Developer ID Application" | head -1 | awk '{print $2}')
+            codesign --force --deep --options runtime --timestamp --sign "$IDENTITY" "$APP"
+          else
+            echo "Ad-hoc signing (no Developer ID secret set)"
+            codesign --force --deep --sign - "$APP"
+          fi
+          codesign --verify --deep --strict --verbose=2 "$APP" || true
+
+      - name: Package (macOS)
+        if: matrix.label == 'macos'
+        run: |
+          set -e
+          mkdir -p out dmgsrc
+          cp -R "dist/Analogue3DDesktop.app" "dmgsrc/"
+          # .zip for the in-app updater (ditto preserves perms/symlinks the way a
+          # plain zip can drop them, keeping the swapped-in .app launchable).
+          ditto -c -k --sequesterRsrc --keepParent "dist/Analogue3DDesktop.app" "out/Analogue3DDesktop-macos.zip"
+          # .dmg with an Applications drop-target for drag-install (create-dmg if
+          # available, else a plain hdiutil dmg).
+          brew install create-dmg || true
+          create-dmg \
+            --volname "Analogue 3D Desktop" \
+            --window-size 600 360 \
+            --icon "Analogue3DDesktop.app" 150 180 \
+            --app-drop-link 450 180 \
+            "out/Analogue3DDesktop-macos.dmg" "dmgsrc/" \
+          || hdiutil create -volname "Analogue 3D Desktop" -srcfolder "dmgsrc/" -ov -format UDZO "out/Analogue3DDesktop-macos.dmg"
+
+      - name: Notarize (macOS, only when Developer ID secrets are set)
+        if: matrix.label == 'macos' && env.APPLE_DEV_ID_CERT_P12 != ''
+        env:
+          NOTARY_APPLE_ID: ${{ secrets.APPLE_NOTARY_APPLE_ID }}
+          NOTARY_PASSWORD: ${{ secrets.APPLE_NOTARY_PASSWORD }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -e
+          xcrun notarytool submit "out/Analogue3DDesktop-macos.dmg" \
+            --apple-id "$NOTARY_APPLE_ID" --password "$NOTARY_PASSWORD" --team-id "$TEAM_ID" --wait
+          xcrun stapler staple "out/Analogue3DDesktop-macos.dmg"
+          # staple the .app too and re-zip so the updater ships a notarized bundle
+          xcrun stapler staple "dist/Analogue3DDesktop.app"
+          rm -f "out/Analogue3DDesktop-macos.zip"
+          ditto -c -k --sequesterRsrc --keepParent "dist/Analogue3DDesktop.app" "out/Analogue3DDesktop-macos.zip"
+
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.asset }}
-          path: out/${{ matrix.asset }}
+          name: ${{ matrix.label }}
+          path: out/*
 
       - name: Attach to release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: out/${{ matrix.asset }}
+          files: out/*
