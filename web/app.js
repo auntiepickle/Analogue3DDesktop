@@ -131,6 +131,14 @@ window.deskDownload = function (pct) {
   el.busyProgLabel.textContent = `Downloading update… ${pct}%`;
 };
 
+window.deskBackup = function (pct) {
+  el.busyProg.classList.remove("hidden");
+  el.busyProgLabel.classList.remove("hidden");
+  el.busySpin.classList.add("hidden");
+  el.busyBar.style.width = pct + "%";
+  el.busyProgLabel.textContent = `Backing up… ${pct}%`;
+};
+
 /* ---------- SD target ---------- */
 function getRoot() {
   const v = el.sdSelect.value;
@@ -430,8 +438,15 @@ function verLine(cur, latest, update, emptyText) {
   if (!cur && !latest) return `<span class="muted">${emptyText}</span>`;
   let html = `<span class="cur">${cur || "unknown"}</span>`;
   if (latest) {
-    if (update) html += ` <span class="arrow">&rarr;</span> <span class="latest">${latest}</span> <span class="badge upd">update available</span>`;
-    else html += ` <span class="badge ok">up to date</span>`;
+    if (!cur) {
+      // Current version is unknown but we know what's available - offer to install,
+      // never claim "up to date" without something to compare against.
+      html += ` <span class="arrow">&rarr;</span> <span class="latest">${latest}</span> <span class="badge upd">install</span>`;
+    } else if (update) {
+      html += ` <span class="arrow">&rarr;</span> <span class="latest">${latest}</span> <span class="badge upd">update available</span>`;
+    } else {
+      html += ` <span class="badge ok">up to date</span>`;
+    }
   }
   return html;
 }
