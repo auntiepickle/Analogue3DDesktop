@@ -72,16 +72,12 @@ def main():
         except Exception:
             pass
 
-    # Restore last window size / position / maximized state.
+    # Remember whether the window was maximized last time. (Exact size/position
+    # persistence is unreliable through pywebview's resize events on scaled
+    # displays, so we keep just the maximized state, which is solid.)
     st = _load_window_state()
-    win_kwargs = dict(
-        width=int(st.get("width") or 1000),
-        height=int(st.get("height") or 760),
-        min_size=(860, 640),
-        background_color="#0d0d0f",
-    )
-    if st.get("x") is not None and st.get("y") is not None:
-        win_kwargs["x"], win_kwargs["y"] = int(st["x"]), int(st["y"])
+    win_kwargs = dict(width=1000, height=760, min_size=(860, 640),
+                      background_color="#0d0d0f")
     if st.get("maximized"):
         win_kwargs["maximized"] = True
 
@@ -89,19 +85,7 @@ def main():
     window = webview.create_window("Analogue 3D Studio", index, js_api=studio, **win_kwargs)
     studio.attach_window(window)  # lets actions push live progress to the UI
 
-    # Remember window geometry across launches. Track size/pos only while not
-    # maximized, so un-maximizing later restores a sane size.
-    geom = {"width": win_kwargs["width"], "height": win_kwargs["height"],
-            "x": st.get("x"), "y": st.get("y"), "maximized": bool(st.get("maximized"))}
     maxed = {"on": bool(st.get("maximized"))}
-
-    def on_resized(*a):
-        if len(a) >= 2 and not maxed["on"]:
-            geom["width"], geom["height"] = a[0], a[1]
-
-    def on_moved(*a):
-        if len(a) >= 2 and not maxed["on"]:
-            geom["x"], geom["y"] = a[0], a[1]
 
     def on_max(*a):
         maxed["on"] = True
@@ -110,11 +94,9 @@ def main():
         maxed["on"] = False
 
     def on_closing(*a):
-        geom["maximized"] = maxed["on"]
-        _save_window_state(geom)
+        _save_window_state({"maximized": maxed["on"]})
 
-    for name, fn in (("resized", on_resized), ("moved", on_moved),
-                     ("maximized", on_max), ("restored", on_restore),
+    for name, fn in (("maximized", on_max), ("restored", on_restore),
                      ("closing", on_closing)):
         try:
             getattr(window.events, name).__iadd__(fn)
