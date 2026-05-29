@@ -4,7 +4,7 @@ const $ = (id) => document.getElementById(id);
 const api = () => window.pywebview.api;
 
 const el = {
-  version: $("version"),
+  version: $("version"), appUpdate: $("appUpdate"),
   sdLed: $("sdLed"), sdValue: $("sdValue"),
   padLed: $("padLed"), padValue: $("padValue"),
   sdSelect: $("sdSelect"), manualPath: $("manualPath"),
@@ -71,7 +71,7 @@ function setBusy(on, text) {
   if (!on) applyGating();
 }
 
-window.studioProgress = function (pct, block, nblocks) {
+window.deskProgress = function (pct, block, nblocks) {
   el.busyProg.classList.remove("hidden");
   el.busyProgLabel.classList.remove("hidden");
   el.busySpin.classList.add("hidden");
@@ -81,11 +81,11 @@ window.studioProgress = function (pct, block, nblocks) {
   el.busyProgLabel.textContent = `${prefix}${pct}%  (block ${block}/${nblocks})`;
 };
 
-window.studioFlashTarget = function (idx, total) {
+window.deskFlashTarget = function (idx, total) {
   flashTarget = { idx: idx, total: total };
 };
 
-window.studioSteps = function (labels) {
+window.deskSteps = function (labels) {
   el.busySteps.innerHTML = "";
   labels.forEach((label) => {
     const li = document.createElement("li");
@@ -101,7 +101,7 @@ window.studioSteps = function (labels) {
   el.busySteps.classList.remove("hidden");
 };
 
-window.studioStepStatus = function (i, status) {
+window.deskStepStatus = function (i, status) {
   const li = el.busySteps.children[i];
   if (!li) return;
   const marks = { active: "▸", done: "✓", skip: "–", fail: "✗", pending: "○" };
@@ -115,12 +115,20 @@ window.studioStepStatus = function (i, status) {
   }
 };
 
-window.studioStepNote = function (i, note) {
+window.deskStepNote = function (i, note) {
   const li = el.busySteps.children[i];
   if (!li) return;
   let n = li.querySelector(".note");
   if (!n) { n = document.createElement("span"); n.className = "note"; li.appendChild(n); }
   n.textContent = note ? "  - " + note : "";
+};
+
+window.deskDownload = function (pct) {
+  el.busyProg.classList.remove("hidden");
+  el.busyProgLabel.classList.remove("hidden");
+  el.busySpin.classList.add("hidden");
+  el.busyBar.style.width = pct + "%";
+  el.busyProgLabel.textContent = `Downloading update… ${pct}%`;
 };
 
 /* ---------- SD target ---------- */
@@ -221,23 +229,28 @@ async function pollStatus() {
   }
 }
 
+let backups = [];
 async function refreshBackups() {
-  let list = [];
-  try { list = await api().list_backups(); } catch (e) { /* ignore */ }
+  try { backups = await api().list_backups(); } catch (e) { backups = []; }
+  const prev = el.backupSelect.value;
   el.backupSelect.innerHTML = "";
-  if (!list.length) {
+  if (!backups.length) {
     const o = document.createElement("option");
     o.value = ""; o.textContent = "No backups found";
     el.backupSelect.appendChild(o);
     return;
   }
-  list.forEach((b) => {
+  backups.forEach((b) => {
     const o = document.createElement("option");
     o.value = b.name;
     const empty = b.bytes < 2048 ? "  - empty" : "";
-    o.textContent = `${b.name}  (${humanSize(b.bytes)})${empty}`;
+    const lbl = b.label ? "  ·  " + b.label : "";
+    o.textContent = `${b.when || b.name}${lbl}  (${humanSize(b.bytes)})${empty}`;
     el.backupSelect.appendChild(o);
   });
+  if (prev && [...el.backupSelect.options].some((o) => o.value === prev)) {
+    el.backupSelect.value = prev;
+  }
 }
 
 /* ---------- save states (Memories) ---------- */
@@ -464,15 +477,31 @@ let artGames = [];
 let artPage = 0;
 const ART_PAGE_SIZE = 18;
 
+async function syncCustomPackOption() {
+  let has = false;
+  try { has = await api().has_custom_pack(); } catch (e) {}
+  const sel = el.artSource;
+  let opt = sel.querySelector('option[value="custom"]');
+  if (has && !opt) {
+    opt = document.createElement("option");
+    opt.value = "custom";
+    opt.textContent = "My custom labels";
+    sel.insertBefore(opt, sel.firstChild);
+  } else if (!has && opt) {
+    opt.remove();
+  }
+}
+
 async function refreshArt() {
   const root = getRoot();
   const hideControls = () => $("artControls").classList.add("hidden");
+  await syncCustomPackOption();
   if (!root) {
     el.artGallery.innerHTML = '<p class="muted pad">Select a card to see its cartridge art.</p>';
     hideControls(); return;
   }
   let data;
-  try { data = await api().cart_art_games(root); }
+  try { data = await api().cart_art_games(root, el.artSource.value); }
   catch (e) { el.artGallery.innerHTML = '<p class="muted pad">Could not read cartridge art.</p>'; hideControls(); return; }
   if (!data.db_present) {
     el.artGallery.innerHTML = '<p class="muted pad">No art pack installed yet - use "Install art pack" above.</p>';
@@ -520,23 +549,38 @@ function buildArtTile(g) {
   const id = document.createElement("div");
   id.className = "art-id";
   id.textContent = g.cart_id;
+  const actions = document.createElement("div");
+  actions.className = "art-actions";
   const setb = document.createElement("button");
   setb.className = "action sm setart";
   setb.textContent = "Set art";
   setb.dataset.artAction = "set";
   setb.dataset.cart = g.cart_id;
+  actions.appendChild(setb);
+  // "Revert" only on carts the user actually overrode
+  if (g.overridden) {
+    const delb = document.createElement("button");
+    delb.className = "ghost sm artreset";
+    delb.textContent = "Revert";
+    delb.title = "Remove your custom art and revert this cart to the standard art";
+    delb.dataset.artAction = "reset";
+    delb.dataset.cart = g.cart_id;
+    delb.dataset.title = g.title;
+    actions.appendChild(delb);
+  }
   tile.appendChild(img);
   tile.appendChild(cap);
   tile.appendChild(id);
-  tile.appendChild(setb);
+  tile.appendChild(actions);
   return tile;
 }
 
 async function lazyArt(root) {
+  const source = el.artSource.value;
   const imgs = [...el.artGallery.querySelectorAll("img[data-cart]")];
   for (const img of imgs) {
     try {
-      const url = await api().cart_art(root, img.dataset.cart);
+      const url = await api().cart_art(root, img.dataset.cart, source);
       if (url) {
         img.src = url;
       } else {
@@ -599,10 +643,11 @@ function promptDialog(message, opts) {
     const modal = $("promptModal"), ok = $("promptOk"), cancel = $("promptCancel"), input = $("promptInput");
     $("promptTitle").textContent = message;
     ok.textContent = opts.okText || "OK";
-    input.value = "";
+    input.value = opts.value || "";
     input.placeholder = opts.placeholder || "";
     modal.classList.remove("hidden");
     input.focus();
+    input.select();
     const close = (val) => {
       modal.classList.add("hidden");
       ok.removeEventListener("click", onOk);
@@ -663,8 +708,14 @@ const handlers = {
   firmware() { const r = needRoot(); if (r) run("Updating console firmware", () => api().update_firmware(r), true); },
   art() {
     const r = needRoot(); if (!r) return;
-    const source = el.artSource.value === "url" ? el.artUrl.value.trim() : null;
-    if (el.artSource.value === "url" && !source) { log("Enter the art pack URL.", "err"); return; }
+    const sel = el.artSource.value;
+    let source = null;
+    if (sel === "url") {
+      source = el.artUrl.value.trim();
+      if (!source) { log("Enter the art pack URL.", "err"); return; }
+    } else if (sel === "custom") {
+      source = "custom";  // install_art resolves this to your saved custom_labels.db
+    }
     run("Installing cartridge art", () => api().install_art(r, source));
   },
   async flashCtrl() {
@@ -723,6 +774,24 @@ const handlers = {
   async cleanSnapshots() {
     if (!(await confirmDialog("Delete all snapshots except the most recent?\nThis can't be undone.", { danger: true, okText: "Delete" }))) return;
     run("Cleaning old snapshots", () => api().clean_old_snapshots());
+  },
+  async renameSnapshot() {
+    const name = el.memSnapshotSelect.value;
+    if (!name) { log("No snapshot selected.", "err"); return; }
+    const s = snapshots.find((x) => x.name === name);
+    const label = await promptDialog("Snapshot label (blank to clear):",
+      { okText: "Save", value: s ? s.label || "" : "", placeholder: "e.g. before-trim" });
+    if (label === null) return;
+    run("Relabeling snapshot", () => api().rename_snapshot(name, label));
+  },
+  async renameBackup() {
+    const name = el.backupSelect.value;
+    if (!name) { log("No backup selected.", "err"); return; }
+    const b = backups.find((x) => x.name === name);
+    const label = await promptDialog("Backup label (blank to clear):",
+      { okText: "Save", value: b ? b.label || "" : "", placeholder: "e.g. pre-firmware" });
+    if (label === null) return;
+    run("Relabeling backup", () => api().rename_backup(name, label));
   },
   async changeBackupLoc() {
     await run("Setting backup location", () => api().set_backup_location());
@@ -785,9 +854,58 @@ async function deleteSelectedStates() {
   run("Deleting selected save states", () => api().delete_memories(r, items));
 }
 
+async function checkAppUpdate() {
+  let info = null;
+  try { info = await api().update_check(); } catch (e) {}
+  const btn = el.appUpdate;
+  if (info && info.update_available) {
+    btn.textContent = `Update available: v${info.latest}`;
+    btn.title = `You have v${info.current} — v${info.latest} is out. Click to download and install it.`;
+    btn.onclick = () => startSelfUpdate(info);
+    btn.classList.remove("hidden");
+    log(`A newer version is available: v${info.latest} (you have v${info.current}).`, "sys");
+  } else {
+    btn.classList.add("hidden");
+  }
+}
+
+async function startSelfUpdate(info) {
+  if (!(await confirmDialog(
+    `Update to v${info.latest}?\nThe app will download it and restart itself.`,
+    { okText: "Update now" }))) return;
+  setBusy(true, `Downloading update v${info.latest}…`);
+  log(`\n> Updating to v${info.latest}`, "sys");
+  let res;
+  try { res = await api().self_update(); }
+  catch (e) { res = { ok: false, error: String(e) }; }
+
+  if (res && res.restarting) {
+    el.busyText.textContent = "Restarting into the new version…";
+    return;  // the app is about to exit and relaunch
+  }
+  setBusy(false);
+  const why = (res && res.error) || "Couldn't update in-app.";
+  log("Update failed: " + why, "err");
+  if (info.url && await confirmDialog(why + "\n\nOpen the releases page instead?",
+                                      { okText: "Open page" })) {
+    api().open_url(info.url);
+  }
+}
+
 function init() {
   document.querySelectorAll("[data-action]").forEach((btn) => {
     btn.addEventListener("click", () => handlers[btn.dataset.action]());
+  });
+  // kebab menus: toggle on the button, close on any other click
+  document.addEventListener("click", (e) => {
+    const menuBtn = e.target.closest(".menu-btn");
+    let toOpen = null;
+    if (menuBtn) {
+      const menu = menuBtn.parentElement.querySelector(".menu");
+      if (menu && menu.classList.contains("hidden")) toOpen = menu;
+    }
+    document.querySelectorAll(".menu:not(.hidden)").forEach((m) => m.classList.add("hidden"));
+    if (toOpen) toOpen.classList.remove("hidden");
   });
   $("refreshBtn").addEventListener("click", refresh);
   $("clearBtn").addEventListener("click", () => { el.console.innerHTML = ""; });
@@ -804,14 +922,37 @@ function init() {
   $("settingsClose").addEventListener("click", closeSettings);
   $("settingsModal").addEventListener("click", (e) => { if (e.target === $("settingsModal")) closeSettings(); });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && $("modal").classList.contains("hidden")) closeSettings();
+    if (e.key === "Escape") {
+      document.querySelectorAll(".menu:not(.hidden)").forEach((m) => m.classList.add("hidden"));
+      if ($("modal").classList.contains("hidden")) closeSettings();
+    }
   });
-  el.artGallery.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-art-action='set']");
-    if (!b) return;
-    const r = getRoot();
-    if (!r) { log("Select a card first.", "err"); return; }
-    run("Setting cart art", () => api().set_cart_art(r, b.dataset.cart));
+  el.artGallery.addEventListener("click", async (e) => {
+    const setb = e.target.closest("[data-art-action='set']");
+    if (setb) {
+      const r = getRoot();
+      if (!r) { log("Select a card first.", "err"); return; }
+      await run("Setting cart art", () => api().set_cart_art(r, setb.dataset.cart));
+      // surface the result: jump to the "My custom labels" pack and preview it
+      await syncCustomPackOption();
+      if (el.artSource.querySelector('option[value="custom"]')) {
+        el.artSource.value = "custom";
+        el.artUrl.classList.add("hidden");
+      }
+      refreshArt();
+      return;
+    }
+    const delb = e.target.closest("[data-art-action='reset']");
+    if (delb) {
+      const r = getRoot();
+      if (!r) { log("Select a card first.", "err"); return; }
+      const title = delb.dataset.title || delb.dataset.cart;
+      if (!(await confirmDialog(
+        `Remove your custom art for ${title}?\nIt reverts to the standard community art (first time downloads the pack).`,
+        { danger: true, okText: "Remove" }))) return;
+      run("Removing custom art", () => api().delete_cart_art(r, delb.dataset.cart));
+      return;
+    }
   });
   el.memContent.addEventListener("click", async (e) => {
     const trimBtn = e.target.closest("[data-mem-action='trim']");
@@ -860,10 +1001,12 @@ function init() {
   el.manualPath.addEventListener("change", refresh);
   el.artSource.addEventListener("change", () => {
     el.artUrl.classList.toggle("hidden", el.artSource.value !== "url");
+    refreshArt();  // preview the selected pack's icons + recompute Revert visibility
   });
 
   api().version().then((v) => { el.version.textContent = "v" + v; }).catch(() => {});
-  log("Analogue 3D Studio ready.", "sys");
+  checkAppUpdate();
+  log("Analogue 3D Desktop ready.", "sys");
   refreshSettings().then((s) => {
     if (s && s.legacy_root && !s.is_custom) {
       log(`Older backups remain at ${s.legacy_root}.\nNew backups now go to ${s.backup_root}.\nUse the settings cog (top right) to change the location.`, "sys");

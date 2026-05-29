@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="Analogue 3D Studio" width="100%">
+  <img src="assets/banner.svg" alt="Analogue 3D Desktop" width="100%">
 </p>
 
-# Analogue 3D Studio
+# Analogue 3D Desktop
 
 A desktop GUI for the Analogue 3D — a point-and-click, black-and-gold interface
 for updating the console, flashing the 8BitDo 64 controller, managing save
@@ -23,8 +23,9 @@ CLI: the shared `analogue3d` Python package does the real work, and this app is 
   screenshot thumbnails. Take a **snapshot** of every save state and restore the
   whole thing or just one game; trim a game to its newest N; delete individual
   states. Destructive actions take a safety snapshot first.
-- **Cartridge art** — a paginated gallery of your games' box art. Install a
-  community pack or a custom URL, or set a **custom image per cartridge**.
+- **Cartridge art** — a paginated gallery of your games' box art. Install the
+  [RetroGameCorps](https://github.com/retrogamecorps/Analogue-3D-Images) art pack
+  or a custom URL, or set a **custom image per cartridge**.
 - **Auto** — one click runs the lot (back up incl. save states, console firmware,
   art pack, every controller) with a live step checklist.
 - **Settings** — a configurable backup location (defaults to
@@ -46,11 +47,11 @@ CLI: the shared `analogue3d` Python package does the real work, and this app is 
 ## Download
 
 Grab the build for your OS from the
-[Releases page](https://github.com/auntiepickle/Analogue3DStudio/releases) — no Python needed:
+[Releases page](https://github.com/auntiepickle/Analogue3DDesktop/releases) — no Python needed:
 
-- **Windows** — `Analogue3DStudio-windows.exe`. Uses the built-in **Edge WebView2 runtime**
+- **Windows** — `Analogue3DDesktop-windows.exe`. Uses the built-in **Edge WebView2 runtime**
   (ships with Windows 11 and current Windows 10).
-- **macOS** — `Analogue3DStudio-macos.zip`; unzip and open the `.app` (it's unsigned, so the
+- **macOS** — `Analogue3DDesktop-macos.zip`; unzip and open the `.app` (it's unsigned, so the
   first launch is right-click → Open).
 - **Linux** — **run from source** (below). pywebview's GTK/WebKit backend doesn't bundle into
   a portable binary reliably, so there's no Linux download.
@@ -73,7 +74,7 @@ python build.py
 ```
 
 This produces a single windowed executable in `dist/`
-(`Analogue3DStudio.exe` on Windows). It bundles the engine, the web UI, the icon,
+(`Analogue3DDesktop.exe` on Windows). It bundles the engine, the web UI, the icon,
 and the pywebview backend, so it runs with nothing else installed — on Windows the
 target machine just needs the Microsoft Edge WebView2 Runtime (ships with Windows 11
 and current Windows 10).

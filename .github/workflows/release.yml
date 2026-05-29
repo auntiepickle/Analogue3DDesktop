@@ -27,10 +27,10 @@ jobs:
         include:
           - os: windows-latest
             label: windows
-            asset: Analogue3DStudio-windows.exe
+            asset: Analogue3DDesktop-windows.exe
           - os: macos-latest
             label: macos
-            asset: Analogue3DStudio-macos.zip
+            asset: Analogue3DDesktop-macos.zip
     steps:
       - uses: actions/checkout@v4
 
@@ -54,9 +54,9 @@ jobs:
         run: |
           mkdir -p out
           if [ "${{ matrix.label }}" = "windows" ]; then
-            cp "dist/Analogue3DStudio.exe" "out/${{ matrix.asset }}"
+            cp "dist/Analogue3DDesktop.exe" "out/${{ matrix.asset }}"
           else
-            ( cd dist && zip -r "../out/${{ matrix.asset }}" "Analogue3DStudio.app" )
+            ( cd dist && zip -r "../out/${{ matrix.asset }}" "Analogue3DDesktop.app" )
           fi
 
       - name: Upload build artifact

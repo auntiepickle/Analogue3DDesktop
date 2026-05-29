@@ -9,16 +9,20 @@ methods run an engine task, capture everything it prints, and return
 import io
 import os
 import re
+import sys
 import json
 import base64
 import zipfile
+import tempfile
+import subprocess
 import contextlib
 import threading
+import webbrowser
 
 import analogue3d
-from analogue3d import sdcard, controller, savestates, labels, saves, config, ui
+from analogue3d import sdcard, controller, savestates, labels, saves, config, ui, updates
 
-STUDIO_VERSION = "0.1.0"
+APP_VERSION = "0.2.0"
 
 # The GUI does its own confirmations; the engine must never block on a terminal
 # prompt (there's no stdin behind a webview).
@@ -32,6 +36,7 @@ _thumb_cache = {}
 _art_cache = {}
 
 _FW_RE = re.compile(r"a3d_os_(\d+)_(\d+)_(\d+)\.bin$", re.IGNORECASE)
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")  # strip terminal color codes from captured output
 
 
 def _backup_dir():
@@ -47,6 +52,15 @@ def _fw_version_from_name(name):
     return tuple(int(g) for g in m.groups()) if m else None
 
 
+def _clean_child_env():
+    """Environment for a relaunch helper: strip PyInstaller's one-file markers
+    (_MEIPASS2 etc.) so the freshly-swapped exe extracts and loads its OWN Python
+    DLLs instead of inheriting ours - otherwise the new bootloader fails with
+    'Failed to load Python DLL ... The specified module could not be found.'"""
+    return {k: v for k, v in os.environ.items()
+            if not (k.startswith("_MEIPASS") or k.startswith("_PYI"))}
+
+
 def _run(task):
     """Run a no-arg callable, capturing stdout/stderr into a log string."""
     with _lock:
@@ -59,7 +73,7 @@ def _run(task):
                 ok, error = False, str(e)
                 print(f"\nERROR: {e}")
         # Flash progress uses carriage returns; flatten them so the log reads cleanly.
-        log = buf.getvalue().replace("\r", "\n")
+        log = _ANSI.sub("", buf.getvalue()).replace("\r", "\n")
         return {"ok": ok, "log": log, "error": error}
 
 
@@ -83,17 +97,17 @@ class Api:
         """A flash() progress callback that streams percent to the UI."""
         def cb(written, total, block, nblocks):
             pct = min(100, written * 100 // total) if total else 0
-            self._emit(f"window.studioProgress&&studioProgress({pct},{block},{nblocks})")
+            self._emit(f"window.deskProgress&&deskProgress({pct},{block},{nblocks})")
         return cb
 
     def _steps_init(self, labels):
-        self._emit("window.studioSteps&&studioSteps(" + json.dumps(labels) + ")")
+        self._emit("window.deskSteps&&deskSteps(" + json.dumps(labels) + ")")
 
     def _step(self, i, status):
-        self._emit(f"window.studioStepStatus&&studioStepStatus({i},{json.dumps(status)})")
+        self._emit(f"window.deskStepStatus&&deskStepStatus({i},{json.dumps(status)})")
 
     def _step_note(self, i, note):
-        self._emit(f"window.studioStepNote&&studioStepNote({i},{json.dumps(note)})")
+        self._emit(f"window.deskStepNote&&deskStepNote({i},{json.dumps(note)})")
 
     def _flash_announce(self, total, step_index=None):
         """An update_all/update_all_to announce callback that reports which
@@ -102,7 +116,7 @@ class Api:
 
         def announce(cur, tgt):
             idx[0] += 1
-            self._emit(f"window.studioFlashTarget&&studioFlashTarget({idx[0]},{total})")
+            self._emit(f"window.deskFlashTarget&&deskFlashTarget({idx[0]},{total})")
             if step_index is not None:
                 self._step_note(step_index, f"updating #{idx[0]} of {total}")
             print(f"  controller {idx[0]} of {total}: "
@@ -111,7 +125,151 @@ class Api:
 
     # ---------- read-only state ----------
     def version(self):
-        return STUDIO_VERSION
+        return APP_VERSION
+
+    def update_check(self):
+        """Is a newer desktop-app release out? Cached daily, silent offline.
+        Returns {current, latest, url, update_available} or None."""
+        try:
+            return updates.check(APP_VERSION, updates.GUI_REPO)
+        except Exception:
+            return None
+
+    def open_url(self, url):
+        """Open a link in the user's default browser (not the embedded webview)."""
+        try:
+            if url and re.match(r"^https?://", url):
+                webbrowser.open(url)
+                return True
+        except Exception:
+            pass
+        return False
+
+    # ---------- self-update ----------
+    def self_update(self):
+        """Download the latest desktop build and relaunch into it, so the user
+        never has to visit the releases page. Frozen Windows/macOS builds only;
+        streams download progress to the UI via window.deskDownload(pct)."""
+        if not getattr(sys, "frozen", False):
+            return {"ok": False, "log": "",
+                    "error": "This copy is running from source - update it with "
+                             "git/pip, not the in-app updater."}
+        if sys.platform == "win32":
+            contains, kind = "windows", "exe"
+        elif sys.platform == "darwin":
+            contains, kind = "macos", "app"
+        else:
+            return {"ok": False, "log": "",
+                    "error": "In-app update isn't available on this platform."}
+
+        info = updates.latest_asset(updates.GUI_REPO, contains)
+        if not info or not info.get("url"):
+            return {"ok": False, "log": "",
+                    "error": "Couldn't find a matching download in the latest release."}
+
+        try:
+            if kind == "exe":
+                dest = sys.executable + ".new"
+                self._download(info["url"], dest)
+                self._swap_and_restart_windows(sys.executable, dest)
+            else:
+                self._swap_and_restart_macos(info["url"])
+        except Exception as e:
+            return {"ok": False, "log": "", "error": f"Update failed: {e}"}
+
+        return {"ok": True, "restarting": True,
+                "log": f"Downloaded {info['tag']}. Restarting into the new version..."}
+
+    def _download(self, url, dest):
+        """Stream a file to `dest`, emitting percent to window.deskDownload()."""
+        import requests
+        self._emit("window.deskDownload&&deskDownload(0)")
+        with requests.get(url, stream=True, timeout=60) as r:
+            r.raise_for_status()
+            total = int(r.headers.get("Content-Length") or 0)
+            done, last = 0, -1
+            with open(dest, "wb") as f:
+                for chunk in r.iter_content(65536):
+                    if not chunk:
+                        continue
+                    f.write(chunk)
+                    done += len(chunk)
+                    if total:
+                        pct = min(100, done * 100 // total)
+                        if pct != last:
+                            last = pct
+                            self._emit(f"window.deskDownload&&deskDownload({pct})")
+        return dest
+
+    def _swap_and_restart_windows(self, exe, new_file):
+        """Hand off to a helper .bat that swaps the exe and relaunches it. A running
+        one-file .exe stays locked for a moment after we exit (the bootloader is
+        still tearing down), so the move is retried until it succeeds. `ping` is
+        used for the delay because `timeout` needs console input we don't have."""
+        fd, bat = tempfile.mkstemp(suffix=".bat")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(
+                "@echo off\r\n"
+                "setlocal\r\n"
+                "set tries=0\r\n"
+                ":retry\r\n"
+                f'move /Y "{new_file}" "{exe}" >nul 2>&1\r\n'
+                "if not errorlevel 1 goto launch\r\n"
+                "set /a tries+=1\r\n"
+                "if %tries% geq 90 goto launch\r\n"
+                "ping -n 2 127.0.0.1 >nul\r\n"
+                "goto retry\r\n"
+                ":launch\r\n"
+                "ping -n 2 127.0.0.1 >nul\r\n"  # brief settle after the swap
+                f'start "" "{exe}"\r\n'
+                'del "%~f0"\r\n'
+            )
+        CREATE_NO_WINDOW = 0x08000000  # hidden console (so start/ping/move work, no flash)
+        subprocess.Popen(["cmd", "/c", bat], creationflags=CREATE_NO_WINDOW,
+                         close_fds=True, env=_clean_child_env())
+        self._quit_soon()
+
+    def _swap_and_restart_macos(self, url):
+        """Download the zip, unzip it, then hand off to a shell script that waits
+        for us to exit, swaps the .app bundle, and reopens it."""
+        # .../Foo.app/Contents/MacOS/Foo  ->  .../Foo.app
+        app_root = os.path.dirname(os.path.dirname(os.path.dirname(sys.executable)))
+        work = tempfile.mkdtemp(prefix="a3dupdate-")
+        zip_path = os.path.join(work, "update.zip")
+        self._download(url, zip_path)
+        with zipfile.ZipFile(zip_path) as z:
+            z.extractall(work)
+        new_app = next((os.path.join(work, n) for n in os.listdir(work)
+                        if n.endswith(".app")), None)
+        if not new_app:
+            raise RuntimeError("no .app found in the downloaded archive")
+        pid = os.getpid()
+        sh = os.path.join(work, "swap.sh")
+        with open(sh, "w", encoding="utf-8") as f:
+            f.write(
+                "#!/bin/sh\n"
+                f'while kill -0 {pid} 2>/dev/null; do sleep 1; done\n'
+                f'rm -rf "{app_root}"\n'
+                f'mv "{new_app}" "{app_root}"\n'
+                f'open "{app_root}"\n'
+            )
+        os.chmod(sh, 0o755)
+        subprocess.Popen(["/bin/sh", sh], close_fds=True, env=_clean_child_env())
+        self._quit_soon()
+
+    def _quit_soon(self):
+        """Give the bridge a beat to return to JS, then hard-exit so the file
+        lock is released and the swap script can take over."""
+        def bye():
+            try:
+                if self._window is not None:
+                    self._window.destroy()
+            except Exception:
+                pass
+            os._exit(0)
+        # 1.0s so the bridge has time to return {restarting:true} to the UI before
+        # we hard-exit (the swap helper waits for the lock either way)
+        threading.Timer(1.0, bye).start()
 
     # ---------- settings ----------
     def settings(self):
@@ -172,7 +330,11 @@ class Api:
             for name in sorted(os.listdir(d), reverse=True):
                 if name.startswith("analogue3d_backup_") and name.endswith(".zip"):
                     p = os.path.join(d, name)
-                    out.append({"name": name, "bytes": os.path.getsize(p)})
+                    m = re.search(r"(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})(?:_(.+?))?\.zip$", name)
+                    when = (f"{m.group(1)}-{m.group(2)}-{m.group(3)} {m.group(4)}:{m.group(5)}"
+                            if m else name)
+                    out.append({"name": name, "bytes": os.path.getsize(p), "when": when,
+                                "label": (m.group(7) if m else "") or ""})
         return out
 
     # ---------- actions ----------
@@ -183,7 +345,16 @@ class Api:
         return _run(lambda: sdcard.install_firmware(root))
 
     def install_art(self, root, source=None):
-        return _run(lambda: sdcard.install_labels(root, source or None))
+        if source == "custom":
+            source = labels.custom_pack_path()
+
+        def task():
+            sdcard.install_labels(root, source or None)
+            _art_cache.clear()  # card art changed; drop cached thumbnails
+        return _run(task)
+
+    def has_custom_pack(self):
+        return labels.has_custom_pack()
 
     def update_controllers(self):
         def task():
@@ -232,7 +403,7 @@ class Api:
             self._step(1, "done" if ok else "fail")
 
             self._step(2, "active")
-            sdcard.install_labels(root)
+            sdcard.install_labels(root, labels.custom_pack_path() if labels.has_custom_pack() else None)
             self._step(2, "done")
 
             n = controller.connected_count()
@@ -358,7 +529,8 @@ class Api:
             else:
                 when = s["name"]
             out.append({
-                "name": s["name"], "when": when, "bytes": s["bytes"],
+                "name": s["name"], "when": when,
+                "label": (m.group(7) if m else "") or "", "bytes": s["bytes"],
                 "count": sum(g["count"] for g in s["games"]), "games": s["games"],
             })
         return out
@@ -392,6 +564,15 @@ class Api:
                 print("Snapshot not found: " + name)
         return _run(task)
 
+    def rename_snapshot(self, name, label):
+        def task():
+            new = savestates.rename_snapshot(name, label)
+            if new:
+                print("Snapshot relabeled." if label else "Snapshot label cleared.")
+            else:
+                print("Snapshot not found: " + name)
+        return _run(task)
+
     def clean_old_snapshots(self):
         def task():
             snaps = savestates.list_snapshots()  # newest first
@@ -417,6 +598,15 @@ class Api:
             print("Deleted backup: " + os.path.basename(name))
         return _run(task)
 
+    def rename_backup(self, name, label):
+        def task():
+            new = sdcard.rename_backup(name, label)
+            if new:
+                print("Backup relabeled." if label else "Backup label cleared.")
+            else:
+                print("Backup not found: " + name)
+        return _run(task)
+
     def clean_old_backups(self):
         def task():
             d = _backup_dir()
@@ -438,7 +628,7 @@ class Api:
         return _run(task)
 
     # ---------- cartridge art ----------
-    def cart_art_games(self, root):
+    def cart_art_games(self, root, source=None):
         games = {}
         try:
             for g in savestates.find_game_states(root):
@@ -450,12 +640,34 @@ class Api:
                 games.setdefault(s["cart_id"], s["name"])
         except Exception:
             pass
-        items = [{"cart_id": cid, "title": title}
-                 for cid, title in sorted(games.items(), key=lambda kv: kv[1].lower())]
-        return {"db_present": os.path.isfile(_labels_db(root)), "games": items}
+        overrides = labels.overridden_carts()
+        card_db = _labels_db(root)
+        pack = labels.custom_pack_path() if (overrides and labels.has_custom_pack()) else None
+        source_db = self._art_source_db(root, source)  # what the gallery is showing
 
-    def cart_art(self, root, cart_id):
-        db = _labels_db(root)
+        def shows_override(cid):
+            # Revert only when the gallery is currently displaying the user's own
+            # override for this cart (so it's hidden while previewing a stock pack).
+            return bool(pack) and cid in overrides and labels.label_matches(source_db, pack, cid)
+
+        items = [{"cart_id": cid, "title": title, "overridden": shows_override(cid)}
+                 for cid, title in sorted(games.items(), key=lambda kv: kv[1].lower())]
+        return {"db_present": os.path.isfile(card_db), "games": items}
+
+    def _art_source_db(self, root, source):
+        """Which labels.db the gallery should preview art from. Defaults to the
+        card; 'custom'/'community' preview those packs (no download for community -
+        only if it's already cached)."""
+        if source == "custom" and labels.has_custom_pack():
+            return labels.custom_pack_path()
+        if source == "community":
+            cached = labels.community_cache()
+            if cached:
+                return cached
+        return _labels_db(root)
+
+    def cart_art(self, root, cart_id, source=None):
+        db = self._art_source_db(root, source)
         if not os.path.isfile(db):
             return ""
         try:
@@ -501,14 +713,38 @@ class Api:
             image_path = picked[0] if isinstance(picked, (list, tuple)) else picked
             try:
                 result = labels.set_label(db, cart_id, image_path)
-                labels.save_override(cart_id, image_path)  # survives art-pack re-installs
+                labels.save_custom_pack(db)  # build the selectable "My custom labels" pack
+                labels.mark_override(cart_id)  # so the UI shows Revert only for this cart
+                _art_cache.clear()  # show the new art immediately, not a cached thumbnail
             except Exception as e:
                 print("Failed: " + str(e))
                 return
             verb = "Updated" if result == "updated" else "Added"
             print(f"{verb} art for cart {cart_id} from {os.path.basename(image_path)}. "
-                  f"Saved as a custom override (kept across art-pack installs); "
-                  f"resizes to 74x86 and shows on the console next boot.")
+                  f"Saved into your 'My custom labels' pack; resizes to 74x86 and "
+                  f"shows on the console next boot.")
+        return _run(task)
+
+    def delete_cart_art(self, root, cart_id):
+        """Drop a single cart's custom override: revert it to the standard
+        community art (or remove the slot), on the card and in the custom pack."""
+        def task():
+            db = _labels_db(root)
+            if not os.path.isfile(db):
+                print("No labels.db on the card.")
+                return
+            res = labels.reset_label(db, cart_id)
+            if labels.has_custom_pack():
+                labels.reset_label(labels.custom_pack_path(), cart_id)
+            labels.unmark_override(cart_id)
+            _art_cache.clear()  # art changed; drop cached thumbnails so the UI refreshes
+            if res == "reverted":
+                print(f"Reverted cart {cart_id} to the standard community art.")
+            elif res == "removed":
+                print(f"Removed custom art for cart {cart_id} "
+                      f"(the community pack has no art for it).")
+            else:
+                print(f"Cart {cart_id} had no custom art to remove.")
         return _run(task)
 
     # ---------- firmware versions ----------

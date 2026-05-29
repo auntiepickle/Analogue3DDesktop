@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Analogue 3D Studio</title>
+  <title>Analogue 3D Desktop</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -12,9 +12,10 @@
     <!-- Header -->
     <header class="topbar">
       <div class="wordmark">
-        <span class="gold">ANALOGUE&nbsp;3D</span><span class="thin">STUDIO</span>
+        <span class="gold">ANALOGUE&nbsp;3D</span><span class="thin">DESKTOP</span>
       </div>
       <div class="ver" id="version">v0.0</div>
+      <button class="update-pill hidden" id="appUpdate" title="A newer version is available">Update available</button>
       <button class="cog" id="settingsBtn" title="Settings" aria-label="Settings">&#9881;</button>
     </header>
 
@@ -91,9 +92,15 @@
           <div class="restore-row">
             <select id="backupSelect" class="grow"><option value="">No backups found</option></select>
             <button class="action" data-action="restore">Restore</button>
-            <button class="action danger" data-action="deleteBackup">Delete</button>
+            <button class="action" data-action="renameBackup">Rename</button>
+            <div class="menu-wrap">
+              <button class="action danger menu-btn" title="Delete options">Delete&nbsp;&#9662;</button>
+              <div class="menu hidden">
+                <button class="menu-item danger" data-action="deleteBackup">Delete this backup</button>
+                <button class="menu-item danger" data-action="cleanBackups">Delete all but the latest</button>
+              </div>
+            </div>
           </div>
-          <button class="action danger sm" data-action="cleanBackups">Delete all but the latest</button>
         </article>
       </div>
     </section>
@@ -104,7 +111,7 @@
         <h2>Cartridge art</h2>
         <div class="row-tools">
           <select id="artSource" class="mini">
-            <option value="community">Community pack</option>
+            <option value="community">RetroGameCorps art pack</option>
             <option value="url">Custom URL&hellip;</option>
           </select>
           <input type="text" id="artUrl" class="hidden mini-input" placeholder="https://.../labels.db" />
@@ -152,8 +159,14 @@
           <label>Snapshot</label>
           <select id="memSnapshotSelect" class="grow" title="Snapshot"></select>
           <button class="action" data-action="restoreAll">Restore all</button>
-          <button class="action danger" data-action="deleteSnapshot">Delete snapshot</button>
-          <button class="action danger sm" data-action="cleanSnapshots">Delete all but the latest</button>
+          <button class="action" data-action="renameSnapshot">Rename</button>
+          <div class="menu-wrap">
+            <button class="action danger menu-btn" title="Delete options">Delete&nbsp;&#9662;</button>
+            <div class="menu hidden">
+              <button class="menu-item danger" data-action="deleteSnapshot">Delete this snapshot</button>
+              <button class="menu-item danger" data-action="cleanSnapshots">Delete all but the latest</button>
+            </div>
+          </div>
         </div>
         <div class="mem-row">
           <span class="muted">Just one game:</span>

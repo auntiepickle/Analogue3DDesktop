@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Analogue 3D Studio - a desktop GUI for the Analogue 3D Utility.
+"""Analogue 3D Desktop - a desktop GUI for the Analogue 3D Utility.
 
 Launches a native window (pywebview) that loads web/index.html and bridges the
 JavaScript UI to the analogue3d engine through the Api class. The heavy lifting
@@ -11,7 +11,7 @@ import os
 import sys
 import json
 
-_WIN_STATE = os.path.join(os.path.expanduser("~"), ".analogue3d", "studio_window.json")
+_WIN_STATE = os.path.join(os.path.expanduser("~"), ".analogue3d", "desktop_window.json")
 
 
 def _load_window_state():
@@ -35,7 +35,7 @@ def main():
     try:
         import webview
     except ImportError:
-        print("Analogue 3D Studio needs pywebview.\n"
+        print("Analogue 3D Desktop needs pywebview.\n"
               "  pip install pywebview\n"
               "(On Windows it uses the built-in Edge WebView2 runtime.)")
         sys.exit(1)
@@ -68,7 +68,7 @@ def main():
             # Give the process its own taskbar identity so Windows shows our icon,
             # not the generic Python one.
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                "auntiepickle.analogue3dstudio")
+                "auntiepickle.analogue3ddesktop")
         except Exception:
             pass
 
@@ -81,9 +81,9 @@ def main():
     if st.get("maximized"):
         win_kwargs["maximized"] = True
 
-    studio = Api()
-    window = webview.create_window("Analogue 3D Studio", index, js_api=studio, **win_kwargs)
-    studio.attach_window(window)  # lets actions push live progress to the UI
+    api_obj = Api()
+    window = webview.create_window("Analogue 3D Desktop", index, js_api=api_obj, **win_kwargs)
+    api_obj.attach_window(window)  # lets actions push live progress to the UI
 
     maxed = {"on": bool(st.get("maximized"))}
 
