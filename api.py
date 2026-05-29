@@ -18,6 +18,8 @@ import threading
 import analogue3d
 from analogue3d import sdcard, controller, savestates, labels, saves, config, ui
 
+STUDIO_VERSION = "0.1.0"
+
 # The GUI does its own confirmations; the engine must never block on a terminal
 # prompt (there's no stdin behind a webview).
 ui.ASSUME_YES = True
@@ -109,7 +111,7 @@ class Api:
 
     # ---------- read-only state ----------
     def version(self):
-        return analogue3d.__version__
+        return STUDIO_VERSION
 
     # ---------- settings ----------
     def settings(self):
