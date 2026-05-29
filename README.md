@@ -43,6 +43,13 @@ CLI: the shared `analogue3d` Python package does the real work, and this app is 
   <img src="assets/screenshots/savestates.png" alt="Save-state (Memories) manager and snapshots" width="90%">
 </p>
 
+## Download
+
+Grab **`Analogue3DStudio-windows.exe`** from the
+[Releases page](https://github.com/auntiepickle/Analogue3DStudio/releases) and run it —
+no Python needed. It uses the built-in **Edge WebView2 runtime** (ships with Windows 11
+and current Windows 10).
+
 ## Run from source
 
 ```sh

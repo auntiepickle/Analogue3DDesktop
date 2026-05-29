@@ -1,0 +1,53 @@
+name: release
+
+# Builds the standalone Windows binary with PyInstaller and attaches it to the
+# GitHub Release whenever a version tag (vX.Y.Z) is pushed. Can also be run
+# manually (workflow_dispatch) to produce a build artifact without releasing.
+#
+# The GUI uses the Edge WebView2 backend (Windows), so this targets Windows.
+# The engine (analogue3d) is pulled from the public core repo at build time.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies + engine
+        run: |
+          python -m pip install --upgrade pip
+          pip install pywebview pythonnet pyinstaller
+          pip install "git+https://github.com/auntiepickle/Analogue3DUtility.git"
+
+      - name: Build one-file binary
+        run: python build.py
+
+      - name: Stage artifact
+        shell: bash
+        run: |
+          mkdir -p out
+          cp "dist/Analogue3DStudio.exe" "out/Analogue3DStudio-windows.exe"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Analogue3DStudio-windows.exe
+          path: out/Analogue3DStudio-windows.exe
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/Analogue3DStudio-windows.exe
