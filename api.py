@@ -326,6 +326,26 @@ class Api:
             print("Deleted from card: " + os.path.basename(name))
         return _run(task)
 
+    def delete_memories(self, root, items):
+        """Delete several selected save states at once (one safety snapshot first).
+        items: list of {folder, name}."""
+        def task():
+            if not items:
+                print("Nothing selected.")
+                return
+            snap, _ = savestates.archive_all(root)  # one snapshot covers them all
+            if snap:
+                print("Snapshot saved: " + os.path.basename(snap))
+            base = savestates.memories_dir(root)
+            n = 0
+            for it in items:
+                p = os.path.join(base, os.path.basename(it.get("folder", "")),
+                                 os.path.basename(it.get("name", "")))
+                if savestates.delete_state(p):
+                    n += 1
+            print(f"Deleted {n} selected save state(s) from the card.")
+        return _run(task)
+
     # ---------- archive snapshots ----------
     def list_snapshots(self):
         out = []

@@ -205,7 +205,9 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
 .art-tile .setart { width: 100%; align-self: stretch; margin-top: auto; }
 
 /* delete button on save-state thumbnails (always visible, brighter on hover) */
-.thumb { position: relative; }
+.thumb { position: relative; cursor: pointer; }
+.thumb.selected { outline: 2px solid var(--gold); outline-offset: -2px; }
+.thumb.selected .cap { color: var(--gold-soft); }
 .thumb .del {
   position: absolute; top: 4px; right: 4px;
   width: 20px; height: 20px; line-height: 16px; text-align: center;

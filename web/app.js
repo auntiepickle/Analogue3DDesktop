@@ -259,8 +259,12 @@ let memGames = [];
 let memKeepDefault = 5;
 let memPage = 0;
 const MEM_PAGE_SIZE = 8;
+let selectedStates = new Set();   // keys: "<folder><name>"
+let selectAnchor = null;          // {folder, idx} for shift-range selection
 
 function renderMemories(m, root) {
+  selectedStates.clear();
+  selectAnchor = null;
   memGames = m.available ? m.games : [];
   memKeepDefault = m.keep_default || 5;
   if (!memGames.length) {
@@ -323,6 +327,9 @@ function buildGameRow(g, root, autoExpand) {
   g.states.forEach((s, i) => {
     const t = document.createElement("div");
     t.className = "thumb" + (i === 0 ? " newest" : "");
+    t.dataset.folder = g.folder;
+    t.dataset.name = s.name;
+    t.dataset.idx = i;
     const img = document.createElement("img");
     img.alt = s.when;
     img.dataset.folder = g.folder;
@@ -665,7 +672,7 @@ const handlers = {
     if (!name || !cart) { log("Pick a snapshot and a game.", "err"); return; }
     const game = el.memArchiveGame.selectedOptions[0] ? el.memArchiveGame.selectedOptions[0].textContent : cart;
     if (!(await confirmDialog(`Restore ${game} from this snapshot onto the card?`, { okText: "Restore game" }))) return;
-    run("Restoring one game", () => api().restore_memories_game(r, name, cart));
+    run("Restoring " + game.replace(/\s*\(\d+\)\s*$/, ""), () => api().restore_memories_game(r, name, cart));
   },
   async deleteSnapshot() {
     const name = el.memSnapshotSelect.value;
@@ -687,6 +694,51 @@ const handlers = {
     refreshSettings();
   },
 };
+
+/* ---------- save-state multi-select (Shift/Ctrl click + Del) ---------- */
+function thumbKey(folder, name) { return folder + "" + name; }
+
+function refreshThumbSelection() {
+  el.memContent.querySelectorAll(".thumb").forEach((t) => {
+    t.classList.toggle("selected", selectedStates.has(thumbKey(t.dataset.folder, t.dataset.name)));
+  });
+}
+
+function handleThumbSelect(tile, e) {
+  const folder = tile.dataset.folder, name = tile.dataset.name;
+  const idx = parseInt(tile.dataset.idx, 10);
+  const key = thumbKey(folder, name);
+  if (e.shiftKey && selectAnchor && selectAnchor.folder === folder) {
+    if (!(e.ctrlKey || e.metaKey)) selectedStates.clear();
+    const lo = Math.min(idx, selectAnchor.idx), hi = Math.max(idx, selectAnchor.idx);
+    tile.closest(".thumbs").querySelectorAll(".thumb").forEach((t) => {
+      const i = parseInt(t.dataset.idx, 10);
+      if (i >= lo && i <= hi) selectedStates.add(thumbKey(t.dataset.folder, t.dataset.name));
+    });
+  } else if (e.ctrlKey || e.metaKey) {
+    if (selectedStates.has(key)) selectedStates.delete(key);
+    else selectedStates.add(key);
+    selectAnchor = { folder, idx };
+  } else {
+    selectedStates.clear();
+    selectedStates.add(key);
+    selectAnchor = { folder, idx };
+  }
+  refreshThumbSelection();
+}
+
+async function deleteSelectedStates() {
+  const r = getRoot();
+  if (!r) { log("Select a card first.", "err"); return; }
+  const items = [...selectedStates].map((k) => {
+    const i = k.indexOf("");
+    return { folder: k.slice(0, i), name: k.slice(i + 1) };
+  });
+  if (!(await confirmDialog(`Delete ${items.length} selected save state(s)?\nA full snapshot is saved first, then they're removed from the card.`, { danger: true, okText: "Delete" }))) return;
+  selectedStates.clear();
+  selectAnchor = null;
+  run("Deleting selected save states", () => api().delete_memories(r, items));
+}
 
 function init() {
   document.querySelectorAll("[data-action]").forEach((btn) => {
@@ -738,6 +790,11 @@ function init() {
       run("Deleting save state", () => api().delete_memory(r, folder, name));
       return;
     }
+    const tile = e.target.closest(".thumb");
+    if (tile && tile.dataset.name) {
+      handleThumbSelect(tile, e);
+      return;
+    }
     const head = e.target.closest(".game-head");
     if (head && !e.target.closest(".game-actions")) {
       const game = head.parentElement;
@@ -745,6 +802,14 @@ function init() {
       game.classList.toggle("expanded");
       if (expanding) loadGameThumbs(game, getRoot());
     }
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Delete") return;
+    const tag = (document.activeElement && document.activeElement.tagName) || "";
+    if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+    if (!selectedStates.size) return;
+    e.preventDefault();
+    deleteSelectedStates();
   });
   el.sdSelect.addEventListener("change", () => { syncManual(); refresh(); });
   el.manualPath.addEventListener("change", refresh);
