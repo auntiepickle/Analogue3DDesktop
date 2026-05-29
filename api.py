@@ -176,8 +176,8 @@ class Api:
         return out
 
     # ---------- actions ----------
-    def backup(self, root):
-        return _run(lambda: sdcard.create_backup(root))
+    def backup(self, root, label=None):
+        return _run(lambda: sdcard.create_backup(root, label))
 
     def update_firmware(self, root):
         return _run(lambda: sdcard.install_firmware(root))
@@ -287,9 +287,9 @@ class Api:
         _thumb_cache[key] = url
         return url
 
-    def archive_memories(self, root):
+    def archive_memories(self, root, label=None):
         def task():
-            path, n = savestates.archive_all(root)
+            path, n = savestates.archive_all(root, label)
             if not path:
                 print("No save states on this card to archive.")
                 return
@@ -350,9 +350,13 @@ class Api:
     def list_snapshots(self):
         out = []
         for s in savestates.list_snapshots():
-            m = re.search(r"(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})", s["name"])
-            when = (f"{m.group(1)}-{m.group(2)}-{m.group(3)} {m.group(4)}:{m.group(5)}"
-                    if m else s["name"])
+            m = re.search(r"(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})(?:_(.+?))?\.zip$", s["name"])
+            if m:
+                when = f"{m.group(1)}-{m.group(2)}-{m.group(3)} {m.group(4)}:{m.group(5)}"
+                if m.group(7):
+                    when += "  ·  " + m.group(7)
+            else:
+                when = s["name"]
             out.append({
                 "name": s["name"], "when": when, "bytes": s["bytes"],
                 "count": sum(g["count"] for g in s["games"]), "games": s["games"],

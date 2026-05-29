@@ -592,6 +592,36 @@ function confirmDialog(message, opts) {
   });
 }
 
+/* ---------- styled text prompt ---------- */
+function promptDialog(message, opts) {
+  opts = opts || {};
+  return new Promise((resolve) => {
+    const modal = $("promptModal"), ok = $("promptOk"), cancel = $("promptCancel"), input = $("promptInput");
+    $("promptTitle").textContent = message;
+    ok.textContent = opts.okText || "OK";
+    input.value = "";
+    input.placeholder = opts.placeholder || "";
+    modal.classList.remove("hidden");
+    input.focus();
+    const close = (val) => {
+      modal.classList.add("hidden");
+      ok.removeEventListener("click", onOk);
+      cancel.removeEventListener("click", onCancel);
+      input.removeEventListener("keydown", onKey);
+      resolve(val);
+    };
+    const onOk = () => close(input.value.trim());
+    const onCancel = () => close(null);
+    const onKey = (e) => {
+      if (e.key === "Enter") { e.preventDefault(); close(input.value.trim()); }
+      else if (e.key === "Escape") { e.preventDefault(); close(null); }
+    };
+    ok.addEventListener("click", onOk);
+    cancel.addEventListener("click", onCancel);
+    input.addEventListener("keydown", onKey);
+  });
+}
+
 /* ---------- run an action ---------- */
 async function run(busyText, fn, refreshVer) {
   setBusy(true, busyText);
@@ -624,7 +654,12 @@ function needRoot() {
 /* ---------- wire up ---------- */
 const handlers = {
   auto() { const r = needRoot(); if (r) run("Auto - doing everything", () => api().auto(r), true); },
-  backup() { const r = needRoot(); if (r) run("Backing up SD card", () => api().backup(r)); },
+  async backup() {
+    const r = needRoot(); if (!r) return;
+    const label = await promptDialog("Label this backup (optional):", { okText: "Back up", placeholder: "e.g. before-firmware" });
+    if (label === null) return;
+    run("Backing up SD card", () => api().backup(r, label));
+  },
   firmware() { const r = needRoot(); if (r) run("Updating console firmware", () => api().update_firmware(r), true); },
   art() {
     const r = needRoot(); if (!r) return;
@@ -657,9 +692,11 @@ const handlers = {
     if (!(await confirmDialog("Delete all SD backups except the most recent?\nThis can't be undone.", { danger: true, okText: "Delete" }))) return;
     run("Cleaning old backups", () => api().clean_old_backups());
   },
-  archiveMem() {
-    const r = needRoot();
-    if (r) run("Archiving all save states", () => api().archive_memories(r));
+  async archiveMem() {
+    const r = needRoot(); if (!r) return;
+    const label = await promptDialog("Label this archive (optional):", { okText: "Archive", placeholder: "e.g. before-trim" });
+    if (label === null) return;
+    run("Archiving all save states", () => api().archive_memories(r, label));
   },
   async restoreAll() {
     const r = needRoot(); if (!r) return;
