@@ -34,10 +34,19 @@ def main():
     icon = os.path.join(here, "assets", "icon.ico")
 
     if sys.platform == "win32":
-        # Give the process its own taskbar identity so Windows shows our icon,
-        # not the generic Python one.
         try:
             import ctypes
+            # Per-monitor DPI awareness so the webview renders crisply (not
+            # bitmap-stretched/blurry) on displays scaled above 100%.
+            try:
+                ctypes.windll.user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))  # PER_MONITOR_AWARE_V2
+            except Exception:
+                try:
+                    ctypes.windll.shcore.SetProcessDpiAwareness(2)  # PER_MONITOR_DPI_AWARE
+                except Exception:
+                    ctypes.windll.user32.SetProcessDPIAware()
+            # Give the process its own taskbar identity so Windows shows our icon,
+            # not the generic Python one.
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
                 "auntiepickle.analogue3dstudio")
         except Exception:
