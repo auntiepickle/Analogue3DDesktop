@@ -296,7 +296,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 }
 .game.expanded .game-head .chev { transform: rotate(90deg); }
 .game-head .cover {
-  width: 34px; height: 40px; flex: none;
+  width: 52px; height: 39px; flex: none;  /* 4:3 to match the 320x240 screenshots */
   object-fit: cover; border-radius: 4px;
   border: 1px solid var(--border); background: #0a0a0c;
 }
