@@ -497,12 +497,14 @@ class Api:
             image_path = picked[0] if isinstance(picked, (list, tuple)) else picked
             try:
                 result = labels.set_label(db, cart_id, image_path)
+                labels.save_override(cart_id, image_path)  # survives art-pack re-installs
             except Exception as e:
                 print("Failed: " + str(e))
                 return
             verb = "Updated" if result == "updated" else "Added"
             print(f"{verb} art for cart {cart_id} from {os.path.basename(image_path)}. "
-                  f"It resizes to 74x86 and shows on the console next boot.")
+                  f"Saved as a custom override (kept across art-pack installs); "
+                  f"resizes to 74x86 and shows on the console next boot.")
         return _run(task)
 
     # ---------- firmware versions ----------
