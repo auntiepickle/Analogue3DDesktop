@@ -5,14 +5,13 @@
     python build.py
 
 Produces a single windowed executable in dist/:
-    Windows : dist/Analogue3DStudio.exe   (uses the built-in Edge WebView2 runtime)
-    macOS   : dist/Analogue3DStudio.app
-    Linux   : dist/Analogue3DStudio
+    Windows : dist/Analogue3DStudio.exe   (Edge WebView2 backend, via pythonnet)
+    macOS   : dist/Analogue3DStudio.app   (Cocoa/WebKit backend)
+    Linux   : dist/Analogue3DStudio       (GTK/WebKit backend)
 
-The engine (analogue3d), the web UI, the icon, and the pywebview backend are all
-bundled, so the binary runs with nothing else installed (on Windows the target
-machine just needs the Microsoft Edge WebView2 Runtime, which ships with Win11
-and current Win10).
+The engine (analogue3d), the web UI, the icon (Windows), and the pywebview
+backend are bundled. On Windows the target just needs the Edge WebView2 Runtime
+(ships with Win11 and current Win10).
 """
 
 import os
@@ -21,37 +20,50 @@ import subprocess
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SEP = ";" if sys.platform == "win32" else ":"
-ICON = os.path.join("assets", "icon.ico" if sys.platform == "win32" else "icon.png")
 
-# If the engine is checked out as a sibling repo (the local-dev / editable case),
-# point PyInstaller at its source so it can actually bundle the `analogue3d`
-# package - an editable (pip install -e) install is an import hook, not files
-# PyInstaller can follow. (A normal `pip install analogue3d` needs no --paths.)
-_extra = []
+# If the engine is checked out as a sibling repo (local-dev / editable case),
+# point PyInstaller at its source so it can bundle the `analogue3d` package - an
+# editable install is an import hook, not files PyInstaller can follow. (A normal
+# `pip install analogue3d`, e.g. in CI, needs no --paths.)
+paths = []
 _core = os.path.normpath(os.path.join(HERE, "..", "Analogue3DUtility"))
 if os.path.isdir(os.path.join(_core, "analogue3d")):
-    _extra += ["--paths", _core]
+    paths += ["--paths", _core]
+
+# Windows talks to Edge WebView2 through pythonnet (clr); bundle it + the icon.
+# macOS/Linux use native backends (pyobjc / PyGObject) that pywebview pulls in.
+platform_args = []
+if sys.platform == "win32":
+    platform_args += [
+        "--icon", os.path.join("assets", "icon.ico"),
+        "--collect-all", "clr_loader",
+        "--collect-all", "pythonnet",
+        "--hidden-import", "clr",
+    ]
 
 args = [
     sys.executable, "-m", "PyInstaller",
     "--noconfirm", "--clean",
     "--name", "Analogue3DStudio",
     "--onefile", "--windowed",
-    "--icon", ICON,
     "--add-data", f"web{SEP}web",
     "--add-data", f"assets{SEP}assets",
-    *_extra,
+    *paths,
     "--collect-submodules", "analogue3d",
     "--collect-all", "webview",
-    "--collect-all", "clr_loader",
-    "--collect-all", "pythonnet",
-    "--hidden-import", "clr",
     "--hidden-import", "hid",
+    *platform_args,
     "app.py",
 ]
 
 print("Running PyInstaller...\n  " + " ".join(args))
 subprocess.check_call(args, cwd=HERE)
 
-out = os.path.join(HERE, "dist", "Analogue3DStudio" + (".exe" if sys.platform == "win32" else ""))
+name = "Analogue3DStudio"
+if sys.platform == "win32":
+    out = os.path.join(HERE, "dist", name + ".exe")
+elif sys.platform == "darwin":
+    out = os.path.join(HERE, "dist", name + ".app")
+else:
+    out = os.path.join(HERE, "dist", name)
 print("\nBuilt:", out)
