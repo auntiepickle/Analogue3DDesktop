@@ -157,7 +157,9 @@ class Api:
         if sys.platform == "win32":
             contains, kind = "windows", "exe"
         elif sys.platform == "darwin":
-            contains, kind = "macos", "app"
+            # Match the .zip specifically: the release also ships a -macos.dmg
+            # (for first-install), but the updater swaps the zipped .app.
+            contains, kind = "macos.zip", "app"
         else:
             return {"ok": False, "log": "",
                     "error": "In-app update isn't available on this platform."}
@@ -237,8 +239,10 @@ class Api:
         work = tempfile.mkdtemp(prefix="a3dupdate-")
         zip_path = os.path.join(work, "update.zip")
         self._download(url, zip_path)
-        with zipfile.ZipFile(zip_path) as z:
-            z.extractall(work)
+        # Extract with ditto, not zipfile: a .app holds an executable and symlinks
+        # whose permissions Python's zipfile would drop, leaving an app macOS
+        # refuses to launch. ditto restores them faithfully.
+        subprocess.run(["ditto", "-x", "-k", zip_path, work], check=True)
         new_app = next((os.path.join(work, n) for n in os.listdir(work)
                         if n.endswith(".app")), None)
         if not new_app:
