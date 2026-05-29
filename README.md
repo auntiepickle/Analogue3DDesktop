@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.svg" alt="Analogue 3D Desktop" width="100%">
+  <img src="assets/banner.svg?v=0.2.0" alt="Analogue 3D Desktop" width="100%">
 </p>
 
 # Analogue 3D Desktop
@@ -35,13 +35,13 @@ CLI: the shared `analogue3d` Python package does the real work, and this app is 
 ## Screenshots
 
 <p align="center">
-  <img src="assets/screenshots/main.png" alt="Main window: status, Auto, Updates, Backups" width="90%">
+  <img src="assets/screenshots/main.png?v=0.2.0" alt="Main window: status, Auto, Updates, Backups" width="90%">
 </p>
 <p align="center">
-  <img src="assets/screenshots/cartart.png" alt="Cartridge art gallery" width="90%">
+  <img src="assets/screenshots/cartart.png?v=0.2.0" alt="Cartridge art gallery" width="90%">
 </p>
 <p align="center">
-  <img src="assets/screenshots/savestates.png" alt="Save-state (Memories) manager and snapshots" width="90%">
+  <img src="assets/screenshots/savestates.png?v=0.2.0" alt="Save-state (Memories) manager and snapshots" width="90%">
 </p>
 
 ## Download
