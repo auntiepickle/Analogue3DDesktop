@@ -256,13 +256,15 @@ async function refreshMemories() {
 }
 
 let memGames = [];
-let memLimit = 20;
+let memKeepDefault = 5;
+let memCap = 20;
 let memPage = 0;
 const MEM_PAGE_SIZE = 8;
 
 function renderMemories(m, root) {
   memGames = m.available ? m.games : [];
-  memLimit = m.limit || 20;
+  memKeepDefault = m.keep_default || 5;
+  memCap = m.cap || 20;
   if (!memGames.length) {
     el.memContent.innerHTML = '<p class="muted pad">No save states on this card.</p>';
     $("memControls").classList.add("hidden");
@@ -295,7 +297,7 @@ function renderMemPage(root) {
 }
 
 function buildGameRow(g, root, autoExpand) {
-  const overCap = g.count >= memLimit;
+  const overCap = g.count >= memCap;
   const game = document.createElement("div");
   game.className = "game" + (autoExpand ? " expanded" : "");
   game.innerHTML = `
@@ -304,10 +306,10 @@ function buildGameRow(g, root, autoExpand) {
       <img class="cover" alt="" />
       <span class="game-title"></span>
       <span class="game-id"></span>
-      <span class="game-meta">${g.count} state${g.count === 1 ? "" : "s"} &middot; ${humanSize(g.total_bytes)}${overCap ? ' &middot; <span class="cap-warn">at the ' + memLimit + ' cap</span>' : ""}</span>
+      <span class="game-meta">${g.count} state${g.count === 1 ? "" : "s"} &middot; ${humanSize(g.total_bytes)}${overCap ? ' &middot; <span class="cap-warn">at the ' + memCap + ' cap</span>' : ""}</span>
       <span class="game-actions">
         <label>keep latest</label>
-        <input type="number" class="keep-input" min="0" value="${memLimit}" />
+        <input type="number" class="keep-input" min="0" value="${memKeepDefault}" />
         <button class="action" data-mem-action="trim">Trim &amp; archive</button>
       </span>
     </div>

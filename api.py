@@ -266,7 +266,8 @@ class Api:
                 "states": [{"name": s["name"], "when": s["when"], "bytes": s["bytes"]}
                            for s in g["states"]],
             })
-        return {"available": bool(out), "limit": savestates.DEFAULT_KEEP, "games": out}
+        return {"available": bool(out), "keep_default": savestates.DEFAULT_KEEP,
+                "cap": savestates.CONSOLE_CAP, "games": out}
 
     def memory_thumbnail(self, root, folder, name):
         base = savestates.memories_dir(root)
