@@ -278,6 +278,13 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .mem-controls #memSearch, .mem-controls #artSearch { max-width: 280px; }
 .mem-controls #memPageInfo, .mem-controls #artPageInfo { font-size: 12px; white-space: nowrap; }
 
+.mem-selbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: 10px;
+  background: rgba(232, 185, 35, .08); border: 1px solid var(--gold-dim);
+}
+.mem-selbar #memSelCount { color: var(--gold-soft); font-size: 13px; flex: 1; }
+
 .mem-content { display: flex; flex-direction: column; gap: 12px; }
 .game {
   background: var(--panel);
@@ -323,7 +330,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   overflow: hidden;
   background: #000;
 }
-.thumb.newest { border-color: var(--gold); }
+/* the NEWEST tag marks the newest; no gold border (it collided with selection) */
 .thumb img {
   display: block;
   width: 100%;

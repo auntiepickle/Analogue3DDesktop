@@ -283,6 +283,8 @@ function filteredMemGames() {
 }
 
 function renderMemPage(root) {
+  selectedStates.clear();
+  selectAnchor = null;
   const games = filteredMemGames();
   const pages = Math.max(1, Math.ceil(games.length / MEM_PAGE_SIZE));
   memPage = Math.min(Math.max(memPage, 0), pages - 1);
@@ -296,6 +298,7 @@ function renderMemPage(root) {
   $("memPrev").disabled = memPage <= 0;
   $("memNext").disabled = memPage >= pages - 1;
   loadCovers(root);  // one small cover per visible game; full strips load on expand
+  refreshThumbSelection();
 }
 
 function buildGameRow(g, root, autoExpand) {
@@ -693,6 +696,8 @@ const handlers = {
     await run("Resetting backup location", () => api().reset_backup_location());
     refreshSettings();
   },
+  delSelected() { deleteSelectedStates(); },
+  clearSel() { selectedStates.clear(); selectAnchor = null; refreshThumbSelection(); },
 };
 
 /* ---------- save-state multi-select (Shift/Ctrl click + Del) ---------- */
@@ -702,6 +707,9 @@ function refreshThumbSelection() {
   el.memContent.querySelectorAll(".thumb").forEach((t) => {
     t.classList.toggle("selected", selectedStates.has(thumbKey(t.dataset.folder, t.dataset.name)));
   });
+  const n = selectedStates.size;
+  $("memSelBar").classList.toggle("hidden", n === 0);
+  if (n) $("memSelCount").textContent = `${n} save state${n === 1 ? "" : "s"} selected`;
 }
 
 function handleThumbSelect(tile, e) {
