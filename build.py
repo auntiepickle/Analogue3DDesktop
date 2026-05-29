@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Build a standalone Analogue 3D Studio binary with PyInstaller.
+"""Build a standalone Analogue 3D Desktop binary with PyInstaller.
 
     pip install pyinstaller
     python build.py
 
 Produces a single windowed executable in dist/:
-    Windows : dist/Analogue3DStudio.exe   (Edge WebView2 backend, via pythonnet)
-    macOS   : dist/Analogue3DStudio.app   (Cocoa/WebKit backend)
-    Linux   : dist/Analogue3DStudio       (GTK/WebKit backend)
+    Windows : dist/Analogue3DDesktop.exe   (Edge WebView2 backend, via pythonnet)
+    macOS   : dist/Analogue3DDesktop.app   (Cocoa/WebKit backend)
+    Linux   : dist/Analogue3DDesktop       (GTK/WebKit backend)
 
 The engine (analogue3d), the web UI, the icon (Windows), and the pywebview
 backend are bundled. On Windows the target just needs the Edge WebView2 Runtime
@@ -44,7 +44,7 @@ if sys.platform == "win32":
 args = [
     sys.executable, "-m", "PyInstaller",
     "--noconfirm", "--clean",
-    "--name", "Analogue3DStudio",
+    "--name", "Analogue3DDesktop",
     "--onefile", "--windowed",
     "--add-data", f"web{SEP}web",
     "--add-data", f"assets{SEP}assets",
@@ -59,7 +59,7 @@ args = [
 print("Running PyInstaller...\n  " + " ".join(args))
 subprocess.check_call(args, cwd=HERE)
 
-name = "Analogue3DStudio"
+name = "Analogue3DDesktop"
 if sys.platform == "win32":
     out = os.path.join(HERE, "dist", name + ".exe")
 elif sys.platform == "darwin":
