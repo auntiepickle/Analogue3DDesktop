@@ -22,7 +22,7 @@ import webbrowser
 import analogue3d
 from analogue3d import sdcard, controller, savestates, labels, saves, config, ui, updates
 
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.2.1"
 
 # The GUI does its own confirmations; the engine must never block on a terminal
 # prompt (there's no stdin behind a webview).
