@@ -4,10 +4,10 @@ name: release
 # Release whenever a version tag (vX.Y.Z) is pushed. Can also be run manually
 # (workflow_dispatch) to produce build artifacts without releasing.
 #
-# Windows is the primary target (Edge WebView2 backend). macOS and Linux are
-# best-effort: pywebview's native backends are heavier to bundle, so if a job
-# fails the others still attach (fail-fast is off). The engine (analogue3d) is
-# pulled from the public core repo at build time.
+# Windows (Edge WebView2) and macOS (Cocoa/WebKit) are built. Linux is NOT built:
+# pywebview's GTK/WebKit backend doesn't bundle into a portable one-file binary
+# reliably, so Linux users run from source (see the README). fail-fast is off so
+# one OS failing doesn't block the other's upload.
 
 on:
   push:
@@ -31,9 +31,6 @@ jobs:
           - os: macos-latest
             label: macos
             asset: Analogue3DStudio-macos.zip
-          - os: ubuntu-latest
-            label: linux
-            asset: Analogue3DStudio-linux
     steps:
       - uses: actions/checkout@v4
 
@@ -41,24 +38,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Linux system deps (GTK/WebKit for pywebview)
-        if: matrix.label == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgirepository1.0-dev gir1.2-gtk-3.0 gir1.2-webkit2-4.1 \
-            libcairo2-dev pkg-config python3-dev
-
       - name: Install Python deps + engine
         shell: bash
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller "git+https://github.com/auntiepickle/Analogue3DUtility.git"
-          case "${{ matrix.label }}" in
-            windows) pip install pywebview pythonnet ;;
-            macos)   pip install pywebview ;;
-            linux)   pip install "pywebview[gtk]" PyGObject ;;
-          esac
+          if [ "${{ matrix.label }}" = "windows" ]; then pip install pywebview pythonnet; fi
+          if [ "${{ matrix.label }}" = "macos" ]; then pip install pywebview; fi
 
       - name: Build one-file binary
         run: python build.py
@@ -67,11 +53,11 @@ jobs:
         shell: bash
         run: |
           mkdir -p out
-          case "${{ matrix.label }}" in
-            windows) cp "dist/Analogue3DStudio.exe" "out/${{ matrix.asset }}" ;;
-            macos)   ( cd dist && zip -r "../out/${{ matrix.asset }}" "Analogue3DStudio.app" ) ;;
-            linux)   cp "dist/Analogue3DStudio" "out/${{ matrix.asset }}" ;;
-          esac
+          if [ "${{ matrix.label }}" = "windows" ]; then
+            cp "dist/Analogue3DStudio.exe" "out/${{ matrix.asset }}"
+          else
+            ( cd dist && zip -r "../out/${{ matrix.asset }}" "Analogue3DStudio.app" )
+          fi
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

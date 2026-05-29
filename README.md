@@ -45,10 +45,15 @@ CLI: the shared `analogue3d` Python package does the real work, and this app is 
 
 ## Download
 
-Grab **`Analogue3DStudio-windows.exe`** from the
-[Releases page](https://github.com/auntiepickle/Analogue3DStudio/releases) and run it —
-no Python needed. It uses the built-in **Edge WebView2 runtime** (ships with Windows 11
-and current Windows 10).
+Grab the build for your OS from the
+[Releases page](https://github.com/auntiepickle/Analogue3DStudio/releases) — no Python needed:
+
+- **Windows** — `Analogue3DStudio-windows.exe`. Uses the built-in **Edge WebView2 runtime**
+  (ships with Windows 11 and current Windows 10).
+- **macOS** — `Analogue3DStudio-macos.zip`; unzip and open the `.app` (it's unsigned, so the
+  first launch is right-click → Open).
+- **Linux** — **run from source** (below). pywebview's GTK/WebKit backend doesn't bundle into
+  a portable binary reliably, so there's no Linux download.
 
 ## Run from source
 
