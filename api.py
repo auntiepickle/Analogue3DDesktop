@@ -22,7 +22,7 @@ import webbrowser
 import analogue3d
 from analogue3d import sdcard, controller, savestates, labels, saves, config, ui, updates
 
-APP_VERSION = "0.2.1"
+APP_VERSION = "0.2.2"
 
 # The GUI does its own confirmations; the engine must never block on a terminal
 # prompt (there's no stdin behind a webview).
@@ -98,6 +98,12 @@ class Api:
         def cb(written, total, block, nblocks):
             pct = min(100, written * 100 // total) if total else 0
             self._emit(f"window.deskProgress&&deskProgress({pct},{block},{nblocks})")
+        return cb
+
+    def _backup_progress_cb(self):
+        """A create_backup() progress callback - just a percent, no block count."""
+        def cb(pct):
+            self._emit(f"window.deskBackup&&deskBackup({pct})")
         return cb
 
     def _steps_init(self, labels):
@@ -343,7 +349,7 @@ class Api:
 
     # ---------- actions ----------
     def backup(self, root, label=None):
-        return _run(lambda: sdcard.create_backup(root, label))
+        return _run(lambda: sdcard.create_backup(root, label, progress=self._backup_progress_cb()))
 
     def update_firmware(self, root):
         return _run(lambda: sdcard.install_firmware(root))
@@ -397,7 +403,7 @@ class Api:
             print("=== Auto: backup -> firmware -> art pack -> controllers ===")
 
             self._step(0, "active")
-            sdcard.create_backup(root)
+            sdcard.create_backup(root, progress=self._backup_progress_cb())
             self._step(0, "done")
 
             self._step(1, "active")
