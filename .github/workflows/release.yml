@@ -94,6 +94,10 @@ jobs:
             security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KCPW" "$KC" >/dev/null
             security list-keychains -d user -s "$KC" login.keychain
             IDENTITY=$(security find-identity -v -p codesigning "$KC" | grep "Developer ID Application" | head -1 | awk '{print $2}')
+            if [ -z "$IDENTITY" ]; then
+              echo "No 'Developer ID Application' identity found - check APPLE_DEV_ID_CERT_P12 / APPLE_DEV_ID_CERT_PASSWORD." >&2
+              exit 1
+            fi
             codesign --force --deep --options runtime --timestamp --sign "$IDENTITY" "$APP"
           else
             echo "Ad-hoc signing (no Developer ID secret set)"
