@@ -543,6 +543,82 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .hidden { display: none !important; }
 
 /* ============================================================
+   THEMES - N64 edition accent colors
+   ----------------------------------------------------------
+   Each theme overrides the gold tokens so existing var(--gold)
+   references re-theme automatically. The original "Charcoal"
+   theme (Analogue's gold-on-black) is the default - no class
+   override needed. Picker lives in Settings.
+   ============================================================ */
+
+body.theme-ice {
+  --gold: #58c7e3; --gold-soft: #8ed6e5; --gold-dim: #2a8db8;
+  --gold-line: rgba(88,199,227,.38); --gold-faint: rgba(88,199,227,.12);
+}
+body.theme-jungle {
+  --gold: #3fcb6b; --gold-soft: #6fdf90; --gold-dim: #1e8a44;
+  --gold-line: rgba(63,203,107,.38); --gold-faint: rgba(63,203,107,.12);
+}
+body.theme-watermelon {
+  --gold: #ff5b6b; --gold-soft: #ff8a96; --gold-dim: #b03540;
+  --gold-line: rgba(255,91,107,.38); --gold-faint: rgba(255,91,107,.12);
+}
+body.theme-grape {
+  --gold: #a663ff; --gold-soft: #c79bff; --gold-dim: #6b3aae;
+  --gold-line: rgba(166,99,255,.38); --gold-faint: rgba(166,99,255,.12);
+}
+body.theme-fire {
+  --gold: #ff7430; --gold-soft: #ffa570; --gold-dim: #b8501c;
+  --gold-line: rgba(255,116,48,.38); --gold-faint: rgba(255,116,48,.12);
+}
+body.theme-atomic {
+  --gold: #b066ff; --gold-soft: #d29eff; --gold-dim: #6b3aae;
+  --gold-line: rgba(176,102,255,.40); --gold-faint: rgba(176,102,255,.13);
+  --bg: #0c0a14;
+}
+body.theme-smoke {
+  --gold: #cfd1d5; --gold-soft: #e6e7ea; --gold-dim: #8b8c91;
+  --gold-line: rgba(207,209,213,.32); --gold-faint: rgba(207,209,213,.10);
+}
+
+/* Theme picker (in the Settings modal). */
+.theme-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+.theme-swatch {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: border-color .12s;
+}
+.theme-swatch:hover { border-color: var(--gold-line); }
+.theme-swatch.active { border-color: var(--gold); }
+.theme-swatch .dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(232,185,35,.4);
+}
+.theme-swatch .name {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.theme-swatch.active .name { color: var(--gold); }
+/* Each swatch's dot color is set via inline style on the .dot - see init(). */
+
+/* ============================================================
    DUAL MODE: minimal (default) vs tinker (UI label: "Advanced")
    ----------------------------------------------------------
    Design language derived from: Analogue's monochromatic
@@ -581,38 +657,41 @@ body.mode-minimal .app {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 40px 24px;
+  padding: clamp(40px, 6vh, 80px) clamp(24px, 4vw, 64px);
+  width: 100%;
 }
 
 .min-panel {
   width: 100%;
-  max-width: 900px;
+  max-width: 1400px;
   background: var(--panel);
   border: 1px solid var(--gold-line);
-  border-radius: 2px;          /* sharp, not soft */
-  padding: 26px 32px 24px;
+  border-radius: 2px;
+  padding: clamp(28px, 3vw, 52px) clamp(32px, 4vw, 64px) clamp(24px, 2vw, 40px);
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, .4) inset,
-    0 24px 90px rgba(0, 0, 0, .55);
+    0 32px 120px rgba(0, 0, 0, .6);
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: clamp(24px, 2.4vw, 36px);
 }
 
 .min-header {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding-bottom: 14px;
+  gap: 18px;
+  padding-bottom: clamp(16px, 1.8vw, 22px);
   border-bottom: 1px solid var(--gold-line);
 }
-.min-header .ver { margin-left: auto; }
+.min-header .wordmark { font-size: clamp(20px, 1.6vw, 26px); }
+.min-header .wordmark .thin { font-size: clamp(14px, 1.05vw, 17px); }
+.min-header .ver { margin-left: auto; font-size: 13px; }
 
 /* ----- the three instruments (SD / CONSOLE / CONTROLLER) ----- */
 .min-instruments {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  gap: clamp(14px, 1.5vw, 22px);
 }
 /* Stack vertically on narrower windows, side-by-side on wide. */
 @media (max-width: 720px) {
@@ -623,16 +702,16 @@ body.mode-minimal .app {
   background: var(--panel-2);
   border: 1px solid var(--gold-line);
   border-radius: 2px;
-  padding: 16px 16px 14px;
+  padding: clamp(18px, 1.6vw, 28px) clamp(20px, 1.8vw, 30px);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-width: 0;                /* allow overflow ellipsis */
+  gap: clamp(10px, 1vw, 14px);
+  min-width: 0;
 }
 
 .min-instr-label {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 3px;
   text-transform: uppercase;
   color: var(--gold);
@@ -644,27 +723,27 @@ body.mode-minimal .app {
   gap: 10px;
 }
 .min-instr-led-row .led {
-  width: 9px;
-  height: 9px;
-  flex: 0 0 9px;
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
 }
 .min-instr-status {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--dim);
 }
 
 .min-instr-value {
-  font-size: 15px;
+  font-size: clamp(17px, 1.5vw, 22px);
   color: var(--text);
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  /* Allow badges inside (verLine output) to render on a second line. */
   line-height: 1.4;
+  min-height: 1.4em;
 }
 .min-instr-value .cur { font-weight: 600; }
 .min-instr-value .latest { font-weight: 600; }
@@ -676,20 +755,20 @@ body.mode-minimal .app {
 .min-state {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 10px 0 2px;
+  gap: 18px;
+  padding: clamp(14px, 1.2vw, 20px) 0 2px;
   border-top: 1px solid var(--gold-line);
 }
 .min-state-label {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 3px;
   text-transform: uppercase;
   color: var(--gold);
 }
 .min-state-text {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 13px;
   color: var(--dim);
   letter-spacing: .5px;
   flex: 1;
@@ -702,10 +781,10 @@ body.mode-minimal .app {
 /* ----- big RUN AUTO button, styled as a hardware control ----- */
 .big-auto {
   font-family: var(--mono);
-  font-size: 15px;
-  letter-spacing: 4px;
+  font-size: clamp(15px, 1.2vw, 20px);
+  letter-spacing: clamp(4px, .35vw, 6px);
   font-weight: 700;
-  padding: 18px 24px;
+  padding: clamp(20px, 1.8vw, 28px) clamp(24px, 2vw, 36px);
   border-radius: 2px;
   margin-top: 4px;
   text-transform: uppercase;
@@ -734,4 +813,131 @@ body.mode-minimal .app {
   font-size: 10px;
   letter-spacing: 3px;
   text-transform: uppercase;
+}
+
+/* ============================================================
+   ADVANCED MODE: sidebar (rail) + main grid layout.
+   Same design language as minimal - monospace small-caps section
+   labels, hairline gold borders, sharp corners.
+   ============================================================ */
+
+body.mode-tinker .tinker-view {
+  display: grid;
+  grid-template-columns: clamp(260px, 22vw, 320px) 1fr;
+  gap: clamp(20px, 1.8vw, 32px);
+  align-items: start;
+}
+@media (max-width: 960px) {
+  body.mode-tinker .tinker-view {
+    grid-template-columns: 1fr;   /* stack on narrow */
+  }
+}
+
+/* The sidebar: persistent command center. */
+.adv-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 16px 18px;
+  background: var(--panel);
+  border: 1px solid var(--gold-line);
+  border-radius: 2px;
+  position: sticky;
+  top: 16px;
+}
+.adv-rail .topbar {
+  padding: 0 0 12px 0;
+  border-bottom: 1px solid var(--gold-line);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.adv-rail .topbar .wordmark { font-size: 15px; flex-basis: 100%; }
+.adv-rail .topbar .ver { font-size: 11px; margin-right: auto; }
+.adv-rail .status {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+}
+.adv-rail .picker { padding: 4px 0; }
+.adv-rail .picker label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  display: block;
+  margin-bottom: 6px;
+}
+/* The persistent Auto in the rail - same hi-fi treatment as minimal. */
+.adv-rail .hero {
+  background: var(--panel-2);
+  border: 1px solid var(--gold-line);
+  border-radius: 2px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.adv-rail .hero h2 {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 0;
+}
+.adv-rail .hero-text p { font-size: 11px; line-height: 1.4; max-width: none; }
+.adv-rail .hero .primary {
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 12px;
+  border-radius: 2px;
+}
+
+/* Main content area. */
+.adv-main {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 1.6vw, 28px);
+  min-width: 0;
+}
+
+/* Re-style the existing section blocks for the new design language. */
+body.mode-tinker .block {
+  background: var(--panel);
+  border: 1px solid var(--gold-line);
+  border-radius: 2px;
+  padding: 18px 22px 22px;
+}
+body.mode-tinker .block > .section-head { margin-bottom: 16px; }
+body.mode-tinker .block > .section-head h2 {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 700;
+  margin: 0;
+}
+body.mode-tinker .card {
+  background: var(--panel-2);
+  border: 1px solid var(--gold-line);
+  border-radius: 2px;
+}
+body.mode-tinker .card h3 {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin: 0 0 8px;
+}
+body.mode-tinker .console-wrap {
+  background: var(--panel);
+  border: 1px solid var(--gold-line);
+  border-radius: 2px;
 }

@@ -68,9 +68,12 @@
       </div>
     </section>
 
-    <!-- =================== TINKER MODE =================== -->
-    <!-- The current full UI - everything visible at once. -->
+    <!-- =================== ADVANCED MODE (internally "tinker") =================== -->
+    <!-- Sidebar (rail) holds the command center: wordmark, status, picker, Auto.
+         Main holds the dense sections (Updates, Backups, Cart art, Memories, Console). -->
     <div class="tinker-view" id="tinkerView">
+
+    <aside class="adv-rail">
 
     <!-- Header -->
     <header class="topbar">
@@ -117,6 +120,10 @@
       </div>
       <button class="primary" data-action="auto">Run Auto</button>
     </section>
+
+    </aside><!-- /adv-rail -->
+
+    <main class="adv-main">
 
     <!-- UPDATES -->
     <section class="block">
@@ -249,6 +256,8 @@
       <pre id="console" class="console" aria-live="polite"></pre>
     </section>
 
+    </main><!-- /adv-main -->
+
     </div><!-- /tinker-view -->
 
     <div class="busy hidden" id="busy">
@@ -263,6 +272,12 @@
     <div class="modal hidden" id="settingsModal">
       <div class="modal-box settings-box">
         <div class="modal-title">Settings</div>
+        <div class="settings-group">
+          <div class="settings-label">Theme</div>
+          <div class="settings-desc">Accent color inspired by the N64 console editions.</div>
+          <div class="theme-picker" id="themePicker"></div>
+        </div>
+
         <div class="settings-group">
           <div class="settings-label">Backup location</div>
           <div class="settings-desc">Where SD backups, save-state snapshots, and game-save backups are written.</div>

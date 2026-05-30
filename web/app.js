@@ -35,12 +35,57 @@ const el = {
 
 const MANUAL = "__manual__";
 const MODE_KEY = "a3d:mode";
+const THEME_KEY = "a3d:theme";
+
+/* N64-edition-inspired themes. Each just overrides the gold tokens via a body
+   class so all existing var(--gold) references re-theme automatically. Order is
+   the order shown in the Settings swatch picker. */
+const THEMES = [
+  { id: "charcoal",  name: "Charcoal",  dot: "#e8b923" },
+  { id: "ice",       name: "Ice",       dot: "#58c7e3" },
+  { id: "jungle",    name: "Jungle",    dot: "#3fcb6b" },
+  { id: "watermelon",name: "Watermelon",dot: "#ff5b6b" },
+  { id: "grape",     name: "Grape",     dot: "#a663ff" },
+  { id: "fire",      name: "Fire",      dot: "#ff7430" },
+  { id: "atomic",    name: "Atomic",    dot: "#b066ff" },
+  { id: "smoke",     name: "Smoke",     dot: "#cfd1d5" },
+];
 
 function getMode() { return localStorage.getItem(MODE_KEY) || "minimal"; }
 function setMode(m) {
   document.body.classList.remove("mode-minimal", "mode-tinker");
   document.body.classList.add("mode-" + m);
   try { localStorage.setItem(MODE_KEY, m); } catch (e) {}
+}
+
+function getTheme() { return localStorage.getItem(THEME_KEY) || "charcoal"; }
+function setTheme(id) {
+  THEMES.forEach((t) => document.body.classList.remove("theme-" + t.id));
+  document.body.classList.add("theme-" + id);
+  try { localStorage.setItem(THEME_KEY, id); } catch (e) {}
+  _renderThemePicker();
+}
+
+function _renderThemePicker() {
+  const host = $("themePicker");
+  if (!host) return;
+  const cur = getTheme();
+  host.innerHTML = "";
+  THEMES.forEach((t) => {
+    const sw = document.createElement("button");
+    sw.className = "theme-swatch" + (t.id === cur ? " active" : "");
+    sw.dataset.theme = t.id;
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    dot.style.background = t.dot;
+    dot.style.boxShadow = `0 0 10px ${t.dot}66`;
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = t.name;
+    sw.appendChild(dot); sw.appendChild(name);
+    sw.addEventListener("click", () => setTheme(t.id));
+    host.appendChild(sw);
+  });
 }
 
 /* Mirror the tinker-view status into the minimal instruments so a user who
@@ -728,7 +773,11 @@ async function refreshSettings() {
   } catch (e) { return null; }
 }
 
-function openSettings() { refreshSettings(); $("settingsModal").classList.remove("hidden"); }
+function openSettings() {
+  refreshSettings();
+  _renderThemePicker();
+  $("settingsModal").classList.remove("hidden");
+}
 function closeSettings() { $("settingsModal").classList.add("hidden"); }
 
 /* ---------- styled confirm modal ---------- */
@@ -1150,9 +1199,10 @@ function init() {
   setInterval(pollStatus, 2500);  // keep the status strip live (plug/unplug)
 }
 
-// Apply the saved mode at script-load time so the chosen view paints on the
-// first frame - waiting for pywebviewready would flash the default view first.
+// Apply saved mode + theme at script-load time so the chosen view + accent
+// paint on the first frame - waiting for pywebviewready would flash the default.
 setMode(getMode());
+setTheme(getTheme());
 
 if (window.pywebview && window.pywebview.api) {
   init();
