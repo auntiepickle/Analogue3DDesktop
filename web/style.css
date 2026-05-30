@@ -625,7 +625,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
    Modeled on user-provided Analogue line-art reference (image #24). */
 .n64-ports {
   width: 100%;
-  aspect-ratio: 240 / 50;
+  aspect-ratio: 240 / 56;
   height: auto;
   display: block;
   margin: 4px 0 2px;
@@ -848,7 +848,7 @@ body.mode-minimal .app {
    page; left-docked reads as a tool. */
 .minimal-view {
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;          /* center the panel - was pin-left, user said it felt off */
   align-items: flex-start;
   padding: clamp(32px, 4vh, 60px) clamp(32px, 4vw, 64px);
   width: 100%;
@@ -968,7 +968,7 @@ body.mode-minimal .app {
    so it separates LAST from the instruments below, not from a CTA. */
 .min-state {
   display: flex;
-  align-items: center;
+  align-items: baseline;            /* baseline-align mono LAST label with sans value text */
   gap: 18px;
   padding: 2px 0 clamp(12px, 1vw, 18px);
   border-bottom: 1px solid var(--gold-line);
@@ -1041,7 +1041,7 @@ body.mode-minimal .app {
   font-size: 10px;
   letter-spacing: 2.5px;
   text-transform: uppercase;
-  color: var(--dim);
+  color: var(--gold);              /* theme-aware (was hardcoded --dim, wrong contrast in red/blue themes) */
   padding: 6px 10px;
   background: transparent;
   border: 1px solid var(--gold-line);
@@ -1113,9 +1113,11 @@ body.mode-tinker .tinker-view {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* Drop "DESKTOP" subtitle inside the narrow rail wordmark - frees ~70px so the
-   version pill + mode toggle + cog can all sit cleanly on one row. */
-.adv-rail .topbar .wordmark .thin { display: none; }
+/* In the narrow rail topbar, drop BOTH the "DESKTOP" subtitle AND the "3D"
+   model marker — just "ANALOGUE" so the version pill + mode toggle + cog
+   actually fit at the 280px rail floor without ellipsing to "ANA...". */
+.adv-rail .topbar .wordmark .thin,
+.adv-rail .topbar .wordmark .model { display: none; }
 .adv-rail .topbar .ver { font-size: 10px; margin-left: auto; flex: 0 0 auto; }
 .adv-rail .topbar .mode-toggle-tinker { flex: 0 0 auto; font-size: 9px; padding: 4px 6px; }
 .adv-rail .topbar .cog { flex: 0 0 auto; font-size: 14px; }
