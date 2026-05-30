@@ -975,7 +975,7 @@ body.mode-minimal .app {
 .big-auto {
   font-family: var(--mono);
   font-size: clamp(17px, 1.4vw, 24px);
-  letter-spacing: clamp(2.5px, .25vw, 3px);   /* IA-adjudicated: keep "DO EVERYTHING" as one command, not 4 words */
+  letter-spacing: clamp(1.5px, .15vw, 2.5px); /* tightened from 2.5-3px after visual review showed letters reading as separated at ultrawide */
   font-weight: 700;
   padding: clamp(22px, 2vw, 32px) clamp(28px, 2.2vw, 40px);
   border-radius: 2px;
