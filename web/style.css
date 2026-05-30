@@ -112,7 +112,10 @@ html, body {
 }
 .led.on { background: var(--green); box-shadow: 0 0 10px rgba(61,220,132,.7); }
 .led.off { background: #44444c; }
-.stat-label { font-size: 10px; letter-spacing: 1.5px; color: var(--dim); }
+/* Theme-aware "attention" LED - update available, action recommended. Uses the
+   current theme accent so the language is consistent with the rest of the UI. */
+.led.warn { background: var(--gold); box-shadow: 0 0 10px var(--gold-line); }
+.stat-label { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); }
 .stat-value { font-family: var(--mono); font-size: 13px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---------- picker ---------- */
@@ -581,6 +584,75 @@ body.theme-smoke {
   --gold-line: rgba(207,209,213,.32); --gold-faint: rgba(207,209,213,.10);
 }
 
+/* ----------------------------------------------------------
+   CLEAR / FUNTASTIC: the translucent-case finish.
+   Layers a frosted-glass treatment on top of any active theme,
+   so "Atomic + Clear" / "Ice + Clear" / "Smoke + Clear" feel
+   like the iconic translucent N64 editions. Toggle in Settings.
+   ---------------------------------------------------------- */
+body.clear {
+  /* Give the background SOMETHING for the translucent panels to refract.
+     Two soft radial pools tinted with the active accent. */
+  background:
+    radial-gradient(ellipse at 22% 18%, var(--gold-faint), transparent 55%),
+    radial-gradient(ellipse at 78% 82%, var(--gold-faint), transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+body.clear .min-panel,
+body.clear .adv-rail,
+body.clear .block,
+body.clear .console-wrap {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0) 40%),
+    color-mix(in oklab, var(--panel) 55%, transparent);
+  backdrop-filter: blur(22px) saturate(135%);
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
+  border-color: var(--gold-line);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.05) inset,
+    0 0 0 1px rgba(0,0,0,.35) inset,
+    0 24px 80px rgba(0,0,0,.5);
+}
+
+body.clear .min-instr,
+body.clear .card {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0) 35%),
+    color-mix(in oklab, var(--panel-2) 60%, transparent);
+  backdrop-filter: blur(16px) saturate(125%);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+}
+
+/* Slightly brighter hairline borders for the "edge catching light" effect. */
+body.clear {
+  --gold-line: color-mix(in oklab, var(--gold) 55%, transparent);
+}
+
+/* Clear toggle in the settings modal. */
+.clear-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  margin-top: 8px;
+  background: var(--panel-2);
+  transition: border-color .12s;
+}
+.clear-toggle:hover { border-color: var(--gold-line); }
+.clear-toggle input { accent-color: var(--gold); }
+.clear-toggle .clear-name {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
 /* Theme picker (in the Settings modal). */
 .theme-picker {
   display: grid;
@@ -639,8 +711,9 @@ body:not(.mode-tinker) #tinkerView { display: none; }
 body.mode-minimal #tinkerView { display: none; }
 body.mode-tinker #minimalView { display: none; }
 
-/* Tinker (Advanced) mode: keep the existing layout but let it breathe on a wide screen. */
-body.mode-tinker .app { max-width: 1400px; }
+/* Advanced mode: use the whole viewport. Was clamped to 1400 which left ~45%
+   void on a 2560 ultrawide - the user's "wasted space" complaint applies here too. */
+body.mode-tinker .app { max-width: none; padding: 18px 24px 28px; }
 
 /* Minimal: full viewport, panel centered. Surrounding dark is intentional negative space,
    not waste - the panel reads as a piece of hardware floating in a rack. */
@@ -663,7 +736,7 @@ body.mode-minimal .app {
 
 .min-panel {
   width: 100%;
-  max-width: 1400px;
+  max-width: clamp(1400px, 78vw, 1900px);   /* fill ultrawide intentionally */
   background: var(--panel);
   border: 1px solid var(--gold-line);
   border-radius: 2px;
@@ -691,7 +764,7 @@ body.mode-minimal .app {
 .min-instruments {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: clamp(14px, 1.5vw, 22px);
+  gap: clamp(18px, 2.2vw, 32px);
 }
 /* Stack vertically on narrower windows, side-by-side on wide. */
 @media (max-width: 720px) {
@@ -736,7 +809,7 @@ body.mode-minimal .app {
 }
 
 .min-instr-value {
-  font-size: clamp(17px, 1.5vw, 22px);
+  font-size: clamp(18px, 1.6vw, 30px);   /* read confidently at ultrawide, not postage-stamp */
   color: var(--text);
   font-weight: 600;
   white-space: nowrap;
@@ -767,10 +840,9 @@ body.mode-minimal .app {
   color: var(--gold);
 }
 .min-state-text {
-  font-family: var(--mono);
-  font-size: 13px;
-  color: var(--dim);
-  letter-spacing: .5px;
+  font-family: var(--sans);              /* mono label -> sans value, the core hi-fi pattern */
+  font-size: clamp(13px, 1.05vw, 17px);
+  color: var(--text);
   flex: 1;
   min-width: 0;
   white-space: nowrap;
@@ -823,8 +895,8 @@ body.mode-minimal .app {
 
 body.mode-tinker .tinker-view {
   display: grid;
-  grid-template-columns: clamp(260px, 22vw, 320px) 1fr;
-  gap: clamp(20px, 1.8vw, 32px);
+  grid-template-columns: clamp(280px, 22vw, 360px) 1fr;
+  gap: clamp(28px, 3vw, 48px);   /* breathing room between rail and main */
   align-items: start;
 }
 @media (max-width: 960px) {
@@ -833,13 +905,14 @@ body.mode-tinker .tinker-view {
   }
 }
 
-/* The sidebar: persistent command center. */
+/* The sidebar: persistent command center. Darker than main so the eye reads
+   it as a distinct hardware panel, not a second content column. */
 .adv-rail {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: 16px 18px;
-  background: var(--panel);
+  padding: 18px 20px;
+  background: var(--panel-2);    /* one layer darker than main */
   border: 1px solid var(--gold-line);
   border-radius: 2px;
   position: sticky;
@@ -865,7 +938,7 @@ body.mode-tinker .tinker-view {
   font-size: 10px;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--dim);
+  color: var(--gold);            /* technical-control label, not generic UI */
   display: block;
   margin-bottom: 6px;
 }
@@ -879,10 +952,14 @@ body.mode-tinker .tinker-view {
   flex-direction: column;
   gap: 10px;
 }
+.adv-rail .hero {
+  background: var(--panel);      /* lighter than rail so it pops as the primary action */
+  padding: clamp(16px, 2vw, 24px);
+}
 .adv-rail .hero h2 {
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 3px;
+  font-size: clamp(12px, 0.95vw, 14px);   /* heading > button text */
+  letter-spacing: 4px;
   text-transform: uppercase;
   color: var(--gold);
   margin: 0;
@@ -892,9 +969,9 @@ body.mode-tinker .tinker-view {
   font-family: var(--mono);
   text-transform: uppercase;
   letter-spacing: 3px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  padding: 12px;
+  padding: clamp(14px, 1.4vw, 20px);
   border-radius: 2px;
 }
 
@@ -917,7 +994,7 @@ body.mode-tinker .block > .section-head { margin-bottom: 16px; }
 body.mode-tinker .block > .section-head h2 {
   font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: 3px;
+  letter-spacing: 4px;            /* aggressive retro receiver feel */
   text-transform: uppercase;
   color: var(--gold);
   font-weight: 700;
@@ -930,11 +1007,11 @@ body.mode-tinker .card {
 }
 body.mode-tinker .card h3 {
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 2px;
+  font-size: 11px;                /* parity with section head, not subordinate */
+  letter-spacing: 3px;
   text-transform: uppercase;
-  color: var(--dim);
-  margin: 0 0 8px;
+  color: var(--gold);             /* card titles are primary, not dim */
+  margin: 0 0 10px;
 }
 body.mode-tinker .console-wrap {
   background: var(--panel);

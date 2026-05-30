@@ -36,6 +36,7 @@ const el = {
 const MANUAL = "__manual__";
 const MODE_KEY = "a3d:mode";
 const THEME_KEY = "a3d:theme";
+const CLEAR_KEY = "a3d:clear";
 
 /* N64-edition-inspired themes. Each just overrides the gold tokens via a body
    class so all existing var(--gold) references re-theme automatically. Order is
@@ -64,6 +65,14 @@ function setTheme(id) {
   document.body.classList.add("theme-" + id);
   try { localStorage.setItem(THEME_KEY, id); } catch (e) {}
   _renderThemePicker();
+}
+
+function getClear() { return localStorage.getItem(CLEAR_KEY) === "1"; }
+function setClear(on) {
+  document.body.classList.toggle("clear", !!on);
+  try { localStorage.setItem(CLEAR_KEY, on ? "1" : "0"); } catch (e) {}
+  const cb = $("clearToggle");
+  if (cb) cb.checked = !!on;
 }
 
 function _renderThemePicker() {
@@ -117,7 +126,7 @@ function _syncMinimal() {
     el.minFwLed.className = "led on";
     el.minFwStatus.textContent = "up to date";
   } else if (updBadge) {
-    el.minFwLed.className = "led off";   // attention, not "ok green"
+    el.minFwLed.className = "led warn";          // theme accent: attention
     el.minFwStatus.textContent = "update";
   } else if (el.consoleVer.querySelector(".muted")) {
     el.minFwLed.className = "led off";
@@ -776,6 +785,11 @@ async function refreshSettings() {
 function openSettings() {
   refreshSettings();
   _renderThemePicker();
+  const cb = $("clearToggle");
+  if (cb) {
+    cb.checked = getClear();
+    cb.onchange = (e) => setClear(e.target.checked);
+  }
   $("settingsModal").classList.remove("hidden");
 }
 function closeSettings() { $("settingsModal").classList.add("hidden"); }
@@ -1199,10 +1213,12 @@ function init() {
   setInterval(pollStatus, 2500);  // keep the status strip live (plug/unplug)
 }
 
-// Apply saved mode + theme at script-load time so the chosen view + accent
-// paint on the first frame - waiting for pywebviewready would flash the default.
+// Apply saved mode + theme + clear at script-load time so the chosen view +
+// accent + finish paint on the first frame - waiting for pywebviewready would
+// flash the default state first.
 setMode(getMode());
 setTheme(getTheme());
+setClear(getClear());
 
 if (window.pywebview && window.pywebview.api) {
   init();
