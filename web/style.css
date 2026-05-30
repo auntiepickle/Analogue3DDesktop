@@ -543,19 +543,31 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .hidden { display: none !important; }
 
 /* ============================================================
-   DUAL MODE: minimal vs tinker
+   DUAL MODE: minimal (default) vs tinker (UI label: "Advanced")
+   ----------------------------------------------------------
+   Design language derived from: Analogue's monochromatic
+   restraint, Teenage Engineering's "intentional color" minimalism,
+   and retro hi-fi receiver typography (monospace technical labels
+   over large sans-serif values). Sharp corners, hairline gold
+   borders, gold as the single accent.
    ============================================================ */
 
-/* Default to minimal until JS sets a mode (avoids a flash of tinker UI). */
+:root {
+  --gold-line: rgba(232, 185, 35, .35);   /* hairline accent border    */
+  --gold-faint: rgba(232, 185, 35, .12);  /* even-fainter inner glow   */
+  --panel-2: #0e0e10;                     /* nested-panel background   */
+}
+
+/* First-paint default: hide tinker so a fresh launch flashes minimal, never the busy tinker view. */
 body:not(.mode-tinker) #tinkerView { display: none; }
 body.mode-minimal #tinkerView { display: none; }
 body.mode-tinker #minimalView { display: none; }
 
-/* Tinker mode takes more of the wide screen than the old 960px column. */
+/* Tinker (Advanced) mode: keep the existing layout but let it breathe on a wide screen. */
 body.mode-tinker .app { max-width: 1400px; }
 
-/* Minimal mode: let the centered panel sit in the middle of any screen size.
-   The dark surrounding space is intentional - a CRT in a rack, not wasted pixels. */
+/* Minimal: full viewport, panel centered. Surrounding dark is intentional negative space,
+   not waste - the panel reads as a piece of hardware floating in a rack. */
 body.mode-minimal .app {
   max-width: none;
   padding: 0;
@@ -569,20 +581,19 @@ body.mode-minimal .app {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 40px 20px;
+  padding: 40px 24px;
 }
 
 .min-panel {
   width: 100%;
-  max-width: 640px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, .02), rgba(255, 255, 255, 0)) , var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 28px 32px 24px;
+  max-width: 900px;
+  background: var(--panel);
+  border: 1px solid var(--gold-line);
+  border-radius: 2px;          /* sharp, not soft */
+  padding: 26px 32px 24px;
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, .03) inset,
-    0 24px 80px rgba(0, 0, 0, .5),
-    0 0 0 1px rgba(232, 185, 35, .03);
+    0 0 0 1px rgba(0, 0, 0, .4) inset,
+    0 24px 90px rgba(0, 0, 0, .55);
   display: flex;
   flex-direction: column;
   gap: 22px;
@@ -592,72 +603,135 @@ body.mode-minimal .app {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--border);
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--gold-line);
 }
 .min-header .ver { margin-left: auto; }
 
-.min-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  padding: 4px 0;
+/* ----- the three instruments (SD / CONSOLE / CONTROLLER) ----- */
+.min-instruments {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+/* Stack vertically on narrower windows, side-by-side on wide. */
+@media (max-width: 720px) {
+  .min-instruments { grid-template-columns: 1fr; }
 }
 
-.min-row {
+.min-instr {
+  background: var(--panel-2);
+  border: 1px solid var(--gold-line);
+  border-radius: 2px;
+  padding: 16px 16px 14px;
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;                /* allow overflow ellipsis */
 }
-.min-row .led {
-  width: 12px;
-  height: 12px;
-  flex: 0 0 12px;
-}
-.min-row-body { flex: 1; min-width: 0; }
-.min-row-label {
+
+.min-instr-label {
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 2px;
+  font-size: 10px;
+  letter-spacing: 3px;
   text-transform: uppercase;
-  color: var(--dim);
-  margin-bottom: 2px;
+  color: var(--gold);
 }
-.min-row-value {
-  font-size: 17px;
-  color: var(--text);
-  line-height: 1.35;
+
+.min-instr-led-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
 }
-.min-row-value .cur { font-weight: 600; }
-.min-row-value .latest { color: var(--text); font-weight: 600; }
-.min-row-value .arrow { color: var(--dim); }
-.min-row-value .badge { font-size: 11px; }
+.min-instr-led-row .led {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 9px;
+}
+.min-instr-status {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
 
-/* The hero button: BIG. This is the only primary action on the page. */
-.big-auto {
-  font-size: 16px;
-  padding: 14px 24px;
-  letter-spacing: .5px;
-  font-weight: 700;
-  margin-top: 4px;
+.min-instr-value {
+  font-size: 15px;
+  color: var(--text);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Allow badges inside (verLine output) to render on a second line. */
+  line-height: 1.4;
 }
-.big-auto:disabled { opacity: .5; cursor: not-allowed; }
+.min-instr-value .cur { font-weight: 600; }
+.min-instr-value .latest { font-weight: 600; }
+.min-instr-value .arrow { color: var(--dim); margin: 0 4px; }
+.min-instr-value .badge { font-size: 10px; margin-left: 6px; }
+.min-instr-value .muted { font-weight: 400; }
+
+/* ----- LAST line (backup / state summary) ----- */
+.min-state {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0 2px;
+  border-top: 1px solid var(--gold-line);
+}
+.min-state-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.min-state-text {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--dim);
+  letter-spacing: .5px;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ----- big RUN AUTO button, styled as a hardware control ----- */
+.big-auto {
+  font-family: var(--mono);
+  font-size: 15px;
+  letter-spacing: 4px;
+  font-weight: 700;
+  padding: 18px 24px;
+  border-radius: 2px;
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+.big-auto:disabled { opacity: .45; cursor: not-allowed; }
 
 /* The subtle "show me the rest" link below Auto. */
 .mode-toggle {
   align-self: center;
-  font-size: 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
   color: var(--dim);
   padding: 6px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
 }
 .mode-toggle:hover:not(:disabled) { color: var(--gold); }
 
-/* The matching "back to simple view" button in the tinker topbar. */
+/* The matching "back to minimal" button in the advanced topbar. */
 .mode-toggle-tinker {
   margin-left: auto;
-  font-size: 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
 }

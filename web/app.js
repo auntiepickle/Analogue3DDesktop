@@ -23,11 +23,14 @@ const el = {
   busySteps: $("busySteps"),
   busyProg: $("busyProg"), busyBar: $("busyBar"), busyProgLabel: $("busyProgLabel"),
   // Minimal mode mirrors of the status surface above. Populated from the same
-  // detect()/versions() data via _syncMinimal() so both views stay in lockstep.
+  // detect()/versions()/list_backups() data via _syncMinimal* so both views stay
+  // in lockstep. New layout has separate LED-row status (one mono word) and
+  // value (the actual version / label).
   minVersion: $("minVersion"), minAppUpdate: $("minAppUpdate"),
-  minSdLed: $("minSdLed"), minSdValue: $("minSdValue"),
-  minFwLed: $("minFwLed"), minFwValue: $("minFwValue"),
-  minCtrlLed: $("minCtrlLed"), minCtrlValue: $("minCtrlValue"),
+  minSdLed: $("minSdLed"), minSdStatus: $("minSdStatus"), minSdValue: $("minSdValue"),
+  minFwLed: $("minFwLed"), minFwStatus: $("minFwStatus"), minFwValue: $("minFwValue"),
+  minCtrlLed: $("minCtrlLed"), minCtrlStatus: $("minCtrlStatus"), minCtrlValue: $("minCtrlValue"),
+  minLastState: $("minLastState"),
 };
 
 const MANUAL = "__manual__";
@@ -40,26 +43,93 @@ function setMode(m) {
   try { localStorage.setItem(MODE_KEY, m); } catch (e) {}
 }
 
-/* Mirror the tinker-view status into the minimal panel so a user who switches
-   modes mid-session sees a coherent screen. Reads from the tinker DOM rather
-   than threading data through every call site - prototype-level, intentionally
-   light-touch. */
+/* Mirror the tinker-view status into the minimal instruments so a user who
+   switches modes mid-session sees a coherent screen. Reads from the tinker
+   DOM rather than threading data through every call site - prototype-level,
+   intentionally light-touch. Each instrument has a small status word (e.g.
+   "CONNECTED" / "UPDATE" / "NONE") and a bigger value line below it. */
 function _syncMinimal() {
   if (!el.minSdLed) return;
-  // SD card LED + label
+
+  // -- SD CARD --
   el.minSdLed.className = el.sdLed.className;
-  el.minSdValue.textContent = el.sdValue.textContent;
-  // Controller LED + count
-  el.minCtrlLed.className = el.padLed.className;
-  el.minCtrlValue.textContent = el.padValue.textContent;
-  // Console firmware version line - reuse the rich span markup from refreshVersions
-  el.minFwValue.innerHTML = el.consoleVer.innerHTML;
-  // LED color from the badge class actually rendered, not by sniffing text
+  const sdText = el.sdValue.textContent || "";
+  if (el.sdLed.className.indexOf("on") !== -1) {
+    el.minSdStatus.textContent = "connected";
+    el.minSdValue.textContent = sdText;
+  } else if (sdText.toLowerCase().indexOf("not detected") !== -1) {
+    el.minSdStatus.textContent = "not found";
+    el.minSdValue.textContent = "—";
+  } else {
+    el.minSdStatus.textContent = "pick a drive";
+    el.minSdValue.textContent = sdText || "—";
+  }
+
+  // -- CONSOLE FIRMWARE --
   const okBadge = el.consoleVer.querySelector(".badge.ok");
   const updBadge = el.consoleVer.querySelector(".badge.upd");
-  if (okBadge) el.minFwLed.className = "led on";
-  else if (updBadge) el.minFwLed.className = "led off";  // attention, but not green
-  else el.minFwLed.className = "led off";
+  if (okBadge) {
+    el.minFwLed.className = "led on";
+    el.minFwStatus.textContent = "up to date";
+  } else if (updBadge) {
+    el.minFwLed.className = "led off";   // attention, not "ok green"
+    el.minFwStatus.textContent = "update";
+  } else if (el.consoleVer.querySelector(".muted")) {
+    el.minFwLed.className = "led off";
+    el.minFwStatus.textContent = "—";
+  } else {
+    el.minFwLed.className = "led off";
+    el.minFwStatus.textContent = "no fw";
+  }
+  // Render the version line; strip the badge (status is shown separately).
+  el.minFwValue.innerHTML = el.consoleVer.innerHTML;
+  const fwBadge = el.minFwValue.querySelector(".badge");
+  if (fwBadge) fwBadge.remove();
+
+  // -- CONTROLLER --
+  el.minCtrlLed.className = el.padLed.className;
+  if (el.padLed.className.indexOf("on") !== -1) {
+    el.minCtrlStatus.textContent = "connected";
+    el.minCtrlValue.innerHTML = el.ctrlVer.innerHTML;
+    const cBadge = el.minCtrlValue.querySelector(".badge");
+    if (cBadge) cBadge.remove();
+  } else {
+    el.minCtrlStatus.textContent = "none";
+    el.minCtrlValue.textContent = "—";
+  }
+}
+
+/* The LAST state line: when's the most recent backup, and how big. Reads from
+   the same `backups` array refreshBackups() populates. */
+function _syncMinimalLast() {
+  if (!el.minLastState) return;
+  if (!backups || !backups.length) {
+    el.minLastState.textContent = "no backup yet";
+    return;
+  }
+  const newest = backups[0];
+  el.minLastState.textContent =
+    `backup ${_relativeWhen(newest.when)}  ·  ${humanSize(newest.bytes)}`;
+}
+
+function _relativeWhen(whenStr) {
+  // when format is "YYYY-MM-DD HH:MM" (see api.list_backups).
+  if (!whenStr) return "—";
+  const parts = whenStr.split(" ");
+  const d = parts[0]; const t = parts[1] || "00:00";
+  if (!d || d.split("-").length !== 3) return whenStr;
+  const [y, mo, da] = d.split("-").map(Number);
+  const [h, mi] = t.split(":").map(Number);
+  const then = new Date(y, mo - 1, da, h || 0, mi || 0);
+  const diff = Date.now() - then.getTime();
+  if (diff < 0) return whenStr;
+  const hour = 3600000, day = 86400000;
+  if (diff < hour) return "just now";
+  if (diff < day) return "today";
+  const days = Math.floor(diff / day);
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days} days ago`;
+  return whenStr;   // exact for older
 }
 
 function humanSize(n) {
@@ -278,6 +348,7 @@ async function pollStatus() {
 let backups = [];
 async function refreshBackups() {
   try { backups = await api().list_backups(); } catch (e) { backups = []; }
+  _syncMinimalLast();   // keep the minimal-mode LAST line in lockstep
   const prev = el.backupSelect.value;
   el.backupSelect.innerHTML = "";
   if (!backups.length) {
