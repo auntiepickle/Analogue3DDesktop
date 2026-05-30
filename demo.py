@@ -10,22 +10,49 @@ import hashlib
 import random
 from datetime import datetime, timedelta
 
+# Verified cart_id -> game name pairs from the cached community labels.db.
+# Each pair was hand-identified by dumping the cart art and recognizing the
+# cover. Using these first means the demo gallery/memories show titles that
+# actually MATCH the cart art beside them. Order = stable demo display order.
+VERIFIED_TITLES = [
+    ("03cc04ee", "Mario Kart 64"),
+    ("04079b93", "Super Smash Bros."),
+    ("025b1beb", "Mario Party"),
+    ("0071a6de", "The Legend of Zelda: Majora's Mask"),
+    ("10cf7be3", "GoldenEye 007"),
+    ("02e906a1", "Mega Man 64"),
+    ("0fa0615b", "Mortal Kombat Trilogy"),
+    ("0079994a", "Turok: Rage Wars"),
+    ("088ca0db", "Madden NFL '99"),
+    ("003965ca", "NFL Quarterback Club 99"),
+    ("0498e26e", "NFL Quarterback Club 2001"),
+    ("04fb8b29", "All-Star Baseball 2000"),
+    ("0149b304", "Nagano Winter Olympics '98"),
+    ("03aaa5d7", "Carmageddon 64"),
+    ("005574c0", "Armorines: Project S.W.A.R.M."),
+    ("09708fb9", "BattleTanx: Global Assault"),
+    ("0720286c", "Bust-A-Move 2: Arcade Edition"),
+    ("06b608c0", "Telefoot Soccer 2000"),
+]
+
 # Well-known N64 titles - mix of hits, RPGs, sports, racing, weird stuff -
 # enough breadth that the gallery and memories list feel like a real library.
-GAMES = [
-    "Super Mario 64", "The Legend of Zelda: Ocarina of Time", "GoldenEye 007",
-    "Star Fox 64", "Mario Kart 64", "Banjo-Kazooie", "Banjo-Tooie",
+# Order: verified-art titles first (so the visible-first tiles always match
+# their art), then the curated extras for breadth.
+_EXTRA_TITLES = [
+    "Super Mario 64", "The Legend of Zelda: Ocarina of Time",
+    "Star Fox 64", "Banjo-Kazooie", "Banjo-Tooie",
     "Conker's Bad Fur Day", "Perfect Dark", "Donkey Kong 64", "Paper Mario",
-    "Super Smash Bros.", "Mario Tennis", "Mario Golf", "Mario Party",
-    "Mario Party 2", "Mario Party 3", "Yoshi's Story", "Diddy Kong Racing",
-    "1080 Snowboarding", "Excitebike 64", "Wave Race 64", "Pokemon Snap",
-    "Pokemon Stadium", "Pokemon Stadium 2", "Pokemon Puzzle League",
-    "The Legend of Zelda: Majora's Mask", "F-Zero X", "Star Wars: Rogue Squadron",
-    "Star Wars: Shadows of the Empire", "Star Wars Episode I: Racer",
-    "Resident Evil 2", "Rayman 2: The Great Escape", "Turok: Dinosaur Hunter",
-    "Turok 2: Seeds of Evil", "Turok 3: Shadow of Oblivion", "Turok: Rage Wars",
-    "Mortal Kombat Trilogy", "Mortal Kombat 4", "WWF No Mercy",
-    "WWF WrestleMania 2000", "Tony Hawk's Pro Skater", "Tony Hawk's Pro Skater 2",
+    "Mario Tennis", "Mario Golf", "Mario Party 2", "Mario Party 3",
+    "Yoshi's Story", "Diddy Kong Racing", "1080 Snowboarding",
+    "Excitebike 64", "Wave Race 64", "Pokemon Snap", "Pokemon Stadium",
+    "Pokemon Stadium 2", "Pokemon Puzzle League", "F-Zero X",
+    "Star Wars: Rogue Squadron", "Star Wars: Shadows of the Empire",
+    "Star Wars Episode I: Racer", "Resident Evil 2",
+    "Rayman 2: The Great Escape", "Turok: Dinosaur Hunter",
+    "Turok 2: Seeds of Evil", "Turok 3: Shadow of Oblivion",
+    "Mortal Kombat 4", "WWF No Mercy", "WWF WrestleMania 2000",
+    "Tony Hawk's Pro Skater", "Tony Hawk's Pro Skater 2",
     "Tony Hawk's Pro Skater 3", "WCW/nWo Revenge", "WCW/nWo World Tour",
     "Snowboard Kids", "Snowboard Kids 2", "Bomberman 64", "Bomberman Hero",
     "Bomberman 64: The Second Attack", "Kirby 64: The Crystal Shards",
@@ -34,24 +61,25 @@ GAMES = [
     "Beetle Adventure Racing", "Top Gear Rally", "Hydro Thunder", "Roadsters",
     "World Driver Championship", "NFL Blitz", "NFL Blitz 2000", "NBA Hangtime",
     "NBA Jam 99", "NBA Showtime: NBA on NBC", "NHL Breakaway 98", "NHL 99",
-    "All-Star Baseball 2000", "All-Star Baseball 2001", "Triple Play 2000",
+    "All-Star Baseball 2001", "Triple Play 2000",
     "Tetrisphere", "Wetrix", "Quake", "Quake II", "Quake 64", "Hexen",
     "Doom 64", "Castlevania", "Castlevania: Legacy of Darkness",
     "ISS 64", "ISS Pro 98", "ISS 2000", "Worms Armageddon", "Mickey's Speedway USA",
     "Magical Tetris Challenge", "Tetris 64", "Glover", "Earthworm Jim 3D",
     "Rampage World Tour", "Mischief Makers", "Hybrid Heaven", "Penny Racers",
-    "Chameleon Twist", "Chameleon Twist 2", "Carmageddon 64", "Dr. Mario 64",
+    "Chameleon Twist", "Chameleon Twist 2", "Dr. Mario 64",
     "Hey You, Pikachu", "Hot Wheels Turbo Racing", "Off Road Challenge",
     "Test Drive 64", "Vigilante 8", "Vigilante 8: Second Offense",
     "Twisted Edge Snowboarding", "South Park", "South Park Rally", "Quest 64",
     "Aidyn Chronicles", "Body Harvest", "Spider-Man",
-    "Battletanx", "Battletanx: Global Assault", "Forsaken 64", "Daikatana",
+    "Battletanx", "Forsaken 64", "Daikatana",
     "Aero Fighters Assault", "Wipeout 64", "Extreme-G", "Extreme-G 2",
-    "Indy Racing 2000", "Madden NFL 99", "Madden NFL 2000",
+    "Indy Racing 2000", "Madden NFL 2000",
     "Pilotwings 64", "Blast Corps", "Sin and Punishment",
     "Ridge Racer 64", "Mace: The Dark Age", "California Speed",
     "Knife Edge: Nose Gunner", "Ogre Battle 64",
 ]
+GAMES = [t for _, t in VERIFIED_TITLES] + _EXTRA_TITLES
 
 
 def _cart_id_hash(title):
@@ -114,19 +142,25 @@ def _real_cart_ids():
     return _REAL_CART_IDS
 
 
+_VERIFIED_BY_TITLE = {t: cid for cid, t in VERIFIED_TITLES}
+
+
 def _cart_id(title):
-    """Deterministic title -> real labels.db cart_id when we have one cached, else
-    fall back to the title hash. Each title gets a stable cart_id across calls."""
+    """Deterministic title -> real labels.db cart_id. VERIFIED_TITLES gives us
+    correct pairings for the popular titles; the rest fall through to arbitrary
+    real cart_ids (so they still get real art, just not matching art) or the
+    hash fallback if labels.db isn't around."""
+    if title in _VERIFIED_BY_TITLE:
+        return _VERIFIED_BY_TITLE[title]
     global _CART_ID_BY_TITLE
     if _CART_ID_BY_TITLE is None:
         _CART_ID_BY_TITLE = {}
         real = _real_cart_ids()
         if real:
-            # Hand each curated title a unique real cart_id so the gallery shows
-            # real art for as many titles as we can cover (up to len(real)).
-            for i, t in enumerate(GAMES):
-                _CART_ID_BY_TITLE[t] = real[i % len(real)]
-        # else: stays empty and we fall through to hash below
+            verified_set = {cid for cid, _ in VERIFIED_TITLES}
+            unused = [r for r in real if r not in verified_set]
+            for i, t in enumerate(_EXTRA_TITLES):
+                _CART_ID_BY_TITLE[t] = unused[i % len(unused)] if unused else real[i % len(real)]
     cid = _CART_ID_BY_TITLE.get(title)
     return cid if cid else _cart_id_hash(title)
 
