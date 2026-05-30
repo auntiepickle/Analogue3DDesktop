@@ -956,14 +956,16 @@ body.mode-minimal .app {
 
 body.mode-tinker .tinker-view {
   display: grid;
-  grid-template-columns: clamp(280px, 22vw, 360px) 1fr;
-  gap: clamp(28px, 3vw, 48px);   /* breathing room between rail and main */
+  grid-template-columns: clamp(240px, 20vw, 340px) minmax(0, 1fr);
+  gap: clamp(20px, 2vw, 36px);
   align-items: start;
 }
-@media (max-width: 960px) {
-  body.mode-tinker .tinker-view {
-    grid-template-columns: 1fr;   /* stack on narrow */
-  }
+/* Only collapse at TRULY narrow viewports - high-DPI Windows scaling shrinks
+   the logical CSS viewport (e.g. 200% scale on 1080p -> 540 CSS px), so a
+   960px breakpoint was triggering on real "high-DPI fullscreen" sessions and
+   misreading them as mobile. */
+@media (max-width: 640px) {
+  body.mode-tinker .tinker-view { grid-template-columns: 1fr; }
 }
 
 /* The sidebar: persistent command center. Darker than main so the eye reads
@@ -1104,11 +1106,19 @@ body.mode-tinker .tinker-view {
    Console get .span2 in HTML for full-width treatment (galleries/lists benefit). */
 body.mode-tinker .adv-main {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);  /* allow shrink below intrinsic */
   gap: clamp(20px, 1.6vw, 28px);
   min-width: 0;
 }
+/* CRITICAL: grid children default to min-width:auto (= min-content), so long
+   <select> labels like a backup filename can push the column past the
+   viewport. Force them to shrink. */
+body.mode-tinker .adv-main > * { min-width: 0; }
 body.mode-tinker .adv-main .span2 { grid-column: 1 / -1; }
+body.mode-tinker .block select,
+body.mode-tinker .block input[type="text"] { max-width: 100%; min-width: 0; }
+body.mode-tinker .restore-row { min-width: 0; flex-wrap: wrap; }
+body.mode-tinker .restore-row > select { flex: 1 1 0; min-width: 0; }
 @media (max-width: 1200px) {
   body.mode-tinker .adv-main { grid-template-columns: 1fr; }
 }
