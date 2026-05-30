@@ -621,32 +621,35 @@ button:disabled { opacity: .45; cursor: not-allowed; }
    ============================================================ */
 /* Sizing per adjudicator conflict E: scale to cell + lock aspect to prevent
    distortion. Density Advocate sizes, Visual Purist locks aspect. */
+/* Real Analogue 3D ports: circular recess + trapezoid socket + 3 contact pins.
+   Modeled on user-provided Analogue line-art reference (image #24). */
 .n64-ports {
   width: 100%;
-  aspect-ratio: 240 / 80;
+  aspect-ratio: 240 / 50;
   height: auto;
   display: block;
   margin: 4px 0 2px;
 }
+.n64-ports .port-ring,
 .n64-ports .port-socket {
   fill: none;
   stroke: var(--dim);
-  stroke-width: 1.5;
-  transition: stroke .25s ease;
+  stroke-width: 1.2;
+  transition: stroke .25s ease, filter .25s ease;
 }
-.n64-ports .port-led {
-  fill: #44444c;
-  transition: fill .25s ease, filter .25s ease;
+.n64-ports .port-pin {
+  fill: var(--dim);
+  transition: fill .25s ease;
 }
-.n64-ports .port.lit .port-socket { stroke: var(--gold); }
-.n64-ports .port.lit .port-led {
-  fill: var(--green);
-  filter: drop-shadow(0 0 4px var(--green));
+.n64-ports .port.lit .port-ring,
+.n64-ports .port.lit .port-socket {
+  stroke: var(--gold);
+  filter: drop-shadow(0 0 3px var(--gold));
 }
-/* When Funtastic is on, the LED gets a softer translucent glow to match the
-   case-and-light feel of a real N64 with its plastic top. */
-body.clear .n64-ports .port.lit .port-led {
-  filter: drop-shadow(0 0 6px var(--green)) drop-shadow(0 0 2px rgba(61,220,132,.4));
+.n64-ports .port.lit .port-pin { fill: var(--gold); }
+body.clear .n64-ports .port.lit .port-ring,
+body.clear .n64-ports .port.lit .port-socket {
+  filter: drop-shadow(0 0 5px var(--gold)) drop-shadow(0 0 2px color-mix(in oklab, var(--gold) 35%, transparent));
 }
 
 /* ============================================================
@@ -869,13 +872,31 @@ body.mode-minimal .app {
 .min-header {
   display: flex;
   align-items: center;
-  gap: 18px;
+  flex-wrap: nowrap;
+  gap: clamp(8px, 1vw, 18px);
   padding-bottom: clamp(16px, 1.8vw, 22px);
   border-bottom: 1px solid var(--gold-line);
 }
-.min-header .wordmark { font-size: clamp(20px, 1.6vw, 26px); }
-.min-header .wordmark .thin { font-size: clamp(14px, 1.05vw, 17px); }
-.min-header .ver { margin-left: auto; font-size: 13px; }
+/* Wordmark allowed to shrink + ellipsis so version/toggle/cog never get pushed
+   offscreen at narrow widths (user-reported "ANALOGUE _" truncation). */
+.min-header .wordmark {
+  font-size: clamp(20px, 1.6vw, 26px);
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.min-header .wordmark .gold,
+.min-header .wordmark .thin { display: inline; }
+.min-header .wordmark .thin { font-size: clamp(14px, 1.05vw, 17px); margin-left: 10px; }
+@media (max-width: 720px) {
+  .min-header .wordmark .thin { display: none; }
+}
+.min-header .ver { margin-left: auto; font-size: 13px; flex: 0 0 auto; }
+.min-header .mode-toggle-inline,
+.min-header .cog { flex: 0 0 auto; }
 
 /* ----- the three instruments (SD / CONSOLE / CONTROLLER) ----- */
 .min-instruments {
@@ -1047,7 +1068,7 @@ body.mode-minimal .app {
 
 body.mode-tinker .tinker-view {
   display: grid;
-  grid-template-columns: clamp(240px, 20vw, 340px) minmax(0, 1fr);
+  grid-template-columns: clamp(280px, 20vw, 340px) minmax(0, 1fr);
   gap: clamp(20px, 2vw, 36px);
   align-items: start;
 }
@@ -1128,6 +1149,8 @@ body.mode-tinker .tinker-view {
   letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--gold);
+  white-space: nowrap;          /* "SD CARD" must not wrap to 2 lines at narrow rail */
+  flex: 0 0 auto;
 }
 .adv-rail .stat-value {
   font-family: var(--sans);

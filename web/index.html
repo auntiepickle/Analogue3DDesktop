@@ -68,22 +68,36 @@
                  small LED above each. .lit on a <g class="port"> when a controller
                  is in that slot. The shape itself is the meaning - users recognize
                  the N64 silhouette instantly. -->
-            <svg class="n64-ports" id="minCtrlPorts" viewBox="0 0 240 36" aria-label="controllers">
+            <!-- Real Analogue 3D ports per user reference: circular recess +
+                 trapezoid socket cutout + 3 contact pins. Not just 4 trapezoids. -->
+            <svg class="n64-ports" id="minCtrlPorts" viewBox="0 0 240 50" aria-label="controllers">
               <g class="port" data-port="1">
-                <circle cx="30"  cy="5" r="2.5" class="port-led"/>
-                <path class="port-socket" d="M 14 14 H 46 L 49 30 H 11 Z"/>
+                <circle cx="30"  cy="25" r="18" class="port-ring"/>
+                <path class="port-socket" d="M 22 18 L 38 18 L 41 30 L 19 30 Z"/>
+                <circle cx="26" cy="23" r="1" class="port-pin"/>
+                <circle cx="30" cy="23" r="1" class="port-pin"/>
+                <circle cx="34" cy="23" r="1" class="port-pin"/>
               </g>
               <g class="port" data-port="2">
-                <circle cx="90"  cy="5" r="2.5" class="port-led"/>
-                <path class="port-socket" d="M 74 14 H 106 L 109 30 H 71 Z"/>
+                <circle cx="90"  cy="25" r="18" class="port-ring"/>
+                <path class="port-socket" d="M 82 18 L 98 18 L 101 30 L 79 30 Z"/>
+                <circle cx="86" cy="23" r="1" class="port-pin"/>
+                <circle cx="90" cy="23" r="1" class="port-pin"/>
+                <circle cx="94" cy="23" r="1" class="port-pin"/>
               </g>
               <g class="port" data-port="3">
-                <circle cx="150" cy="5" r="2.5" class="port-led"/>
-                <path class="port-socket" d="M 134 14 H 166 L 169 30 H 131 Z"/>
+                <circle cx="150" cy="25" r="18" class="port-ring"/>
+                <path class="port-socket" d="M 142 18 L 158 18 L 161 30 L 139 30 Z"/>
+                <circle cx="146" cy="23" r="1" class="port-pin"/>
+                <circle cx="150" cy="23" r="1" class="port-pin"/>
+                <circle cx="154" cy="23" r="1" class="port-pin"/>
               </g>
               <g class="port" data-port="4">
-                <circle cx="210" cy="5" r="2.5" class="port-led"/>
-                <path class="port-socket" d="M 194 14 H 226 L 229 30 H 191 Z"/>
+                <circle cx="210" cy="25" r="18" class="port-ring"/>
+                <path class="port-socket" d="M 202 18 L 218 18 L 221 30 L 199 30 Z"/>
+                <circle cx="206" cy="23" r="1" class="port-pin"/>
+                <circle cx="210" cy="23" r="1" class="port-pin"/>
+                <circle cx="214" cy="23" r="1" class="port-pin"/>
               </g>
             </svg>
             <div class="min-instr-value" id="minCtrlValue"><span class="muted">none connected</span></div>
