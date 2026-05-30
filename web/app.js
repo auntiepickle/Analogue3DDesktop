@@ -448,7 +448,7 @@ async function refreshMemories() {
 let memGames = [];
 let memKeepDefault = 5;
 let memPage = 0;
-const MEM_PAGE_SIZE = 8;
+const MEM_PAGE_SIZE = 16;   /* was 8 - sparse on ultrawide where the thumb grid fits ~23 across */
 let selectedStates = new Set();   // keys: "<folder><name>"
 let selectAnchor = null;          // {folder, idx} for shift-range selection
 
@@ -660,7 +660,7 @@ async function populateCtrlVersions() {
 /* ---------- cartridge art ---------- */
 let artGames = [];
 let artPage = 0;
-const ART_PAGE_SIZE = 18;
+const ART_PAGE_SIZE = 24;   /* was 18 - sparse rows on ultrawide where 26+ tiles fit per row */
 
 async function syncCustomPackOption() {
   let has = false;
