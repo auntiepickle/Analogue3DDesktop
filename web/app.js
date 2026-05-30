@@ -22,9 +22,45 @@ const el = {
   busy: $("busy"), busyText: $("busyText"), busySpin: $("busySpin"),
   busySteps: $("busySteps"),
   busyProg: $("busyProg"), busyBar: $("busyBar"), busyProgLabel: $("busyProgLabel"),
+  // Minimal mode mirrors of the status surface above. Populated from the same
+  // detect()/versions() data via _syncMinimal() so both views stay in lockstep.
+  minVersion: $("minVersion"), minAppUpdate: $("minAppUpdate"),
+  minSdLed: $("minSdLed"), minSdValue: $("minSdValue"),
+  minFwLed: $("minFwLed"), minFwValue: $("minFwValue"),
+  minCtrlLed: $("minCtrlLed"), minCtrlValue: $("minCtrlValue"),
 };
 
 const MANUAL = "__manual__";
+const MODE_KEY = "a3d:mode";
+
+function getMode() { return localStorage.getItem(MODE_KEY) || "minimal"; }
+function setMode(m) {
+  document.body.classList.remove("mode-minimal", "mode-tinker");
+  document.body.classList.add("mode-" + m);
+  try { localStorage.setItem(MODE_KEY, m); } catch (e) {}
+}
+
+/* Mirror the tinker-view status into the minimal panel so a user who switches
+   modes mid-session sees a coherent screen. Reads from the tinker DOM rather
+   than threading data through every call site - prototype-level, intentionally
+   light-touch. */
+function _syncMinimal() {
+  if (!el.minSdLed) return;
+  // SD card LED + label
+  el.minSdLed.className = el.sdLed.className;
+  el.minSdValue.textContent = el.sdValue.textContent;
+  // Controller LED + count
+  el.minCtrlLed.className = el.padLed.className;
+  el.minCtrlValue.textContent = el.padValue.textContent;
+  // Console firmware version line - reuse the rich span markup from refreshVersions
+  el.minFwValue.innerHTML = el.consoleVer.innerHTML;
+  // LED color from the badge class actually rendered, not by sniffing text
+  const okBadge = el.consoleVer.querySelector(".badge.ok");
+  const updBadge = el.consoleVer.querySelector(".badge.upd");
+  if (okBadge) el.minFwLed.className = "led on";
+  else if (updBadge) el.minFwLed.className = "led off";  // attention, but not green
+  else el.minFwLed.className = "led off";
+}
 
 function humanSize(n) {
   if (n < 1024) return n + " B";
@@ -211,6 +247,7 @@ async function refresh() {
   await refreshBackups();
   await refreshMemories();
   await refreshArt();
+  _syncMinimal();
 }
 
 /* Lightweight background poll: keep the status strip (controllers / SD) live
@@ -235,6 +272,7 @@ async function pollStatus() {
   if (controllerChanged) {
     await refreshVersions();
   }
+  _syncMinimal();
 }
 
 let backups = [];
@@ -469,6 +507,7 @@ async function refreshVersions() {
   consoleUpToDate = !!(v.console_current && v.console_latest && !v.console_update);
   applyGating();
   await populateCtrlVersions();
+  _syncMinimal();
 }
 
 async function populateCtrlVersions() {
@@ -872,15 +911,17 @@ async function deleteSelectedStates() {
 async function checkAppUpdate() {
   let info = null;
   try { info = await api().update_check(); } catch (e) {}
-  const btn = el.appUpdate;
+  const btns = [el.appUpdate, el.minAppUpdate].filter(Boolean);
   if (info && info.update_available) {
-    btn.textContent = `Update available: v${info.latest}`;
-    btn.title = `You have v${info.current} — v${info.latest} is out. Click to download and install it.`;
-    btn.onclick = () => startSelfUpdate(info);
-    btn.classList.remove("hidden");
+    btns.forEach((btn) => {
+      btn.textContent = `Update available: v${info.latest}`;
+      btn.title = `You have v${info.current} — v${info.latest} is out. Click to download and install it.`;
+      btn.onclick = () => startSelfUpdate(info);
+      btn.classList.remove("hidden");
+    });
     log(`A newer version is available: v${info.latest} (you have v${info.current}).`, "sys");
   } else {
-    btn.classList.add("hidden");
+    btns.forEach((btn) => btn.classList.add("hidden"));
   }
 }
 
@@ -908,6 +949,10 @@ async function startSelfUpdate(info) {
 }
 
 function init() {
+  $("toTinker").addEventListener("click", () => setMode("tinker"));
+  $("toMinimal").addEventListener("click", () => setMode("minimal"));
+  $("minSettingsBtn").addEventListener("click", openSettings);
+
   document.querySelectorAll("[data-action]").forEach((btn) => {
     btn.addEventListener("click", () => handlers[btn.dataset.action]());
   });
@@ -1019,7 +1064,10 @@ function init() {
     refreshArt();  // preview the selected pack's icons + recompute Revert visibility
   });
 
-  api().version().then((v) => { el.version.textContent = "v" + v; }).catch(() => {});
+  api().version().then((v) => {
+    el.version.textContent = "v" + v;
+    if (el.minVersion) el.minVersion.textContent = "v" + v;
+  }).catch(() => {});
   checkAppUpdate();
   log("Analogue 3D Desktop ready.", "sys");
   refreshSettings().then((s) => {
@@ -1030,6 +1078,10 @@ function init() {
   refresh().then(refreshVersions);
   setInterval(pollStatus, 2500);  // keep the status strip live (plug/unplug)
 }
+
+// Apply the saved mode at script-load time so the chosen view paints on the
+// first frame - waiting for pywebviewready would flash the default view first.
+setMode(getMode());
 
 if (window.pywebview && window.pywebview.api) {
   init();

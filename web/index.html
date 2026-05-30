@@ -9,6 +9,55 @@
 <body>
   <div class="app">
 
+    <!-- =================== MINIMAL MODE =================== -->
+    <!-- The "plug in, hit one button, done" view. Default mode. -->
+    <section class="minimal-view" id="minimalView">
+      <div class="min-panel">
+        <header class="min-header">
+          <div class="wordmark">
+            <span class="gold">ANALOGUE&nbsp;3D</span><span class="thin">DESKTOP</span>
+          </div>
+          <div class="ver" id="minVersion">v0.0</div>
+          <button class="update-pill hidden" id="minAppUpdate" title="A newer version is available">Update available</button>
+          <button class="cog" id="minSettingsBtn" title="Settings" aria-label="Settings">&#9881;</button>
+        </header>
+
+        <div class="min-rows">
+          <div class="min-row">
+            <span class="led off" id="minSdLed"></span>
+            <div class="min-row-body">
+              <div class="min-row-label">SD card</div>
+              <div class="min-row-value" id="minSdValue">scanning&hellip;</div>
+            </div>
+          </div>
+
+          <div class="min-row">
+            <span class="led off" id="minFwLed"></span>
+            <div class="min-row-body">
+              <div class="min-row-label">Console firmware</div>
+              <div class="min-row-value" id="minFwValue"><span class="muted">&mdash;</span></div>
+            </div>
+          </div>
+
+          <div class="min-row">
+            <span class="led off" id="minCtrlLed"></span>
+            <div class="min-row-body">
+              <div class="min-row-label">Controller</div>
+              <div class="min-row-value" id="minCtrlValue"><span class="muted">none connected</span></div>
+            </div>
+          </div>
+        </div>
+
+        <button class="primary big-auto" data-action="auto" id="minAutoBtn">Run Auto &nbsp;&rsaquo;</button>
+
+        <button class="ghost mode-toggle" id="toTinker" title="Show all the knobs">Tinker mode &nbsp;&#9662;</button>
+      </div>
+    </section>
+
+    <!-- =================== TINKER MODE =================== -->
+    <!-- The current full UI - everything visible at once. -->
+    <div class="tinker-view" id="tinkerView">
+
     <!-- Header -->
     <header class="topbar">
       <div class="wordmark">
@@ -16,6 +65,7 @@
       </div>
       <div class="ver" id="version">v0.0</div>
       <button class="update-pill hidden" id="appUpdate" title="A newer version is available">Update available</button>
+      <button class="ghost sm mode-toggle-tinker" id="toMinimal" title="Back to the simple view">&#9652;&nbsp; Minimal mode</button>
       <button class="cog" id="settingsBtn" title="Settings" aria-label="Settings">&#9881;</button>
     </header>
 
@@ -184,6 +234,8 @@
       </div>
       <pre id="console" class="console" aria-live="polite"></pre>
     </section>
+
+    </div><!-- /tinker-view -->
 
     <div class="busy hidden" id="busy">
       <div class="busy-box">
