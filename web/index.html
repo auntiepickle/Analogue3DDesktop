@@ -60,24 +60,30 @@
 
           <div class="min-instr" id="minCtrlInstr">
             <div class="min-instr-label">CONTROLLER</div>
-            <!-- N64 front-face 4-port indicator: trapezoidal sockets + LED above each.
-                 .lit on a <g class="port"> when a controller is detected in that slot. -->
-            <svg class="n64-ports" id="minCtrlPorts" viewBox="0 0 240 80" aria-label="controllers">
+            <div class="min-instr-led-row">
+              <span class="led off" id="minCtrlLed"></span>
+              <span class="min-instr-status" id="minCtrlStatus">none</span>
+            </div>
+            <!-- N64 front-face 4-port indicator: short/wide trapezoidal sockets +
+                 small LED above each. .lit on a <g class="port"> when a controller
+                 is in that slot. The shape itself is the meaning - users recognize
+                 the N64 silhouette instantly. -->
+            <svg class="n64-ports" id="minCtrlPorts" viewBox="0 0 240 36" aria-label="controllers">
               <g class="port" data-port="1">
-                <circle cx="30"  cy="10" r="4" class="port-led"/>
-                <polygon class="port-socket" points="18,26 42,26 48,62 12,62"/>
+                <circle cx="30"  cy="5" r="2.5" class="port-led"/>
+                <path class="port-socket" d="M 14 14 H 46 L 49 30 H 11 Z"/>
               </g>
               <g class="port" data-port="2">
-                <circle cx="90"  cy="10" r="4" class="port-led"/>
-                <polygon class="port-socket" points="78,26 102,26 108,62 72,62"/>
+                <circle cx="90"  cy="5" r="2.5" class="port-led"/>
+                <path class="port-socket" d="M 74 14 H 106 L 109 30 H 71 Z"/>
               </g>
               <g class="port" data-port="3">
-                <circle cx="150" cy="10" r="4" class="port-led"/>
-                <polygon class="port-socket" points="138,26 162,26 168,62 132,62"/>
+                <circle cx="150" cy="5" r="2.5" class="port-led"/>
+                <path class="port-socket" d="M 134 14 H 166 L 169 30 H 131 Z"/>
               </g>
               <g class="port" data-port="4">
-                <circle cx="210" cy="10" r="4" class="port-led"/>
-                <polygon class="port-socket" points="198,26 222,26 228,62 192,62"/>
+                <circle cx="210" cy="5" r="2.5" class="port-led"/>
+                <path class="port-socket" d="M 194 14 H 226 L 229 30 H 191 Z"/>
               </g>
             </svg>
             <div class="min-instr-value" id="minCtrlValue"><span class="muted">none connected</span></div>
@@ -155,7 +161,7 @@
       <div class="grid2">
         <article class="card">
           <h3>Console firmware</h3>
-          <div class="ver-line" id="consoleVer"><span class="muted">click "Check for updates"</span></div>
+          <div class="ver-line" id="consoleVer"><span class="muted">&mdash;</span></div>
           <button class="action" data-action="firmware">Update firmware</button>
         </article>
         <article class="card">

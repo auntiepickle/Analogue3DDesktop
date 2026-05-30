@@ -5,6 +5,7 @@ iterate on the design at real density instead of the 3-game default state. No SD
 card required; methods that would talk to hardware return canned data.
 """
 
+import os
 import hashlib
 import random
 from datetime import datetime, timedelta
@@ -53,9 +54,81 @@ GAMES = [
 ]
 
 
-def _cart_id(title):
-    """Deterministic 8-char hex cart ID, so the same title gives the same ID across calls."""
+def _cart_id_hash(title):
+    """Fallback deterministic 8-char hex from title, when no real labels.db is around."""
     return hashlib.sha1(title.encode("utf-8")).hexdigest()[:8]
+
+
+# ---- real labels.db integration ----
+# When the engine has the community labels.db cached (or can download it), we
+# use REAL N64 cart IDs from that db as our demo cart_ids. cart_art() then
+# returns the actual RetroGameCorps box art per cart - far better than a
+# generated SVG placeholder. Titles are still drawn from our curated GAMES
+# list; the title-to-cart-id pairing is deterministic but arbitrary - we're
+# trading "exact pairing" for "real art shows up in the gallery."
+
+_REAL_DB_PATH = None
+_REAL_CART_IDS = None
+_CART_ID_BY_TITLE = None
+
+
+def _real_db_path():
+    """Ensure (and return) the community labels.db path, downloading if needed."""
+    global _REAL_DB_PATH
+    if _REAL_DB_PATH is not None:
+        return _REAL_DB_PATH or None
+    try:
+        from analogue3d import labels
+        p = labels.community_cache() or labels.community_db()
+        _REAL_DB_PATH = p if p and os.path.isfile(p) else ""
+    except Exception:
+        _REAL_DB_PATH = ""
+    return _REAL_DB_PATH or None
+
+
+def _real_cart_ids():
+    """Parse cart IDs straight from the labels.db binary (engine doesn't expose
+    a public iterator). Header 256 bytes; uint32-LE sorted ID table at 0x100;
+    0xFFFFFFFF-terminated; max 4096."""
+    global _REAL_CART_IDS
+    if _REAL_CART_IDS is not None:
+        return _REAL_CART_IDS
+    path = _real_db_path()
+    if not path:
+        _REAL_CART_IDS = []
+        return _REAL_CART_IDS
+    import struct
+    try:
+        with open(path, "rb") as f:
+            f.seek(0x100)
+            tbl = f.read(4096 * 4)
+        ids = []
+        for i in range(0, len(tbl), 4):
+            v = struct.unpack_from("<I", tbl, i)[0]
+            if v == 0xFFFFFFFF:
+                break
+            ids.append(f"{v:08x}")
+        _REAL_CART_IDS = ids
+    except Exception:
+        _REAL_CART_IDS = []
+    return _REAL_CART_IDS
+
+
+def _cart_id(title):
+    """Deterministic title -> real labels.db cart_id when we have one cached, else
+    fall back to the title hash. Each title gets a stable cart_id across calls."""
+    global _CART_ID_BY_TITLE
+    if _CART_ID_BY_TITLE is None:
+        _CART_ID_BY_TITLE = {}
+        real = _real_cart_ids()
+        if real:
+            # Hand each curated title a unique real cart_id so the gallery shows
+            # real art for as many titles as we can cover (up to len(real)).
+            for i, t in enumerate(GAMES):
+                _CART_ID_BY_TITLE[t] = real[i % len(real)]
+        # else: stays empty and we fall through to hash below
+    cid = _CART_ID_BY_TITLE.get(title)
+    return cid if cid else _cart_id_hash(title)
 
 
 def _rng(seed):
@@ -167,16 +240,35 @@ def cart_art_games(root, source=None):
     return {"db_present": True, "games": items}
 
 
-# Map cart_id back to title so cart_art() can generate a per-game tile.
-_TITLE_BY_ID = {_cart_id(t): t for t in GAMES}
+# Map cart_id back to title (lazy so _cart_id() finishes wiring first).
+_TITLE_BY_ID = None
+def _title_by_id(cid):
+    global _TITLE_BY_ID
+    if _TITLE_BY_ID is None:
+        _TITLE_BY_ID = {_cart_id(t): t for t in GAMES}
+    return _TITLE_BY_ID.get(cid, "UNKNOWN")
 
 
 def cart_art(cart_id):
-    """Generate a stylized SVG cart-art tile for demo mode. Title text on a
-    hash-derived two-tone gradient with a faux ESRB badge - reads as N64 box
-    art at gallery scale without needing real labels.db images."""
+    """Demo cart-art: prefer REAL labels.db image for this cart_id (when the
+    engine has the community pack cached, our demo IDs come from labels.db too
+    so the lookup actually hits). Falls back to a stylized SVG otherwise."""
+    # 1) Try real labels.db image (RetroGameCorps community pack).
+    path = _real_db_path()
+    if path:
+        try:
+            from analogue3d import labels
+            img = labels.read_label_image(path, cart_id)
+            if img is not None:
+                import io as _io, base64 as _b64
+                buf = _io.BytesIO()
+                img.convert("RGB").save(buf, "PNG")
+                return "data:image/png;base64," + _b64.b64encode(buf.getvalue()).decode("ascii")
+        except Exception:
+            pass
+    # 2) Generated SVG fallback for cart_ids without a labels.db entry.
     import base64 as b64
-    title = _TITLE_BY_ID.get(cart_id, "UNKNOWN")
+    title = _title_by_id(cart_id)
     h = int(cart_id, 16)
     hue1 = h % 360
     hue2 = (h // 256) % 360
