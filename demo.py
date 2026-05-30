@@ -136,9 +136,11 @@ def _rng(seed):
 
 
 def detect():
+    # Use a realistic Windows drive-letter path so demo screenshots look like
+    # what a user actually sees in prod — not the fake "DEMO://" protocol.
     return {
         "cards": [{
-            "path": "DEMO://card/",
+            "path": "E:\\",
             "label": "ANALOGUE 3D",
             "free_gb": 14,
             "strong": True,

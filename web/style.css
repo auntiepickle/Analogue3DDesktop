@@ -152,7 +152,7 @@ select, input[type=text] {
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 2px;
-  padding: 8px 10px;
+  padding: 8px 28px 8px 10px;     /* right pad reserves space for native chevron - was overlapping text */
   font-family: var(--mono);
   font-size: 13px;
   outline: none;
@@ -892,7 +892,9 @@ body.mode-minimal .app {
 .min-header .wordmark .thin { display: inline; }
 .min-header .wordmark .thin { font-size: clamp(14px, 1.05vw, 17px); margin-left: 10px; }
 @media (max-width: 720px) {
-  .min-header .wordmark .thin { display: none; }
+  .min-header .wordmark { font-size: 16px; }   /* shrink so "ANALOGUE" fits next to pills */
+  .min-header .wordmark .thin,
+  .min-header .wordmark .model { display: none; }
 }
 .min-header .ver { margin-left: auto; font-size: 13px; flex: 0 0 auto; }
 .min-header .mode-toggle-inline,
@@ -918,7 +920,9 @@ body.mode-minimal .app {
   flex-direction: column;
   gap: clamp(10px, 1vw, 14px);
   min-width: 0;
-  overflow: hidden;     /* keep long card values from pushing past the grid cell */
+  /* Removed overflow:hidden — was clipping the lit-port drop-shadow into a
+     square. Long values are already truncated by .min-instr-value's own
+     overflow rules, so the card-level clip was redundant. */
 }
 
 .min-instr-label {
@@ -1125,25 +1129,23 @@ body.mode-tinker .tinker-view {
    Adjudicator Conflict B: IA wins. A status LED is a prefix indicator,
    semantically "[OK] SD: ready"; stacking vertically wastes height + breaks
    scan velocity. Inline matches every hardware reference Analogue draws on. */
+/* Grid so labels + values column-align across all status rows (SD CARD,
+   CONTROLLER, etc.) instead of each row sizing independently. Fixes
+   alignment bug where CONTROLLER label sat further right than SD CARD. */
 .adv-rail .status {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  column-gap: 10px;
+  row-gap: 10px;
+  align-items: center;
   padding-bottom: 4px;
   border: none;
 }
 .adv-rail .stat {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
+  display: contents;     /* dissolve into the grid so inner spans hit columns */
 }
 .adv-rail .stat-body {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-  flex: 1;
+  display: contents;     /* same — let label + value land in own columns */
 }
 .adv-rail .stat-label {
   font-family: var(--mono);
