@@ -167,6 +167,54 @@ def cart_art_games(root, source=None):
     return {"db_present": True, "games": items}
 
 
+# Map cart_id back to title so cart_art() can generate a per-game tile.
+_TITLE_BY_ID = {_cart_id(t): t for t in GAMES}
+
+
+def cart_art(cart_id):
+    """Generate a stylized SVG cart-art tile for demo mode. Title text on a
+    hash-derived two-tone gradient with a faux ESRB badge - reads as N64 box
+    art at gallery scale without needing real labels.db images."""
+    import base64 as b64
+    title = _TITLE_BY_ID.get(cart_id, "UNKNOWN")
+    h = int(cart_id, 16)
+    hue1 = h % 360
+    hue2 = (h // 256) % 360
+    sat1 = 55 + (h // 65536) % 25      # 55-80
+    safe = (title.split(":")[0]).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    # Break long titles roughly in half on the nearest space
+    if len(safe) > 14:
+        mid = len(safe) // 2
+        space = safe.rfind(" ", 0, mid + 6)
+        if space != -1:
+            line1, line2 = safe[:space], safe[space + 1:]
+        else:
+            line1, line2 = safe[:14], safe[14:]
+    else:
+        line1, line2 = safe, ""
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" preserveAspectRatio="xMidYMid slice">'
+        f'<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">'
+        f'<stop offset="0" stop-color="hsl({hue1},{sat1}%,28%)"/>'
+        f'<stop offset="1" stop-color="hsl({hue2},{sat1 - 15}%,12%)"/>'
+        f'</linearGradient></defs>'
+        '<rect width="200" height="240" fill="url(#g)"/>'
+        '<rect x="6" y="6" width="188" height="228" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1"/>'
+        '<text x="100" y="32" font-family="Verdana,Arial,sans-serif" font-size="9" font-weight="700" '
+        'fill="rgba(255,255,255,.65)" text-anchor="middle" letter-spacing="2.5">NINTENDO 64</text>'
+        f'<text x="100" y="135" font-family="Verdana,Arial,sans-serif" font-size="15" font-weight="700" '
+        f'fill="white" text-anchor="middle">{line1}</text>'
+        + (f'<text x="100" y="156" font-family="Verdana,Arial,sans-serif" font-size="15" font-weight="700" '
+           f'fill="white" text-anchor="middle">{line2}</text>' if line2 else '')
+        + '<rect x="62" y="195" width="76" height="22" fill="rgba(0,0,0,.4)" '
+          'stroke="rgba(255,255,255,.35)" stroke-width="1"/>'
+          '<text x="100" y="210" font-family="Verdana,Arial,sans-serif" font-size="8" '
+          'fill="rgba(255,255,255,.8)" text-anchor="middle" letter-spacing="2">ESRB E</text>'
+        + '</svg>'
+    )
+    return "data:image/svg+xml;base64," + b64.b64encode(svg.encode("utf-8")).decode("ascii")
+
+
 def versions(root):
     return {
         "console_current": "1.3.0", "console_latest": "1.3.0",

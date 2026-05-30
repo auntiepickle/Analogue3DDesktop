@@ -694,6 +694,7 @@ class Api:
         return _labels_db(root)
 
     def cart_art(self, root, cart_id, source=None):
+        if DEMO: return demo.cart_art(cart_id)
         db = self._art_source_db(root, source)
         if not os.path.isfile(db):
             return ""
