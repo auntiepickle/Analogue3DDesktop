@@ -1130,27 +1130,30 @@ body.mode-tinker .tinker-view {
    Adjudicator Conflict B: IA wins. A status LED is a prefix indicator,
    semantically "[OK] SD: ready"; stacking vertically wastes height + breaks
    scan velocity. Inline matches every hardware reference Analogue draws on. */
-/* Each row: LED on left, label-above-value on right. The narrow rail
-   can't fit horizontal label+value side-by-side without truncating the
-   value into "E:..." / "1...", so stack vertically per row. Eliminates
-   both the column-misalignment bug AND the value-truncation bug. */
+/* Each row: LED on left, label-above-value on right. Stacked (not
+   horizontal) so values aren't truncated to "E:..." in narrow rails.
+   LED is vertically centered with the label+value stack so the rhythm
+   feels intentional instead of off-balance. */
 .adv-rail .status {
   display: grid;
   grid-template-columns: auto 1fr;
-  column-gap: 10px;
-  row-gap: 14px;
-  align-items: start;
+  column-gap: 12px;
+  row-gap: 18px;
+  align-items: center;
   padding-bottom: 4px;
   border: none;
 }
 .adv-rail .stat {
   display: contents;
 }
-.adv-rail .stat > .led { grid-column: 1; margin-top: 6px; }
+.adv-rail .stat > .led {
+  grid-column: 1;
+  align-self: center;     /* anchor to label+value stack center */
+}
 .adv-rail .stat-body {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .adv-rail .stat-label {
