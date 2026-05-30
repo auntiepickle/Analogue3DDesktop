@@ -591,11 +591,17 @@ body.theme-smoke {
    like the iconic translucent N64 editions. Toggle in Settings.
    ---------------------------------------------------------- */
 body.clear {
-  /* Give the background SOMETHING for the translucent panels to refract.
-     Two soft radial pools tinted with the active accent. */
+  /* Boost the accent so the gold/theme pools are visible enough to refract. */
+  --gold-faint: color-mix(in oklab, var(--gold) 26%, transparent);
+  --gold-line:  color-mix(in oklab, var(--gold) 70%, transparent);
+  /* Rich background: two large accent-tinted pools + a faint scanline pattern.
+     backdrop-filter needs SOMETHING fine-grained behind the panels to make the
+     frost effect actually visible - solid black gives nothing to blur. */
   background:
-    radial-gradient(ellipse at 22% 18%, var(--gold-faint), transparent 55%),
-    radial-gradient(ellipse at 78% 82%, var(--gold-faint), transparent 55%),
+    radial-gradient(ellipse 70% 55% at 22% 12%, var(--gold-faint), transparent 65%),
+    radial-gradient(ellipse 80% 65% at 78% 88%, var(--gold-faint), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 50% 50%, color-mix(in oklab, var(--gold) 10%, transparent), transparent 60%),
+    repeating-linear-gradient(180deg, transparent 0 3px, rgba(255,255,255,.018) 3px 4px),
     var(--bg);
   background-attachment: fixed;
 }
@@ -605,30 +611,32 @@ body.clear .adv-rail,
 body.clear .block,
 body.clear .console-wrap {
   background:
-    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0) 40%),
-    color-mix(in oklab, var(--panel) 55%, transparent);
-  backdrop-filter: blur(22px) saturate(135%);
-  -webkit-backdrop-filter: blur(22px) saturate(135%);
-  border-color: var(--gold-line);
+    /* top-edge sheen + caught-light effect on translucent edges */
+    linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 35%),
+    color-mix(in oklab, var(--panel) 32%, transparent);   /* significantly more transparent */
+  backdrop-filter: blur(36px) saturate(170%) brightness(1.05);
+  -webkit-backdrop-filter: blur(36px) saturate(170%) brightness(1.05);
+  border: 1px solid var(--gold-line);
   box-shadow:
-    0 1px 0 rgba(255,255,255,.05) inset,
-    0 0 0 1px rgba(0,0,0,.35) inset,
-    0 24px 80px rgba(0,0,0,.5);
+    inset 0 1px 0 rgba(255,255,255,.14),                  /* bright top edge */
+    inset 0 0 0 1px rgba(0,0,0,.20),
+    0 30px 90px rgba(0,0,0,.45),
+    0 0 60px color-mix(in oklab, var(--gold) 14%, transparent);   /* outer accent halo */
 }
 
 body.clear .min-instr,
 body.clear .card {
   background:
-    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0) 35%),
-    color-mix(in oklab, var(--panel-2) 60%, transparent);
-  backdrop-filter: blur(16px) saturate(125%);
-  -webkit-backdrop-filter: blur(16px) saturate(125%);
+    linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,0) 30%),
+    color-mix(in oklab, var(--panel-2) 35%, transparent);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10);
 }
 
-/* Slightly brighter hairline borders for the "edge catching light" effect. */
-body.clear {
-  --gold-line: color-mix(in oklab, var(--gold) 55%, transparent);
-}
+/* The Auto button keeps full opacity - it's the call-to-action, not the case. */
+body.clear .big-auto,
+body.clear .adv-rail .hero .primary { backdrop-filter: none; -webkit-backdrop-filter: none; }
 
 /* Clear toggle in the settings modal. */
 .clear-toggle {
@@ -925,14 +933,25 @@ body.mode-tinker .tinker-view {
 .adv-rail .topbar {
   padding: 0 0 12px 0;
   border-bottom: 1px solid var(--gold-line);
-  flex-wrap: nowrap;             /* lock to a single row */
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
 }
-.adv-rail .topbar .wordmark { font-size: 13px; flex: 0 1 auto; min-width: 0; }
-.adv-rail .topbar .ver { font-size: 10px; margin-left: auto; }
-.adv-rail .topbar .mode-toggle-tinker { flex: 0 0 auto; }
-.adv-rail .topbar .cog { flex: 0 0 auto; font-size: 14px; }   /* was 20px, dominating the row */
+.adv-rail .topbar .wordmark {
+  font-size: 13px;
+  flex: 0 1 auto;
+  min-width: 0;
+  display: block;                /* override .wordmark { display:flex } so truncation works */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Drop "DESKTOP" subtitle inside the narrow rail wordmark - frees ~70px so the
+   version pill + mode toggle + cog can all sit cleanly on one row. */
+.adv-rail .topbar .wordmark .thin { display: none; }
+.adv-rail .topbar .ver { font-size: 10px; margin-left: auto; flex: 0 0 auto; }
+.adv-rail .topbar .mode-toggle-tinker { flex: 0 0 auto; font-size: 9px; padding: 4px 6px; }
+.adv-rail .topbar .cog { flex: 0 0 auto; font-size: 14px; }
 .adv-rail .status {
   display: flex;
   flex-direction: column;

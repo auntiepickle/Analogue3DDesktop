@@ -24,6 +24,18 @@ from analogue3d import sdcard, controller, savestates, labels, saves, config, ui
 
 APP_VERSION = "0.2.2"
 
+# Demo / fake-data mode: when A3D_DEMO=1, the read-only methods (detect, versions,
+# list_backups, list_memories, list_snapshots, cart_art_games, controller_versions)
+# return canned data from demo.py instead of hitting the SD card. Lets us iterate
+# on the design at real density (~120 games, plenty of save states) without
+# needing the hardware. Write actions still go through the engine.
+DEMO = os.environ.get("A3D_DEMO") == "1"
+demo = None
+if DEMO:
+    import demo as _demo_module
+    demo = _demo_module
+    print("[demo mode] using fake test data from demo.py", flush=True)
+
 # The GUI does its own confirmations; the engine must never block on a terminal
 # prompt (there's no stdin behind a webview).
 ui.ASSUME_YES = True
@@ -315,6 +327,7 @@ class Api:
         return _run(task)
 
     def detect(self):
+        if DEMO: return demo.detect()
         cards = []
         try:
             for d in sdcard.get_potential_sd_cards():
@@ -334,6 +347,7 @@ class Api:
         return {"cards": cards, "controllers": controllers}
 
     def list_backups(self):
+        if DEMO: return demo.list_backups()
         out = []
         d = _backup_dir()
         if os.path.isdir(d):
@@ -432,6 +446,7 @@ class Api:
 
     # ---------- save states (Memories) ----------
     def list_memories(self, root):
+        if DEMO: return demo.list_memories(root)
         try:
             games = savestates.find_game_states(root)
         except Exception:
@@ -529,6 +544,7 @@ class Api:
 
     # ---------- archive snapshots ----------
     def list_snapshots(self):
+        if DEMO: return demo.list_snapshots()
         out = []
         for s in savestates.list_snapshots():
             m = re.search(r"(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})(?:_(.+?))?\.zip$", s["name"])
@@ -639,6 +655,7 @@ class Api:
 
     # ---------- cartridge art ----------
     def cart_art_games(self, root, source=None):
+        if DEMO: return demo.cart_art_games(root, source)
         games = {}
         try:
             for g in savestates.find_game_states(root):
@@ -759,6 +776,7 @@ class Api:
 
     # ---------- firmware versions ----------
     def versions(self, root):
+        if DEMO: return demo.versions(root)
         out = {"console_current": None, "console_latest": None,
                "console_update": False, "controllers": 0,
                "ctrl_current": None, "ctrl_latest": None, "ctrl_update": False}
@@ -811,6 +829,7 @@ class Api:
         return out
 
     def controller_versions(self):
+        if DEMO: return demo.controller_versions()
         try:
             vers = controller.fetch_firmware_list()
         except Exception as e:
