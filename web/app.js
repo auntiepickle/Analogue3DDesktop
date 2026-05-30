@@ -67,7 +67,13 @@ function setTheme(id) {
   _renderThemePicker();
 }
 
-function getClear() { return localStorage.getItem(CLEAR_KEY) === "1"; }
+function getClear() {
+  // Funtastic translucent finish is the default - it's THE look. If the user
+  // explicitly opts out we honor that, but a fresh launch should land on the
+  // best version of the design.
+  const v = localStorage.getItem(CLEAR_KEY);
+  return v === null ? true : v === "1";
+}
 function setClear(on) {
   document.body.classList.toggle("clear", !!on);
   try { localStorage.setItem(CLEAR_KEY, on ? "1" : "0"); } catch (e) {}

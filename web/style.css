@@ -221,6 +221,14 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
   object-fit: cover;
   background: #0a0a0c;
   display: block;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.art-tile:hover .art-img {
+  transform: translateY(-2px) scale(1.025);
+  border-color: var(--gold-line);
+  box-shadow:
+    0 6px 18px rgba(0,0,0,.5),
+    0 0 24px color-mix(in oklab, var(--gold) 28%, transparent);
 }
 .art-tile .noart {
   width: 100%; aspect-ratio: 74 / 86;
@@ -1031,7 +1039,15 @@ body.mode-tinker .tinker-view {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.adv-rail .status #refreshBtn { grid-column: 1 / -1; margin-top: 6px; }
+.adv-rail .status #refreshBtn {
+  grid-column: 1 / -1;
+  justify-self: stretch;       /* span the row instead of floating right */
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
 .adv-rail .picker { padding: 4px 0; }
 .adv-rail .picker label {
   font-family: var(--mono);
