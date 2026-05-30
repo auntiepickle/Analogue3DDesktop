@@ -621,14 +621,15 @@ button:disabled { opacity: .45; cursor: not-allowed; }
    ============================================================ */
 /* Sizing per adjudicator conflict E: scale to cell + lock aspect to prevent
    distortion. Density Advocate sizes, Visual Purist locks aspect. */
-/* Real Analogue 3D ports: circular recess + trapezoid socket + 3 contact pins.
-   Modeled on user-provided Analogue line-art reference (image #24). */
+/* Real Analogue 3D ports: circular recess + stadium socket + 3 contact pins.
+   Modeled on user close-up reference (image #41). */
 .n64-ports {
   width: 100%;
   aspect-ratio: 240 / 56;
   height: auto;
   display: block;
   margin: 4px 0 2px;
+  overflow: visible;       /* drop-shadow glow extends past viewBox - was square-clipped */
 }
 .n64-ports .port-ring,
 .n64-ports .port-socket {
@@ -987,8 +988,8 @@ body.mode-minimal .app {
 }
 .min-state-text {
   font-family: var(--sans);              /* mono label -> sans value, the core hi-fi pattern */
-  font-size: clamp(13px, 1.05vw, 17px);
-  color: var(--text);
+  font-size: clamp(11px, .85vw, 14px);   /* shrunk - was outweighing the LAST label visually */
+  color: var(--dim-bright, var(--text));
   flex: 1;
   min-width: 0;
   white-space: nowrap;
@@ -1129,23 +1130,28 @@ body.mode-tinker .tinker-view {
    Adjudicator Conflict B: IA wins. A status LED is a prefix indicator,
    semantically "[OK] SD: ready"; stacking vertically wastes height + breaks
    scan velocity. Inline matches every hardware reference Analogue draws on. */
-/* Grid so labels + values column-align across all status rows (SD CARD,
-   CONTROLLER, etc.) instead of each row sizing independently. Fixes
-   alignment bug where CONTROLLER label sat further right than SD CARD. */
+/* Each row: LED on left, label-above-value on right. The narrow rail
+   can't fit horizontal label+value side-by-side without truncating the
+   value into "E:..." / "1...", so stack vertically per row. Eliminates
+   both the column-misalignment bug AND the value-truncation bug. */
 .adv-rail .status {
   display: grid;
-  grid-template-columns: auto auto 1fr;
+  grid-template-columns: auto 1fr;
   column-gap: 10px;
-  row-gap: 10px;
-  align-items: center;
+  row-gap: 14px;
+  align-items: start;
   padding-bottom: 4px;
   border: none;
 }
 .adv-rail .stat {
-  display: contents;     /* dissolve into the grid so inner spans hit columns */
+  display: contents;
 }
+.adv-rail .stat > .led { grid-column: 1; margin-top: 6px; }
 .adv-rail .stat-body {
-  display: contents;     /* same — let label + value land in own columns */
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
 }
 .adv-rail .stat-label {
   font-family: var(--mono);
