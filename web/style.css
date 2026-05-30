@@ -217,7 +217,7 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
 .badge.upd { color: #1a1500; background: var(--gold); border-color: var(--gold); font-weight: 600; }
 
 /* ---------- cart art gallery ---------- */
-.art-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 14px; }
+.art-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
 .art-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; }
 .art-tile .art-img {
   width: 100%;
@@ -516,7 +516,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .busy {
   position: fixed;
   inset: 0;
-  background: rgba(6, 6, 8, .82);
+  background: rgba(6, 6, 8, .88);   /* darker so busy reads in front of modals (z-axis truth) */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -532,7 +532,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   border: 1px solid var(--gold-dim);
   border-radius: 2px;
   padding: 24px 32px;
-  box-shadow: 0 14px 44px rgba(0, 0, 0, .55);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .55);   /* bigger spread for busy overlay vs. confirm modals */
 }
 #busyText { color: var(--gold-soft); font-size: 15px; }
 .busy-row { display: flex; align-items: center; gap: 12px; }
@@ -619,9 +619,11 @@ button:disabled { opacity: .45; cursor: not-allowed; }
    an LED above each. Lit ports correspond to detected controllers.
    The shape itself IS the meaning - users recognize it instantly.
    ============================================================ */
+/* Sizing per adjudicator conflict E: scale to cell + lock aspect to prevent
+   distortion. Density Advocate sizes, Visual Purist locks aspect. */
 .n64-ports {
   width: 100%;
-  max-width: 220px;
+  aspect-ratio: 240 / 80;
   height: auto;
   display: block;
   margin: 4px 0 2px;
@@ -838,11 +840,14 @@ body.mode-minimal .app {
   justify-content: center;
 }
 
+/* Pin-left, not centered: Density Advocate wins. The product is an instrument
+   on the bench, not a haiku in white space. Centered reads as marketing landing
+   page; left-docked reads as a tool. */
 .minimal-view {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: clamp(40px, 6vh, 80px) clamp(24px, 4vw, 64px);
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: clamp(32px, 4vh, 60px) clamp(32px, 4vw, 64px);
   width: 100%;
 }
 
@@ -938,12 +943,15 @@ body.mode-minimal .app {
 .min-instr-value .muted { font-weight: 400; }
 
 /* ----- LAST line (backup / state summary) ----- */
+/* Promoted above instruments per IA verdict; border flipped from top -> bottom
+   so it separates LAST from the instruments below, not from a CTA. */
 .min-state {
   display: flex;
   align-items: center;
   gap: 18px;
-  padding: clamp(14px, 1.2vw, 20px) 0 2px;
-  border-top: 1px solid var(--gold-line);
+  padding: 2px 0 clamp(12px, 1vw, 18px);
+  border-bottom: 1px solid var(--gold-line);
+  margin-bottom: clamp(8px, .8vw, 14px);
 }
 .min-state-label {
   font-family: var(--mono);
@@ -967,7 +975,7 @@ body.mode-minimal .app {
 .big-auto {
   font-family: var(--mono);
   font-size: clamp(17px, 1.4vw, 24px);
-  letter-spacing: clamp(3px, .3vw, 4.5px);   /* TE win on spacing - was 5-7px (shouting) */
+  letter-spacing: clamp(2.5px, .25vw, 3px);   /* IA-adjudicated: keep "DO EVERYTHING" as one command, not 4 words */
   font-weight: 700;
   padding: clamp(22px, 2vw, 32px) clamp(28px, 2.2vw, 40px);
   border-radius: 2px;
@@ -991,7 +999,7 @@ body.mode-minimal .app {
 }
 .big-auto:disabled { opacity: .45; cursor: not-allowed; }
 
-/* The subtle "show me the rest" link below Auto. */
+/* The subtle "show me the rest" link below Auto (legacy; toggle now lives in header). */
 .mode-toggle {
   align-self: center;
   font-family: var(--mono);
@@ -1005,6 +1013,22 @@ body.mode-minimal .app {
   cursor: pointer;
 }
 .mode-toggle:hover:not(:disabled) { color: var(--gold); }
+
+/* Promoted into the minimal-mode header: discoverable on first look. */
+.mode-toggle-inline {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid var(--gold-line);
+  border-radius: 2px;
+  cursor: pointer;
+  margin-left: 6px;
+}
+.mode-toggle-inline:hover:not(:disabled) { color: var(--gold); border-color: var(--gold); }
 
 /* The matching "back to minimal" button in the advanced topbar. */
 .mode-toggle-tinker {
@@ -1074,23 +1098,29 @@ body.mode-tinker .tinker-view {
 .adv-rail .topbar .ver { font-size: 10px; margin-left: auto; flex: 0 0 auto; }
 .adv-rail .topbar .mode-toggle-tinker { flex: 0 0 auto; font-size: 9px; padding: 4px 6px; }
 .adv-rail .topbar .cog { flex: 0 0 auto; font-size: 14px; }
-/* Rail status: explicit grid so LEDs share a column and labels/values share
-   their own columns. display:contents on .stat unwraps it into the grid. */
+/* Rail status: each stat is its own inline pair (LED left of label+value).
+   Adjudicator Conflict B: IA wins. A status LED is a prefix indicator,
+   semantically "[OK] SD: ready"; stacking vertically wastes height + breaks
+   scan velocity. Inline matches every hardware reference Analogue draws on. */
 .adv-rail .status {
-  display: grid;
-  grid-template-columns: 12px 1fr;
-  column-gap: 12px;
-  row-gap: 12px;
-  align-items: center;
-  padding-bottom: 4px;
-  border: none;             /* the rail block already has a border */
-}
-.adv-rail .stat { display: contents; }
-.adv-rail .stat-body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 10px;
+  padding-bottom: 4px;
+  border: none;
+}
+.adv-rail .stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
+}
+.adv-rail .stat-body {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
 }
 .adv-rail .stat-label {
   font-family: var(--mono);
@@ -1109,9 +1139,8 @@ body.mode-tinker .tinker-view {
   text-overflow: ellipsis;
 }
 .adv-rail .status #refreshBtn {
-  grid-column: 1 / -1;
-  justify-self: stretch;       /* span the row instead of floating right */
-  margin-top: 6px;
+  margin-top: 4px;
+  align-self: stretch;
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 2px;
@@ -1226,12 +1255,10 @@ body.mode-tinker .card {
 }
 body.mode-tinker .card h3 {
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 3px;
+  font-size: 10px;                /* subordinate to 11px section-head via SIZE + spacing, not just color */
+  letter-spacing: 2px;
   text-transform: uppercase;
-  /* Adjudicator verdict #7: dim so the gold section header above stays the
-     visual anchor. Card titles read as contained children, not peer sections. */
-  color: var(--text);
+  color: var(--text);             /* gold section-head stays visual anchor */
   margin: 0 0 10px;
 }
 body.mode-tinker .console-wrap {

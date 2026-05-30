@@ -23,8 +23,20 @@
           </div>
           <span class="ver" id="minVersion">v0.0</span>
           <button class="update-pill hidden" id="minAppUpdate" title="A newer version is available">Update available</button>
+          <!-- Mode toggle promoted to header (IA-adjudicated): mode switching is the
+               most consequential affordance after the primary action. Discoverable on
+               first look instead of buried below the Auto button. -->
+          <button class="ghost mode-toggle-inline" id="toTinker" title="Show more controls">More&nbsp;Controls &#9662;</button>
           <button class="cog" id="minSettingsBtn" title="Settings" aria-label="Settings">&#9881;</button>
         </header>
+
+        <!-- LAST line promoted above the instruments (IA-adjudicated): the user's
+             most-critical question is "when did I last back up" - it should land
+             before the eye walks through the hardware status row. -->
+        <div class="min-state">
+          <span class="min-state-label">LAST</span>
+          <span class="min-state-text" id="minLastState">no backup yet</span>
+        </div>
 
         <div class="min-instruments">
 
@@ -73,14 +85,7 @@
 
         </div>
 
-        <div class="min-state">
-          <span class="min-state-label">LAST</span>
-          <span class="min-state-text" id="minLastState">no backup yet</span>
-        </div>
-
         <button class="primary big-auto" data-action="auto" id="minAutoBtn">DO EVERYTHING &nbsp;&rsaquo;</button>
-
-        <button class="ghost mode-toggle" id="toTinker" title="Show more controls">More Controls &nbsp;&#9662;</button>
       </div>
     </section>
 
