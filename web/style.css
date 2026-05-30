@@ -126,9 +126,11 @@ html, body {
   box-shadow: 0 0 12px var(--led-glow);
   animation: ledWarn 1.6s ease-in-out infinite;
 }
+/* Adjudicator verdict #3: subtler than Chroma's amplification. Inset peak,
+   no outer radius expansion. Reads as "breathing system alive," not drama. */
 @keyframes ledPulse {
-  0%, 100% { box-shadow: 0 0 16px var(--led-glow); }
-  50%      { box-shadow: 0 0 24px var(--led-glow), inset 0 0 4px var(--led-glow); }
+  0%, 100% { box-shadow: 0 0 14px var(--led-glow); }
+  50%      { box-shadow: 0 0 14px var(--led-glow), inset 0 0 4px var(--led-glow); }
 }
 @keyframes ledWarn {
   0%, 100% { box-shadow: 0 0 12px var(--led-glow); }
@@ -227,12 +229,12 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
   display: block;
   transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
 }
+/* Adjudicator verdict #6: drop the gold glow halo - contradicts the hairline-
+   border language used everywhere else. Crisp border-color shift + lift. */
 .art-tile:hover .art-img {
   transform: translateY(-2px) scale(1.025);
-  border-color: var(--gold-line);
-  box-shadow:
-    0 6px 18px rgba(0,0,0,.5),
-    0 0 24px color-mix(in oklab, var(--gold) 28%, transparent);
+  border-color: var(--gold);
+  box-shadow: 0 6px 18px rgba(0,0,0,.5);
 }
 .art-tile .noart {
   width: 100%; aspect-ratio: 74 / 86;
@@ -290,8 +292,24 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   background: var(--gold);
   color: #1a1500;
   border-color: var(--gold);
+  /* Adjudicator promoted (Restraint, unopposed): hardware bevel on ALL primary
+     buttons. Material honesty across CTAs, not just the hero. */
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.18),
+    inset 0 -1px 0 rgba(0,0,0,.28);
 }
-.primary:hover:not(:disabled) { background: var(--gold-soft); }
+.primary:hover:not(:disabled) {
+  background: var(--gold-soft);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    inset 0 -1px 0 rgba(0,0,0,.30);
+}
+.primary:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.10),
+    inset 0 -1px 0 rgba(0,0,0,.20);
+}
 .action {
   background: var(--panel-2);
   color: var(--text);
@@ -596,6 +614,40 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .hidden { display: none !important; }
 
 /* ============================================================
+   N64 4-PORT CONTROLLER INDICATOR
+   The four trapezoidal sockets across the N64's front face, with
+   an LED above each. Lit ports correspond to detected controllers.
+   The shape itself IS the meaning - users recognize it instantly.
+   ============================================================ */
+.n64-ports {
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  display: block;
+  margin: 4px 0 2px;
+}
+.n64-ports .port-socket {
+  fill: none;
+  stroke: var(--dim);
+  stroke-width: 1.5;
+  transition: stroke .25s ease;
+}
+.n64-ports .port-led {
+  fill: #44444c;
+  transition: fill .25s ease, filter .25s ease;
+}
+.n64-ports .port.lit .port-socket { stroke: var(--gold); }
+.n64-ports .port.lit .port-led {
+  fill: var(--green);
+  filter: drop-shadow(0 0 4px var(--green));
+}
+/* When Funtastic is on, the LED gets a softer translucent glow to match the
+   case-and-light feel of a real N64 with its plastic top. */
+body.clear .n64-ports .port.lit .port-led {
+  filter: drop-shadow(0 0 6px var(--green)) drop-shadow(0 0 2px rgba(61,220,132,.4));
+}
+
+/* ============================================================
    THEMES - N64 edition accent colors
    ----------------------------------------------------------
    Each theme overrides the gold tokens so existing var(--gold)
@@ -666,13 +718,14 @@ body.clear .console-wrap {
   /* Layered depth: bright rim + material-thickness shadow + inner dark edge +
      outer drop + dual accent halo. Reads as a translucent object floating
      above the background, not a flat semi-transparent rectangle. */
+  /* Adjudicator verdict #2: keep the 30px accent halo, drop the wider 80px.
+     Five shadow layers tipped into gluttony; four with one halo still floats. */
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.18),
     inset 0 -4px 8px rgba(0,0,0,.25),
     inset 0 0 0 1px rgba(0,0,0,.22),
     0 30px 90px rgba(0,0,0,.50),
-    0 0 30px color-mix(in oklab, var(--gold) 18%, transparent),
-    0 0 80px color-mix(in oklab, var(--gold) 24%, transparent);
+    0 0 30px color-mix(in oklab, var(--gold) 18%, transparent);
 }
 
 body.clear .min-instr,
@@ -914,18 +967,27 @@ body.mode-minimal .app {
 .big-auto {
   font-family: var(--mono);
   font-size: clamp(17px, 1.4vw, 24px);
-  letter-spacing: clamp(5px, .4vw, 7px);
+  letter-spacing: clamp(3px, .3vw, 4.5px);   /* TE win on spacing - was 5-7px (shouting) */
   font-weight: 700;
   padding: clamp(22px, 2vw, 32px) clamp(28px, 2.2vw, 40px);
   border-radius: 2px;
   margin-top: 4px;
   text-transform: uppercase;
-  /* Hardware bevel - bright top edge + dark bottom edge so it reads as a
-     physical button, not a flat rectangle. */
+  transition: transform .08s ease, box-shadow .08s ease;
+  /* Hardware bevel: bright top edge + dark bottom edge + drop shadow.
+     Reads as a physical button, not a flat rectangle. */
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.20),
     inset 0 -2px 0 rgba(0,0,0,.35),
     0 2px 6px rgba(0,0,0,.35);
+}
+/* Game UI :active depress - the button compresses on press, like real hardware. */
+.big-auto:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 -1px 0 rgba(0,0,0,.25),
+    0 1px 2px rgba(0,0,0,.35);
 }
 .big-auto:disabled { opacity: .45; cursor: not-allowed; }
 
@@ -1164,10 +1226,12 @@ body.mode-tinker .card {
 }
 body.mode-tinker .card h3 {
   font-family: var(--mono);
-  font-size: 11px;                /* parity with section head, not subordinate */
+  font-size: 11px;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: var(--gold);             /* card titles are primary, not dim */
+  /* Adjudicator verdict #7: dim so the gold section header above stays the
+     visual anchor. Card titles read as contained children, not peer sections. */
+  color: var(--text);
   margin: 0 0 10px;
 }
 body.mode-tinker .console-wrap {

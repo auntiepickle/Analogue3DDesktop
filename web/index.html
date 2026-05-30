@@ -48,11 +48,27 @@
 
           <div class="min-instr" id="minCtrlInstr">
             <div class="min-instr-label">CONTROLLER</div>
-            <div class="min-instr-led-row">
-              <span class="led off" id="minCtrlLed"></span>
-              <span class="min-instr-status" id="minCtrlStatus">none</span>
-            </div>
-            <div class="min-instr-value" id="minCtrlValue">&mdash;</div>
+            <!-- N64 front-face 4-port indicator: trapezoidal sockets + LED above each.
+                 .lit on a <g class="port"> when a controller is detected in that slot. -->
+            <svg class="n64-ports" id="minCtrlPorts" viewBox="0 0 240 80" aria-label="controllers">
+              <g class="port" data-port="1">
+                <circle cx="30"  cy="10" r="4" class="port-led"/>
+                <polygon class="port-socket" points="18,26 42,26 48,62 12,62"/>
+              </g>
+              <g class="port" data-port="2">
+                <circle cx="90"  cy="10" r="4" class="port-led"/>
+                <polygon class="port-socket" points="78,26 102,26 108,62 72,62"/>
+              </g>
+              <g class="port" data-port="3">
+                <circle cx="150" cy="10" r="4" class="port-led"/>
+                <polygon class="port-socket" points="138,26 162,26 168,62 132,62"/>
+              </g>
+              <g class="port" data-port="4">
+                <circle cx="210" cy="10" r="4" class="port-led"/>
+                <polygon class="port-socket" points="198,26 222,26 228,62 192,62"/>
+              </g>
+            </svg>
+            <div class="min-instr-value" id="minCtrlValue"><span class="muted">none connected</span></div>
           </div>
 
         </div>

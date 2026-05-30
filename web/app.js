@@ -103,6 +103,18 @@ function _renderThemePicker() {
   });
 }
 
+/* Light up the N64-front 4-port indicator according to how many controllers
+   are detected. The SVG sits in minimal mode's CONTROLLER instrument; lit
+   ports use the .lit class which CSS handles for glow + theme color. */
+function updateControllerPorts(n) {
+  const svg = document.getElementById("minCtrlPorts");
+  if (!svg) return;
+  svg.querySelectorAll(".port").forEach((p) => {
+    const i = parseInt(p.dataset.port, 10);
+    p.classList.toggle("lit", i <= n);
+  });
+}
+
 /* Mirror the tinker-view status into the minimal instruments so a user who
    switches modes mid-session sees a coherent screen. Reads from the tinker
    DOM rather than threading data through every call site - prototype-level,
@@ -110,6 +122,7 @@ function _renderThemePicker() {
    "CONNECTED" / "UPDATE" / "NONE") and a bigger value line below it. */
 function _syncMinimal() {
   if (!el.minSdLed) return;
+  updateControllerPorts(controllerCount);
 
   // -- SD CARD --
   el.minSdLed.className = el.sdLed.className;
