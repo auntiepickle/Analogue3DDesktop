@@ -343,6 +343,51 @@ def cart_art(cart_id):
     return "data:image/svg+xml;base64," + b64.b64encode(svg.encode("utf-8")).decode("ascii")
 
 
+def memory_thumbnail(root, folder, name):
+    """Save-state preview thumbnail. The Analogue 3D itself stores a captured
+    gameplay frame inside each .SAV; in demo mode we don't have those, so we
+    return a darkened/letterboxed cart-art derivative as a stand-in. Better
+    than the bare black square the UI shows otherwise. The folder value is
+    the cart_id (we set it that way in list_memories)."""
+    # 1) Try real cart art for the cart_id, render as a "save-state-like" frame.
+    path = _real_db_path()
+    if path:
+        try:
+            from analogue3d import labels
+            img = labels.read_label_image(path, folder)
+            if img is not None:
+                import io as _io, base64 as _b64
+                from PIL import Image, ImageDraw, ImageEnhance
+                # Letterbox to a 16:9-ish save-state aspect, dim a touch, badge it.
+                w, h = 320, 200
+                frame = Image.new("RGB", (w, h), (8, 8, 10))
+                src = img.convert("RGB")
+                # Cover-fit
+                sw, sh = src.size
+                scale = max(w / sw, h / sh)
+                nw, nh = int(sw * scale), int(sh * scale)
+                src = src.resize((nw, nh))
+                frame.paste(src, ((w - nw) // 2, (h - nh) // 2))
+                # Slight darken + a thin scanline overlay to read as "frame capture".
+                frame = ImageEnhance.Brightness(frame).enhance(0.75)
+                ovl = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+                d = ImageDraw.Draw(ovl)
+                for y in range(0, h, 3):
+                    d.line([(0, y), (w, y)], fill=(0, 0, 0, 36))
+                frame = Image.alpha_composite(frame.convert("RGBA"), ovl).convert("RGB")
+                # State number in the corner derived from filename.
+                num = "".join(c for c in (name or "") if c.isdigit())[:3] or "001"
+                d2 = ImageDraw.Draw(frame)
+                d2.text((8, h - 18), f"STATE {num}", fill=(220, 220, 220))
+                buf = _io.BytesIO()
+                frame.save(buf, "JPEG", quality=72)
+                return "data:image/jpeg;base64," + _b64.b64encode(buf.getvalue()).decode("ascii")
+        except Exception:
+            pass
+    # 2) Fallback: empty string (UI shows blank, current behavior).
+    return ""
+
+
 def versions(root):
     return {
         "console_current": "1.3.0", "console_latest": "1.3.0",

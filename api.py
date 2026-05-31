@@ -465,6 +465,7 @@ class Api:
         return {"available": bool(out), "keep_default": savestates.DEFAULT_KEEP, "games": out}
 
     def memory_thumbnail(self, root, folder, name):
+        if DEMO: return demo.memory_thumbnail(root, folder, name)
         base = savestates.memories_dir(root)
         path = os.path.join(base, os.path.basename(folder), os.path.basename(name))
         if not os.path.isfile(path):
