@@ -157,11 +157,11 @@ function _syncMinimal() {
         const o = document.createElement("option");
         o.value = src.value;
         // Just the [label] for the closed value. Source text is now "path [label]".
-        if (src.value && src.value !== "_MANUAL_") {
+        if (src.value && src.value !== MANUAL) {
           const m = src.textContent.match(/\[([^\]]+)\]/);
           o.textContent = m ? m[1] : src.textContent;
         } else {
-          o.textContent = src.textContent;
+          o.textContent = src.textContent;     // "Enter a path manually..." kept verbatim
         }
         el.minSdValue.appendChild(o);
       });
@@ -1268,15 +1268,47 @@ function init() {
     e.preventDefault();
     deleteSelectedStates();
   });
-  el.sdSelect.addEventListener("change", () => { syncManual(); refresh(); renderSdPickerStats(); });
-  // Mirror the minimal-mode SD picker back into the advanced sdSelect so picks
-  // from the simple view share the same setSdPath() flow.
+  // When "Enter a path manually..." is picked, open the native folder picker
+  // so the user can browse to a drive rather than typing. The picked path
+  // populates the manualPath input + fires refresh; cancel reverts to whatever
+  // card was selected before.
+  async function handleManualPick(prev) {
+    try {
+      const picked = await api().pick_sd_folder();
+      if (picked) {
+        el.manualPath.value = picked;
+        refresh();
+      } else if (prev) {
+        el.sdSelect.value = prev;     // user cancelled; restore previous
+        syncManual();
+      }
+    } catch (e) {
+      log("Folder picker failed: " + e, "err");
+      if (prev) { el.sdSelect.value = prev; syncManual(); }
+    }
+  }
+  let _lastSdValue = el.sdSelect.value;
+  el.sdSelect.addEventListener("change", () => {
+    syncManual();
+    renderSdPickerStats();
+    if (el.sdSelect.value === MANUAL) {
+      handleManualPick(_lastSdValue);
+    } else {
+      _lastSdValue = el.sdSelect.value;
+      refresh();
+    }
+  });
   if (el.minSdValue && el.minSdValue.tagName === "SELECT") {
     el.minSdValue.addEventListener("change", () => {
       el.sdSelect.value = el.minSdValue.value;
       syncManual();
-      refresh();
       renderSdPickerStats();
+      if (el.minSdValue.value === MANUAL) {
+        handleManualPick(_lastSdValue);
+      } else {
+        _lastSdValue = el.minSdValue.value;
+        refresh();
+      }
     });
   }
   el.manualPath.addEventListener("change", refresh);

@@ -300,6 +300,24 @@ class Api:
                 "default_root": config.default_backup_root(),
                 "legacy_root": config.legacy_backup_root()}
 
+    def pick_sd_folder(self):
+        """Open a native folder picker so the user can choose an SD card root by
+        clicking, not typing. Returns the picked path, or "" if they cancelled
+        or there's no window context. Bound to the "Enter a path manually..."
+        option in the SD picker so it acts like a proper file-explorer browse."""
+        w = self._window
+        if w is None:
+            return ""
+        try:
+            import webview
+            picked = w.create_file_dialog(webview.FOLDER_DIALOG)
+        except Exception as e:
+            print("Could not open the folder picker: " + str(e))
+            return ""
+        if not picked:
+            return ""
+        return picked[0] if isinstance(picked, (list, tuple)) else picked
+
     def set_backup_location(self):
         def task():
             w = self._window
