@@ -699,6 +699,24 @@ body.theme-smoke {
   --gold: #cfd1d5; --gold-soft: #e6e7ea; --gold-dim: #8b8c91;
   --gold-line: rgba(207,209,213,.32); --gold-faint: rgba(207,209,213,.10);
 }
+/* Gold — the default Analogue 3D charcoal-and-gold accent, made explicit so
+   the theme picker has a positive "Gold" pick rather than implicit "none". */
+body.theme-gold {
+  --gold: #e8b923; --gold-soft: #f0cf5e; --gold-dim: #b08c1a;
+  --gold-line: rgba(232,185,35,.38); --gold-faint: rgba(232,185,35,.12);
+}
+/* White — Analogue 3D's White edition. Crisp ivory chrome on a cooler bg
+   so the contrast still holds on dark panels. */
+body.theme-white {
+  --gold: #f0eee6; --gold-soft: #ffffff; --gold-dim: #b8b6ad;
+  --gold-line: rgba(240,238,230,.32); --gold-faint: rgba(240,238,230,.10);
+}
+/* Glow — N64 Glow-in-the-Dark / Analogue Pocket Glow series. Phosphor green
+   that reads pale-warm on light bg and electric on dark. */
+body.theme-glow {
+  --gold: #c4f070; --gold-soft: #dcf899; --gold-dim: #82b03e;
+  --gold-line: rgba(196,240,112,.34); --gold-faint: rgba(196,240,112,.12);
+}
 
 /* ----------------------------------------------------------
    CLEAR / FUNTASTIC: the translucent-case finish.
@@ -1231,8 +1249,9 @@ body.mode-tinker .tinker-view {
   text-overflow: ellipsis;
 }
 .adv-rail .status #refreshBtn {
-  margin-top: 4px;
+  margin: 6px 0 0 0;             /* override .status .ghost { margin-left:auto } from base */
   align-self: stretch;
+  width: 100%;
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 2px;

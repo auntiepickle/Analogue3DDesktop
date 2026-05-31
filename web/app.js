@@ -41,8 +41,14 @@ const CLEAR_KEY = "a3d:clear";
 /* N64-edition-inspired themes. Each just overrides the gold tokens via a body
    class so all existing var(--gold) references re-theme automatically. Order is
    the order shown in the Settings swatch picker. */
+/* Themes mirror Analogue 3D + Analogue Pocket + N64 Funtastic colorways.
+   Gold + White are the actual Analogue 3D editions. Glow is the Analogue
+   Pocket Glow series. The rest are N64 Funtastic accents the user can
+   layer with the Funtastic translucent finish in Settings. */
 const THEMES = [
-  { id: "charcoal",  name: "Charcoal",  dot: "#e8b923" },
+  { id: "gold",      name: "Gold",      dot: "#e8b923" },
+  { id: "white",     name: "White",     dot: "#f0eee6" },
+  { id: "glow",      name: "Glow",      dot: "#c4f070" },
   { id: "ice",       name: "Ice",       dot: "#58c7e3" },
   { id: "jungle",    name: "Jungle",    dot: "#3fcb6b" },
   { id: "watermelon",name: "Watermelon",dot: "#ff5b6b" },
