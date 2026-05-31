@@ -161,6 +161,9 @@
     <section class="picker">
       <label for="sdSelect">Target SD card</label>
       <select id="sdSelect"></select>
+      <!-- Free-space / strong-match stats listed beneath the picker so the
+           selected-state value text stays short and doesn't truncate. -->
+      <div class="picker-stats" id="sdPickerStats"></div>
       <input type="text" id="manualPath" class="hidden" placeholder="e.g. H:\ or /Volumes/ANALOGUE 3D" />
     </section>
 

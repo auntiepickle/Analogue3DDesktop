@@ -1220,6 +1220,19 @@ body.mode-tinker .tinker-view {
   text-transform: uppercase;
 }
 .adv-rail .picker { padding: 4px 0; }
+/* Stats listed beneath the TARGET SD CARD picker — same register as the
+   minimal-mode substats so both modes are consistent. */
+.picker-stats {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-top: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .adv-rail .picker label {
   font-family: var(--mono);
   font-size: 10px;

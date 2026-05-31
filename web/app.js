@@ -135,45 +135,35 @@ function _syncMinimal() {
     el.minSdStatus.textContent = "pick a drive";
   }
   // Mirror the advanced sdSelect options into minSdValue (the minimal-mode
-  // selector) so the user can switch cards without dropping into Advanced.
-  // The visible (closed-state) text is SHORT — just the volume label — so
+  // selector). Closed-state text stays short — just the volume label — so
   // it never truncates. The stats line below carries path + free space.
-  function shortenSdOption(verbose) {
-    // verbose: "E:\ [ANALOGUE 3D]  (14 GB free)  ★"  -> label "ANALOGUE 3D"
-    const m = verbose.match(/\[([^\]]+)\]/);
-    if (m) return m[1];
-    // No label? Fall back to just the path (chunk before any space).
-    return verbose.split(/\s{2,}|\s\(/)[0].trim() || verbose;
-  }
   if (el.minSdValue && el.minSdValue.tagName === "SELECT") {
     const upstream = Array.from(el.sdSelect.options).map(o => o.value + "\t" + o.textContent);
-    const current = Array.from(el.minSdValue.options).map(o => o.value + "\t" + o.dataset.long);
+    const current = Array.from(el.minSdValue.options).map(o => o.value + "\t" + o.textContent);
     if (upstream.join("|") !== current.join("|")) {
       el.minSdValue.innerHTML = "";
       Array.from(el.sdSelect.options).forEach((src) => {
         const o = document.createElement("option");
         o.value = src.value;
-        // Closed-state stays short; opened menu also shortens for consistency.
-        o.textContent = src.value && src.value !== "_MANUAL_"
-          ? shortenSdOption(src.textContent)
-          : src.textContent;
-        o.dataset.long = src.textContent;
+        // Just the [label] for the closed value. Source text is now "path [label]".
+        if (src.value && src.value !== "_MANUAL_") {
+          const m = src.textContent.match(/\[([^\]]+)\]/);
+          o.textContent = m ? m[1] : src.textContent;
+        } else {
+          o.textContent = src.textContent;
+        }
         el.minSdValue.appendChild(o);
       });
     }
     el.minSdValue.value = el.sdSelect.value;
-    // Stats line beneath: path + free space, parsed out of the verbose text.
-    const stats = document.getElementById("minSdStats");
-    if (stats) {
-      const sel = el.sdSelect.options[el.sdSelect.selectedIndex];
-      const long = sel ? sel.textContent : "";
-      // Pull the parenthesized "(X GB free)" suffix and the path prefix.
-      const free = (long.match(/\(([^)]+)\)/) || [, ""])[1];
-      const path = sel ? sel.value : "";
-      stats.textContent = path && free
-        ? `${path}  ·  ${free}`
-        : (path || "");
-    }
+  }
+  // Stats line beneath the minimal SD value: drive path + free space.
+  const minStats = document.getElementById("minSdStats");
+  if (minStats) {
+    const sel = el.sdSelect.options[el.sdSelect.selectedIndex];
+    const free = sel && sel.dataset.freeGb ? `${sel.dataset.freeGb} GB free` : "";
+    const path = sel ? sel.value : "";
+    minStats.textContent = path && free ? `${path}  ·  ${free}` : (path || "");
   }
 
   // -- CONSOLE FIRMWARE --
@@ -369,6 +359,19 @@ function syncManual() {
   if (manual) el.manualPath.focus();
 }
 
+/* Stats line under the advanced TARGET SD CARD picker — free space + a
+   "best-match" marker — surfaced beneath the dropdown instead of inline so
+   the selected-option text stays short and stops truncating. */
+function renderSdPickerStats() {
+  const stats = document.getElementById("sdPickerStats");
+  if (!stats) return;
+  const sel = el.sdSelect.options[el.sdSelect.selectedIndex];
+  if (!sel || !sel.dataset.freeGb) { stats.textContent = ""; return; }
+  const free = `${sel.dataset.freeGb} GB free`;
+  const star = sel.dataset.strong ? "  ·  best match ★" : "";
+  stats.textContent = `${free}${star}`;
+}
+
 /* ---------- refresh detected state ---------- */
 async function refresh() {
   let data;
@@ -388,7 +391,12 @@ async function refresh() {
     const o = document.createElement("option");
     o.value = c.path;
     const label = c.label ? ` [${c.label}]` : "";
-    o.textContent = `${c.path}${label}  (${c.free_gb} GB free)${c.strong ? "  ★" : ""}`;
+    // Short option text: path + label only. Free space + strong-match marker
+    // are listed beneath the picker (#sdPickerStats) so the selected-state
+    // doesn't truncate.
+    o.textContent = `${c.path}${label}`;
+    o.dataset.freeGb = c.free_gb;
+    o.dataset.strong = c.strong ? "1" : "";
     el.sdSelect.appendChild(o);
   });
   const manualOpt = document.createElement("option");
@@ -407,6 +415,7 @@ async function refresh() {
     el.sdSelect.value = MANUAL;
   }
   syncManual();
+  renderSdPickerStats();
 
   // status LEDs
   if (strong) {
@@ -1248,7 +1257,7 @@ function init() {
     e.preventDefault();
     deleteSelectedStates();
   });
-  el.sdSelect.addEventListener("change", () => { syncManual(); refresh(); });
+  el.sdSelect.addEventListener("change", () => { syncManual(); refresh(); renderSdPickerStats(); });
   // Mirror the minimal-mode SD picker back into the advanced sdSelect so picks
   // from the simple view share the same setSdPath() flow.
   if (el.minSdValue && el.minSdValue.tagName === "SELECT") {
@@ -1256,6 +1265,7 @@ function init() {
       el.sdSelect.value = el.minSdValue.value;
       syncManual();
       refresh();
+      renderSdPickerStats();
     });
   }
   el.manualPath.addEventListener("change", refresh);
