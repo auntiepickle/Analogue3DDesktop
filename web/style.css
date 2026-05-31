@@ -1169,14 +1169,13 @@ body.mode-tinker .tinker-view {
    scan velocity. Inline matches every hardware reference Analogue draws on. */
 /* Each row: LED on left, label-above-value on right. Stacked (not
    horizontal) so values aren't truncated to "E:..." in narrow rails.
-   LED is vertically centered with the label+value stack so the rhythm
-   feels intentional instead of off-balance. */
+   LED top-aligns with the label so each row reads as one tidy block. */
 .adv-rail .status {
   display: grid;
   grid-template-columns: auto 1fr;
   column-gap: 12px;
   row-gap: 18px;
-  align-items: center;
+  align-items: start;
   padding-bottom: 4px;
   border: none;
 }
@@ -1185,7 +1184,8 @@ body.mode-tinker .tinker-view {
 }
 .adv-rail .stat > .led {
   grid-column: 1;
-  align-self: center;     /* anchor to label+value stack center */
+  align-self: start;
+  margin-top: 3px;        /* small nudge to center the LED on the label cap-height */
 }
 .adv-rail .stat-body {
   display: flex;
