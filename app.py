@@ -53,6 +53,12 @@ def main():
     index = os.path.join(here, "web", "index.html")
     icon = os.path.join(here, "assets", "icon.ico")
 
+    # Screenshot-capture aid: A3D_THEME=jungle launches with that theme picked
+    # via URL hash, no localStorage manipulation. Read by getTheme() in app.js.
+    _theme_override = os.environ.get("A3D_THEME")
+    if _theme_override:
+        index = "file:///" + index.replace(os.sep, "/") + "#theme=" + _theme_override
+
     if sys.platform == "win32":
         try:
             import ctypes

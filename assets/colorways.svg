@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" font-family="ui-monospace, Menlo, Consolas, monospace">
+  <!-- Backdrop matches the app's --panel + faint dot grid pattern -->
+  <rect width="1200" height="380" fill="#0d0d0f"/>
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="12" cy="12" r=".6" fill="rgba(255,255,255,.04)"/>
+    </pattern>
+    <linearGradient id="vignette" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgba(232,185,35,.06)"/>
+      <stop offset="1" stop-color="transparent"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="380" fill="url(#grid)"/>
+  <rect width="1200" height="380" fill="url(#vignette)"/>
+
+  <!-- Header -->
+  <text x="40" y="42" font-size="11" letter-spacing="2.5" fill="#9d9da9">ANALOGUE 3D DESKTOP</text>
+  <text x="40" y="68" font-size="20" letter-spacing="2" font-weight="700" fill="#e8b923">COLORWAYS</text>
+  <text x="40" y="90" font-size="11" fill="#9d9da9">10 accent themes mirroring Analogue 3D + Analogue Pocket + N64 Funtastic editions</text>
+
+  <!-- Swatches: 10 cards, 2 rows × 5 columns. Each card mirrors the .min-instr face.
+       w=216 h=110, gap=14. Layout starts at x=40, y=120. -->
+  <g font-size="10" letter-spacing="2">
+
+    <!-- Row 1 -->
+    <g transform="translate(40 120)">
+      <rect width="216" height="110" rx="2" fill="#16161a" stroke="#2a2a31" stroke-width="1"/>
+      <circle cx="18" cy="20" r="6" fill="#e8b923"/>
+      <text x="34" y="24" fill="#e8b923">GOLD</text>
+      <text x="18" y="58" font-size="14" letter-spacing="0" fill="#ececf0">#e8b923</text>
+      <rect x="18" y="74" width="180" height="2" fill="#e8b923"/>
+      <text x="18" y="96" font-size="9" letter-spacing="1.5" fill="#9d9da9">ANALOGUE 3D · DEFAULT</text>
+    </g>
+
+    <g transform="translate(270 120)">
+      <rect width="216" height="110" rx="2" fill="#16161a" stroke="#2a2a31" stroke-width="1"/>
+      <circle cx="18" cy="20" r="6" fill="#f0eee6"/>
+      <text x="34" y="24" fill="#f0eee6">WHITE</text>
+      <text x="18" y="58" font-size="14" letter-spacing="0" fill="#ececf0">#f0eee6</text>
+      <rect x="18" y="74" width="180" height="2" fill="#f0eee6"/>
+      <text x="18" y="96" font-size="9" letter-spacing="1.5" fill="#9d9da9">ANALOGUE 3D · WHITE</text>
+    </g>
+
+    <g transform="translate(500 120)">
+      <rect width="216" height="110" rx="2" fill="#16161a" stroke="#2a2a31" stroke-width="1"/>
+      <circle cx="18" cy="20" r="6" fill="#c4f070"/>
+      <text x="34" y="24" fill="#c4f070">GLOW</text>
+      <text x="18" y="58" font-size="14" letter-spacing="0" fill="#ececf0">#c4f070</text>
+      <rect x="18" y="74" width="180" height="2" fill="#c4f070"/>
+      <text x="18" y="96" font-size="9" letter-spacing="1.5" fill="#9d9da9">POCKET · GLOW SERIES</text>
+    </g>
+
+    <g transform="translate(730 120)">
+      <rect width="216" height="110" rx="2" fill="#16161a" stroke="#2a2a31" stroke-width="1"/>
+      <circle cx="18" cy="20" r="6" fill="#58c7e3"/>
+      <text x="34" y="24" fill="#58c7e3">ICE</text>
+      <text x="18" y="58" font-size="14" letter-spacing="0" fill="#ececf0">#58c7e3</text>
+      <rect x="18" y="74" width="180" height="2" fill="#58c7e3"/>
+      <text x="18" y="96" font-size="9" letter-spacing="1.5" fill="#9d9da9">N64 · FUNTASTIC BLUE</text>
+    </g>
+
+    <g transform="translate(960 120)">
+      <rect width="216" height="110" rx="2" fill="#16161a" stroke="#2a2a31" stroke-width="1"/>
+      <circle cx="18" cy="20" r="6" fill="#3fcb6b"/>
+      <text x="34" y="24" fill="#3fcb6b">JUNGLE</text>
+      <text x="18" y="58" font-size="14" letter-spacing="0" fill="#ececf0">#3fcb6b</text>
+      <rect x="18" y="74" width="180" height="2" fill="#3fcb6b"/>
+      <text x="18" y="96" font-size="9" letter-spacing="1.5" fill="#9d9da9">N64 · FUNTASTIC GREEN</text>
+    </g>
+
+    <!-- Row 2 -->
+    <g transform="translate(40 244)">
+      <rect width="216" height="110" rx="2" fill="#16161a" stroke="#2a2a31" stroke-width="1"/>
+      <circle cx="18" cy="20" r="6" fill="#ff5b6b"/>
+      <text x="34" y="24" fill="#ff5b6b">WATERMELON</text>
+      <text x="18" y="58" font-size="14" letter-spacing="0" fill="#ececf0">#ff5b6b</text>
+      <rect x="18" y="74" width="180" height="2" fill="#ff5b6b"/>
+      <text x="18" y="96" font-size="9" letter-spacing="1.5" fill="#9d9da9">N64 · FUNTASTIC RED</text>
+    </g>
+
+    <g transform="translate(270 244)">
+      <rect width="216" height="110" rx="2" fill="#16161a" stroke="#2a2a31" stroke-width="1"/>
+      <circle cx="18" cy="20" r="6" fill="#a663ff"/>
+      <text x="34" y="24" fill="#a663ff">GRAPE</text>
+      <text x="18" y="58" font-size="14" letter-spacing="0" fill="#ececf0">#a663ff</text>
+      <rect x="18" y="74" width="180" height="2" fill="#a663ff"/>
+      <text x="18" y="96" font-size="9" letter-spacing="1.5" fill="#9d9da9">N64 · FUNTASTIC PURPLE</text>
+    </g>
+
+    <g transform="translate(500 244)">
+      <rect width="216" height="110" rx="2" fill="#16161a" stroke="#2a2a31" stroke-width="1"/>
+      <circle cx="18" cy="20" r="6" fill="#ff7430"/>
+      <text x="34" y="24" fill="#ff7430">FIRE</text>
+      <text x="18" y="58" font-size="14" letter-spacing="0" fill="#ececf0">#ff7430</text>
+      <rect x="18" y="74" width="180" height="2" fill="#ff7430"/>
+      <text x="18" y="96" font-size="9" letter-spacing="1.5" fill="#9d9da9">POCKET · FIRE</text>
+    </g>
+
+    <g transform="translate(730 244)">
+      <rect width="216" height="110" rx="2" fill="#0c0a14" stroke="#2a2a31" stroke-width="1"/>
+      <circle cx="18" cy="20" r="6" fill="#b066ff"/>
+      <text x="34" y="24" fill="#b066ff">ATOMIC</text>
+      <text x="18" y="58" font-size="14" letter-spacing="0" fill="#ececf0">#b066ff</text>
+      <rect x="18" y="74" width="180" height="2" fill="#b066ff"/>
+      <text x="18" y="96" font-size="9" letter-spacing="1.5" fill="#9d9da9">N64 · ATOMIC PURPLE</text>
+    </g>
+
+    <g transform="translate(960 244)">
+      <rect width="216" height="110" rx="2" fill="#16161a" stroke="#2a2a31" stroke-width="1"/>
+      <circle cx="18" cy="20" r="6" fill="#cfd1d5"/>
+      <text x="34" y="24" fill="#cfd1d5">SMOKE</text>
+      <text x="18" y="58" font-size="14" letter-spacing="0" fill="#ececf0">#cfd1d5</text>
+      <rect x="18" y="74" width="180" height="2" fill="#cfd1d5"/>
+      <text x="18" y="96" font-size="9" letter-spacing="1.5" fill="#9d9da9">N64/POCKET · CLEAR</text>
+    </g>
+
+  </g>
+</svg>

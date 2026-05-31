@@ -62,15 +62,26 @@ function getMode() { return localStorage.getItem(MODE_KEY) || "minimal"; }
 function setMode(m) {
   document.body.classList.remove("mode-minimal", "mode-tinker");
   document.body.classList.add("mode-" + m);
-  // Update aria-checked on the mode toggle so screen readers announce the
-  // current state (a11y review #11). The toggle is role="switch" in HTML.
-  const toggle = document.getElementById("toTinker");
-  if (toggle) toggle.setAttribute("aria-checked", m === "tinker" ? "true" : "false");
+  // Update aria-checked on BOTH mode toggles (More Controls in minimal +
+  // Minimal in advanced) so screen readers announce the current state for
+  // whichever toggle the user reaches (a11y + code review).
+  const toTinker = document.getElementById("toTinker");
+  const toMinimal = document.getElementById("toMinimal");
+  if (toTinker) toTinker.setAttribute("aria-checked", m === "tinker" ? "true" : "false");
+  if (toMinimal) toMinimal.setAttribute("aria-checked", m === "minimal" ? "true" : "false");
   try { localStorage.setItem(MODE_KEY, m); }
   catch (e) { console.warn("Mode persistence failed:", e); }
 }
 
-function getTheme() { return localStorage.getItem(THEME_KEY) || "charcoal"; }
+function getTheme() {
+  // URL hash override (set by app.py when A3D_THEME env is present) — used to
+  // render screenshots in each colorway without manipulating localStorage.
+  const m = (location.hash || "").match(/[#&]theme=([a-z]+)/);
+  if (m) return m[1];
+  let t = localStorage.getItem(THEME_KEY) || "gold";
+  if (t === "charcoal") t = "gold";    // legacy alias — picker entry renamed
+  return t;
+}
 function setTheme(id) {
   THEMES.forEach((t) => document.body.classList.remove("theme-" + t.id));
   document.body.classList.add("theme-" + id);
@@ -158,8 +169,11 @@ function _syncMinimal() {
         o.value = src.value;
         // Just the [label] for the closed value. Source text is now "path [label]".
         if (src.value && src.value !== MANUAL) {
-          const m = src.textContent.match(/\[([^\]]+)\]/);
-          o.textContent = m ? m[1] : src.textContent;
+          // Match the LAST bracket pair — paths can contain brackets themselves
+          // (e.g. "E:\[Backup]\... [ANALOGUE 3D]"), and the volume label is at
+          // the end of the picker option string.
+          const matches = src.textContent.match(/\[([^\]]+)\](?!.*\[)/);
+          o.textContent = matches ? matches[1] : src.textContent;
         } else {
           o.textContent = src.textContent;     // "Enter a path manually..." kept verbatim
         }
