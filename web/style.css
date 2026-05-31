@@ -9,7 +9,7 @@
   --green: #3ddc84;
   --red: #ff5f56;
   --text: #ececf0;
-  --dim: #8b8b95;
+  --dim: #9d9da9;          /* nudged brighter (was #8b8b95) so secondary text reads on Funtastic */
   --mono: ui-monospace, "Cascadia Code", "Consolas", "SF Mono", monospace;
   --sans: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
 }
@@ -204,6 +204,10 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
 /* ---------- blocks / sections ---------- */
 .block { display: flex; flex-direction: column; gap: 12px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+/* Inner cards inside UPDATES/BACKUPS blocks share a baseline height so the
+   left-block inner card aligns with the right-block inner card across the
+   .adv-main column gap. Tallest content in either side sets the floor. */
+.block > .grid2 > .card { min-height: 160px; }
 
 .ver-line {
   font-size: 13px; color: var(--text); flex: 1;
@@ -334,6 +338,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   align-items: center;
   justify-content: space-between;
   margin-bottom: 2px;
+  min-height: 30px;       /* equalize across blocks so UPDATES/BACKUPS cards top-align */
 }
 .section-head h2 { margin: 0; font-size: 16px; color: var(--gold); }
 .section-head .muted { color: var(--dim); font-weight: 400; font-size: 13px; }
@@ -893,9 +898,12 @@ body.mode-minimal .app {
 .min-header .wordmark .thin { display: inline; }
 .min-header .wordmark .thin { font-size: clamp(14px, 1.05vw, 17px); margin-left: 10px; }
 @media (max-width: 720px) {
-  .min-header .wordmark { font-size: 16px; }   /* shrink so "ANALOGUE" fits next to pills */
+  .min-header .wordmark { font-size: 14px; letter-spacing: 1.5px; }   /* shrink + tighter letter-spacing so "ANALOGUE" fits beside the pills */
   .min-header .wordmark .thin,
   .min-header .wordmark .model { display: none; }
+}
+@media (max-width: 480px) {
+  .min-header .wordmark { font-size: 12px; letter-spacing: 1px; }    /* very narrow: drop further so panel pills don't push out the wordmark */
 }
 .min-header .ver { margin-left: auto; font-size: 13px; flex: 0 0 auto; }
 .min-header .mode-toggle-inline,
@@ -1167,26 +1175,24 @@ body.mode-tinker .tinker-view {
    Adjudicator Conflict B: IA wins. A status LED is a prefix indicator,
    semantically "[OK] SD: ready"; stacking vertically wastes height + breaks
    scan velocity. Inline matches every hardware reference Analogue draws on. */
-/* Each row: LED on left, label-above-value on right. Stacked (not
-   horizontal) so values aren't truncated to "E:..." in narrow rails.
-   LED top-aligns with the label so each row reads as one tidy block. */
+/* Each row: LED on left, label-above-value on right. Stacked vertically per
+   row so values don't truncate in narrow rails. Flush-LEFT flex row instead
+   of a 1fr grid column — otherwise the label content "floats right" inside
+   an oversized column when the rail is wide. */
 .adv-rail .status {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: 12px;
-  row-gap: 18px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
   padding-bottom: 4px;
   border: none;
 }
 .adv-rail .stat {
-  display: contents;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
 }
-.adv-rail .stat > .led {
-  grid-column: 1;
-  align-self: start;
-  margin-top: 3px;        /* small nudge to center the LED on the label cap-height */
-}
+.adv-rail .stat > .led { margin-top: 3px; flex: 0 0 auto; }
 .adv-rail .stat-body {
   display: flex;
   flex-direction: column;
