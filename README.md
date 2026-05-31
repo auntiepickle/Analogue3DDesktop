@@ -35,13 +35,21 @@ CLI: the shared `analogue3d` Python package does the real work, and this app is 
 ## Screenshots
 
 <p align="center">
-  <img src="assets/screenshots/main.png?v=0.2.0" alt="Main window: status, Auto, Updates, Backups" width="90%">
+  <img src="assets/screenshots/main.png?v=0.3.0" alt="Minimal mode: ANALOGUE 3D wordmark, LAST line, three instrument cards (SD CARD / CONSOLE / CONTROLLER) with the 4-port indicator, big DO EVERYTHING button" width="90%">
 </p>
 <p align="center">
   <img src="assets/screenshots/cartart.png?v=0.2.0" alt="Cartridge art gallery" width="90%">
 </p>
 <p align="center">
   <img src="assets/screenshots/savestates.png?v=0.2.0" alt="Save-state (Memories) manager and snapshots" width="90%">
+</p>
+
+## Colorways
+
+Ten accent themes mirror Analogue 3D, Analogue Pocket, and N64 Funtastic editions. Switch in Settings.
+
+<p align="center">
+  <img src="assets/colorways.svg?v=0.3.0" alt="Color swatch — the 10 themes: Gold, White, Glow, Ice, Jungle, Watermelon, Grape, Fire, Atomic, Smoke" width="90%">
 </p>
 
 ## Download
