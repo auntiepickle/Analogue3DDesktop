@@ -660,6 +660,23 @@ body.clear .n64-ports .port.lit .port-ring,
 body.clear .n64-ports .port.lit .port-socket {
   filter: drop-shadow(0 0 5px var(--gold)) drop-shadow(0 0 2px color-mix(in oklab, var(--gold) 35%, transparent));
 }
+/* White/Glow themes have very pale accents; the default drop-shadow vanishes
+   against the dark port outline. Swap to a darker stroke so the lit-state
+   still reads as "on" (color review #4). */
+body.theme-white .n64-ports .port.lit .port-ring,
+body.theme-white .n64-ports .port.lit .port-socket {
+  stroke: #7a7870;
+  filter: drop-shadow(0 0 5px #7a7870);
+}
+body.theme-glow .n64-ports .port.lit .port-ring,
+body.theme-glow .n64-ports .port.lit .port-socket {
+  stroke: #5a7a2e;
+  filter: drop-shadow(0 0 4px #5a7a2e);
+}
+/* Funtastic + White/Smoke halos were almost invisible because --gold-faint
+   at 38% of off-white reads as dust on a dark bg. Boost those two. */
+body.clear.theme-white { --gold-faint: color-mix(in oklab, var(--gold) 52%, transparent); }
+body.clear.theme-smoke { --gold-faint: color-mix(in oklab, var(--gold) 45%, transparent); }
 
 /* ============================================================
    THEMES - N64 edition accent colors
@@ -691,12 +708,14 @@ body.theme-fire {
   --gold-line: rgba(255,116,48,.38); --gold-faint: rgba(255,116,48,.12);
 }
 body.theme-atomic {
-  --gold: #b066ff; --gold-soft: #d29eff; --gold-dim: #6b3aae;
-  --gold-line: rgba(176,102,255,.40); --gold-faint: rgba(176,102,255,.13);
+  --gold: #b066ff; --gold-soft: #d29eff; --gold-dim: #7a42c8;   /* was #6b3aae - copy-paste from Grape; brightened to match Atomic */
+  --gold-line: rgba(176,102,255,.38); --gold-faint: rgba(176,102,255,.13);   /* normalize from .40 -> .38 with other themes */
   --bg: #0c0a14;
 }
+/* Smoke — N64 clear-grey. --gold-soft must be perceptibly lighter than --gold
+   (was inverted; soft was brighter via additive overlay only — fixed). */
 body.theme-smoke {
-  --gold: #cfd1d5; --gold-soft: #e6e7ea; --gold-dim: #8b8c91;
+  --gold: #cfd1d5; --gold-soft: #d8d9dd; --gold-dim: #8b8c91;
   --gold-line: rgba(207,209,213,.32); --gold-faint: rgba(207,209,213,.10);
 }
 /* Gold — the default Analogue 3D charcoal-and-gold accent, made explicit so
@@ -705,16 +724,16 @@ body.theme-gold {
   --gold: #e8b923; --gold-soft: #f0cf5e; --gold-dim: #b08c1a;
   --gold-line: rgba(232,185,35,.38); --gold-faint: rgba(232,185,35,.12);
 }
-/* White — Analogue 3D's White edition. Crisp ivory chrome on a cooler bg
-   so the contrast still holds on dark panels. */
+/* White — Analogue 3D's White edition. --gold-dim must drop ~30% luminance
+   from --gold so secondary text reads on dark panels (color review #1). */
 body.theme-white {
-  --gold: #f0eee6; --gold-soft: #ffffff; --gold-dim: #b8b6ad;
+  --gold: #f0eee6; --gold-soft: #ffffff; --gold-dim: #8a8884;
   --gold-line: rgba(240,238,230,.32); --gold-faint: rgba(240,238,230,.10);
 }
-/* Glow — N64 Glow-in-the-Dark / Analogue Pocket Glow series. Phosphor green
-   that reads pale-warm on light bg and electric on dark. */
+/* Glow — N64 Glow-in-the-Dark / Analogue Pocket Glow series. --gold-dim
+   needs desaturate + 20% darken so dim variants survive on dark panel. */
 body.theme-glow {
-  --gold: #c4f070; --gold-soft: #dcf899; --gold-dim: #82b03e;
+  --gold: #c4f070; --gold-soft: #dcf899; --gold-dim: #5a7a2e;
   --gold-line: rgba(196,240,112,.34); --gold-faint: rgba(196,240,112,.12);
 }
 
@@ -822,7 +841,7 @@ body.clear .adv-rail .hero .primary { backdrop-filter: none; -webkit-backdrop-fi
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  box-shadow: 0 0 10px rgba(232,185,35,.4);
+  box-shadow: 0 0 10px rgba(232,185,35,.2);   /* halo capped to 20% so it doesn't outshine the restrained accent budget (brand review) */
 }
 .theme-swatch .name {
   font-family: var(--mono);
@@ -998,21 +1017,21 @@ body.mode-minimal .app {
   appearance: none;
   -webkit-appearance: none;
   background: transparent;
-  border: 1px dashed transparent;
+  border: 1px solid var(--gold-line);    /* visible at rest now — was dashed-transparent and read as static text */
   border-radius: 4px;
-  padding: 4px 28px 4px 6px;
-  margin: -4px -6px;            /* offset padding so layout doesn't jump */
-  width: calc(100% + 12px);
+  padding: 4px 30px 4px 8px;
+  margin: -4px -8px;            /* offset padding so layout doesn't jump */
+  width: calc(100% + 16px);
   cursor: pointer;
   font-family: var(--sans);
   background-image: linear-gradient(45deg, transparent 50%, var(--gold) 50%),
                     linear-gradient(135deg, var(--gold) 50%, transparent 50%);
-  background-position: calc(100% - 14px) 50%, calc(100% - 10px) 50%;
-  background-size: 4px 4px;
+  background-position: calc(100% - 16px) 55%, calc(100% - 12px) 55%;
+  background-size: 5px 5px;
   background-repeat: no-repeat;
   transition: border-color .15s, background-color .15s;
 }
-.min-instr-select:hover { border-color: var(--gold-line); background-color: rgba(0,0,0,.20); }
+.min-instr-select:hover { border-color: var(--gold); background-color: rgba(0,0,0,.20); }
 .min-instr-select:focus { border-color: var(--gold); outline: none; }
 .min-instr-select option { font-size: 14px; background: var(--panel-2); color: var(--text); }
 /* Path + free-space stats under the SD selector. Mono, dim, small caps —
