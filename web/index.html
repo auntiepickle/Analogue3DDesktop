@@ -52,6 +52,9 @@
             <select class="min-instr-value min-instr-select" id="minSdValue" aria-label="Pick SD card">
               <option value="">&mdash;</option>
             </select>
+            <!-- Stats listed beneath the big value (path + free space), so the
+                 selected line stays short and never has to truncate. -->
+            <div class="min-instr-substats" id="minSdStats"></div>
           </div>
 
           <div class="min-instr" id="minFwInstr">

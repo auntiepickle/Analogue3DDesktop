@@ -136,20 +136,44 @@ function _syncMinimal() {
   }
   // Mirror the advanced sdSelect options into minSdValue (the minimal-mode
   // selector) so the user can switch cards without dropping into Advanced.
-  // Rebuild options when the upstream list changed; otherwise just sync value.
+  // The visible (closed-state) text is SHORT — just the volume label — so
+  // it never truncates. The stats line below carries path + free space.
+  function shortenSdOption(verbose) {
+    // verbose: "E:\ [ANALOGUE 3D]  (14 GB free)  ★"  -> label "ANALOGUE 3D"
+    const m = verbose.match(/\[([^\]]+)\]/);
+    if (m) return m[1];
+    // No label? Fall back to just the path (chunk before any space).
+    return verbose.split(/\s{2,}|\s\(/)[0].trim() || verbose;
+  }
   if (el.minSdValue && el.minSdValue.tagName === "SELECT") {
     const upstream = Array.from(el.sdSelect.options).map(o => o.value + "\t" + o.textContent);
-    const current = Array.from(el.minSdValue.options).map(o => o.value + "\t" + o.textContent);
+    const current = Array.from(el.minSdValue.options).map(o => o.value + "\t" + o.dataset.long);
     if (upstream.join("|") !== current.join("|")) {
       el.minSdValue.innerHTML = "";
       Array.from(el.sdSelect.options).forEach((src) => {
         const o = document.createElement("option");
         o.value = src.value;
-        o.textContent = src.textContent;
+        // Closed-state stays short; opened menu also shortens for consistency.
+        o.textContent = src.value && src.value !== "_MANUAL_"
+          ? shortenSdOption(src.textContent)
+          : src.textContent;
+        o.dataset.long = src.textContent;
         el.minSdValue.appendChild(o);
       });
     }
     el.minSdValue.value = el.sdSelect.value;
+    // Stats line beneath: path + free space, parsed out of the verbose text.
+    const stats = document.getElementById("minSdStats");
+    if (stats) {
+      const sel = el.sdSelect.options[el.sdSelect.selectedIndex];
+      const long = sel ? sel.textContent : "";
+      // Pull the parenthesized "(X GB free)" suffix and the path prefix.
+      const free = (long.match(/\(([^)]+)\)/) || [, ""])[1];
+      const path = sel ? sel.value : "";
+      stats.textContent = path && free
+        ? `${path}  ·  ${free}`
+        : (path || "");
+    }
   }
 
   // -- CONSOLE FIRMWARE --

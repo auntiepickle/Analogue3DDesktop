@@ -986,6 +986,19 @@ body.mode-minimal .app {
 .min-instr-select:hover { border-color: var(--gold-line); background-color: rgba(0,0,0,.20); }
 .min-instr-select:focus { border-color: var(--gold); outline: none; }
 .min-instr-select option { font-size: 14px; background: var(--panel-2); color: var(--text); }
+/* Path + free-space stats under the SD selector. Mono, dim, small caps —
+   reads as the "subtext" line on a hi-fi component face. */
+.min-instr-substats {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .min-instr-value .cur { font-weight: 600; }
 .min-instr-value .latest { font-weight: 600; }
 .min-instr-value .arrow { color: var(--dim); margin: 0 4px; }
