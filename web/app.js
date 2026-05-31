@@ -1272,19 +1272,25 @@ function init() {
   // so the user can browse to a drive rather than typing. The picked path
   // populates the manualPath input + fires refresh; cancel reverts to whatever
   // card was selected before.
+  function revertSdSelection(prev) {
+    if (!prev) return;
+    el.sdSelect.value = prev;
+    if (el.minSdValue && el.minSdValue.tagName === "SELECT") el.minSdValue.value = prev;
+    syncManual();
+    renderSdPickerStats();
+  }
   async function handleManualPick(prev) {
     try {
       const picked = await api().pick_sd_folder();
       if (picked) {
         el.manualPath.value = picked;
         refresh();
-      } else if (prev) {
-        el.sdSelect.value = prev;     // user cancelled; restore previous
-        syncManual();
+      } else {
+        revertSdSelection(prev);      // user cancelled — restore previous on BOTH selects
       }
     } catch (e) {
       log("Folder picker failed: " + e, "err");
-      if (prev) { el.sdSelect.value = prev; syncManual(); }
+      revertSdSelection(prev);
     }
   }
   let _lastSdValue = el.sdSelect.value;
