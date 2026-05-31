@@ -46,7 +46,12 @@
               <span class="led off" id="minSdLed"></span>
               <span class="min-instr-status" id="minSdStatus">scanning</span>
             </div>
-            <div class="min-instr-value" id="minSdValue">&mdash;</div>
+            <!-- Native select so users can pick another card without dropping
+                 into Advanced. Options mirror #sdSelect in JS; change fires the
+                 same setSdPath() path. Styled to read as a big-value field. -->
+            <select class="min-instr-value min-instr-select" id="minSdValue" aria-label="Pick SD card">
+              <option value="">&mdash;</option>
+            </select>
           </div>
 
           <div class="min-instr" id="minFwInstr">

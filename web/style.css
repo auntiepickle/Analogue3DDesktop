@@ -962,6 +962,30 @@ body.mode-minimal .app {
   line-height: 1.4;
   min-height: 1.4em;
 }
+/* The SD picker in minimal mode is a real <select> dressed to read as the big
+   value text. Borderless, large font, with a subtle chevron hint that it's
+   interactive. Hovering or focusing surfaces the affordance. */
+.min-instr-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 1px dashed transparent;
+  border-radius: 4px;
+  padding: 4px 28px 4px 6px;
+  margin: -4px -6px;            /* offset padding so layout doesn't jump */
+  width: calc(100% + 12px);
+  cursor: pointer;
+  font-family: var(--sans);
+  background-image: linear-gradient(45deg, transparent 50%, var(--gold) 50%),
+                    linear-gradient(135deg, var(--gold) 50%, transparent 50%);
+  background-position: calc(100% - 14px) 50%, calc(100% - 10px) 50%;
+  background-size: 4px 4px;
+  background-repeat: no-repeat;
+  transition: border-color .15s, background-color .15s;
+}
+.min-instr-select:hover { border-color: var(--gold-line); background-color: rgba(0,0,0,.20); }
+.min-instr-select:focus { border-color: var(--gold); outline: none; }
+.min-instr-select option { font-size: 14px; background: var(--panel-2); color: var(--text); }
 .min-instr-value .cur { font-weight: 600; }
 .min-instr-value .latest { font-weight: 600; }
 .min-instr-value .arrow { color: var(--dim); margin: 0 4px; }

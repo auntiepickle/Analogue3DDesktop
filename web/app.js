@@ -129,13 +129,27 @@ function _syncMinimal() {
   const sdText = el.sdValue.textContent || "";
   if (el.sdLed.className.indexOf("on") !== -1) {
     el.minSdStatus.textContent = "connected";
-    el.minSdValue.textContent = sdText;
   } else if (sdText.toLowerCase().indexOf("not detected") !== -1) {
     el.minSdStatus.textContent = "not found";
-    el.minSdValue.textContent = "—";
   } else {
     el.minSdStatus.textContent = "pick a drive";
-    el.minSdValue.textContent = sdText || "—";
+  }
+  // Mirror the advanced sdSelect options into minSdValue (the minimal-mode
+  // selector) so the user can switch cards without dropping into Advanced.
+  // Rebuild options when the upstream list changed; otherwise just sync value.
+  if (el.minSdValue && el.minSdValue.tagName === "SELECT") {
+    const upstream = Array.from(el.sdSelect.options).map(o => o.value + "\t" + o.textContent);
+    const current = Array.from(el.minSdValue.options).map(o => o.value + "\t" + o.textContent);
+    if (upstream.join("|") !== current.join("|")) {
+      el.minSdValue.innerHTML = "";
+      Array.from(el.sdSelect.options).forEach((src) => {
+        const o = document.createElement("option");
+        o.value = src.value;
+        o.textContent = src.textContent;
+        el.minSdValue.appendChild(o);
+      });
+    }
+    el.minSdValue.value = el.sdSelect.value;
   }
 
   // -- CONSOLE FIRMWARE --
@@ -1211,6 +1225,15 @@ function init() {
     deleteSelectedStates();
   });
   el.sdSelect.addEventListener("change", () => { syncManual(); refresh(); });
+  // Mirror the minimal-mode SD picker back into the advanced sdSelect so picks
+  // from the simple view share the same setSdPath() flow.
+  if (el.minSdValue && el.minSdValue.tagName === "SELECT") {
+    el.minSdValue.addEventListener("change", () => {
+      el.sdSelect.value = el.minSdValue.value;
+      syncManual();
+      refresh();
+    });
+  }
   el.manualPath.addEventListener("change", refresh);
   el.artSource.addEventListener("change", () => {
     el.artUrl.classList.toggle("hidden", el.artSource.value !== "url");
