@@ -78,8 +78,8 @@ html, body {
 .ver {
   margin-left: auto;
   font-family: var(--mono);
-  color: var(--gold-dim);
-  border: 1px solid var(--border);
+  color: var(--gold);             /* was --gold-dim, reading low-contrast against Funtastic panels */
+  border: 1px solid var(--gold-line);
   border-radius: 999px;
   padding: 3px 10px;
   font-size: 12px;
@@ -1111,7 +1111,13 @@ body.mode-minimal .app {
   font-size: 10px;
   letter-spacing: 3px;
   text-transform: uppercase;
+  color: var(--gold);                 /* theme-aware - was inheriting --dim, reading low-contrast */
+  border: 1px solid var(--gold-line);
+  background: transparent;
+  padding: 4px 6px;
+  border-radius: 2px;
 }
+.mode-toggle-tinker:hover:not(:disabled) { color: var(--gold-soft); border-color: var(--gold); }
 
 /* ============================================================
    ADVANCED MODE: sidebar (rail) + main grid layout.
@@ -1158,7 +1164,8 @@ body.mode-tinker .tinker-view {
   gap: 8px;
 }
 .adv-rail .topbar .wordmark {
-  font-size: 13px;
+  font-size: 11px;               /* shrunk from 13px so "ANALOGUE" fits in the 280px-floor rail without truncating */
+  letter-spacing: 1.2px;
   flex: 0 1 auto;
   min-width: 0;
   display: block;                /* override .wordmark { display:flex } so truncation works */
@@ -1194,8 +1201,11 @@ body.mode-tinker .tinker-view {
   align-items: flex-start;
   gap: 10px;
   min-width: 0;
+  flex: 0 0 auto;            /* override base .stat:first-child { flex:1 } that was causing weird vertical growth in column flex */
+  align-self: stretch;       /* take full width of the column-flex .status */
+  justify-content: flex-start;
 }
-.adv-rail .stat > .led { margin-top: 3px; flex: 0 0 auto; }
+.adv-rail .stat > .led { margin-top: 3px; flex: 0 0 auto; align-self: flex-start; }
 .adv-rail .stat-body {
   display: flex;
   flex-direction: column;
