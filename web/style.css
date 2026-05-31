@@ -206,8 +206,11 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 /* Inner cards inside UPDATES/BACKUPS blocks share a baseline height so the
    left-block inner card aligns with the right-block inner card across the
-   .adv-main column gap. Tallest content in either side sets the floor. */
+   .adv-main column gap. Tallest content in either side sets the floor.
+   Last child (action button or button row) bottom-anchors so the visible
+   alignment cue lands at the same Y regardless of content variance. */
 .block > .grid2 > .card { min-height: 160px; }
+.block > .grid2 > .card > :last-child { margin-top: auto; }
 
 .ver-line {
   font-size: 13px; color: var(--text); flex: 1;
