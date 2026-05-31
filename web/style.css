@@ -983,7 +983,7 @@ body.mode-minimal .app {
 
 .min-instr {
   background: var(--panel-2);
-  border: 1px solid var(--gold-line);
+  border: 1px solid var(--border);     /* was --gold-line at 35% opacity — vanished against the panel; --border is theme-stable and reads as a discrete instrument module (border-pro design pass) */
   border-radius: 2px;
   padding: clamp(18px, 1.6vw, 28px) clamp(20px, 1.8vw, 30px);
   display: flex;
@@ -1250,13 +1250,17 @@ body.mode-tinker .tinker-view {
 /* Each row: LED on left, label-above-value on right. Stacked vertically per
    row so values don't truncate in narrow rails. Flush-LEFT flex row instead
    of a 1fr grid column — otherwise the label content "floats right" inside
-   an oversized column when the rail is wide. */
+   an oversized column when the rail is wide. Bordered card container so the
+   status block reads as a discrete instrument module like every other box
+   on the panel (user-reported: "missing any sort of border"). */
 .adv-rail .status {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding-bottom: 4px;
-  border: none;
+  padding: 14px 14px 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 2px;
 }
 .adv-rail .stat {
   display: flex;
