@@ -26,7 +26,7 @@
           <!-- Mode toggle promoted to header (IA-adjudicated): mode switching is the
                most consequential affordance after the primary action. Discoverable on
                first look instead of buried below the Auto button. -->
-          <button class="ghost mode-toggle-inline" id="toTinker" title="Show more controls">More&nbsp;Controls &#9662;</button>
+          <button class="ghost mode-toggle-inline" id="toTinker" title="Show more controls" role="switch" aria-checked="false" aria-label="Show more controls (Advanced mode)">More&nbsp;Controls &#9662;</button>
           <button class="cog" id="minSettingsBtn" title="Settings" aria-label="Settings">&#9881;</button>
         </header>
 
@@ -43,7 +43,7 @@
           <div class="min-instr" id="minSdInstr">
             <div class="min-instr-label">SD CARD</div>
             <div class="min-instr-led-row">
-              <span class="led off" id="minSdLed"></span>
+              <span class="led off" id="minSdLed" aria-hidden="true"></span>
               <span class="min-instr-status" id="minSdStatus">scanning</span>
             </div>
             <!-- Native select so users can pick another card without dropping
@@ -60,7 +60,7 @@
           <div class="min-instr" id="minFwInstr">
             <div class="min-instr-label">CONSOLE</div>
             <div class="min-instr-led-row">
-              <span class="led off" id="minFwLed"></span>
+              <span class="led off" id="minFwLed" aria-hidden="true"></span>
               <span class="min-instr-status" id="minFwStatus">checking</span>
             </div>
             <div class="min-instr-value" id="minFwValue">&mdash;</div>
@@ -69,7 +69,7 @@
           <div class="min-instr" id="minCtrlInstr">
             <div class="min-instr-label">CONTROLLER</div>
             <div class="min-instr-led-row">
-              <span class="led off" id="minCtrlLed"></span>
+              <span class="led off" id="minCtrlLed" aria-hidden="true"></span>
               <span class="min-instr-status" id="minCtrlStatus">none</span>
             </div>
             <!-- N64 front-face 4-port indicator: short/wide trapezoidal sockets +
@@ -141,14 +141,14 @@
     <!-- Status strip -->
     <section class="status">
       <div class="stat" id="sdStat">
-        <span class="led off" id="sdLed"></span>
+        <span class="led off" id="sdLed" aria-hidden="true"></span>
         <div class="stat-body">
           <div class="stat-label">SD CARD</div>
           <div class="stat-value" id="sdValue">scanning&hellip;</div>
         </div>
       </div>
       <div class="stat" id="padStat">
-        <span class="led off" id="padLed"></span>
+        <span class="led off" id="padLed" aria-hidden="true"></span>
         <div class="stat-body">
           <div class="stat-label">CONTROLLER</div>
           <div class="stat-value" id="padValue">&mdash;</div>
@@ -324,9 +324,9 @@
       </div>
     </div>
 
-    <div class="modal hidden" id="settingsModal">
+    <div class="modal hidden" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
       <div class="modal-box settings-box">
-        <div class="modal-title">Settings</div>
+        <div class="modal-title" id="settingsModalTitle">Settings</div>
         <div class="settings-group">
           <div class="settings-label">Theme</div>
           <div class="settings-desc">N64 console colors.</div>
@@ -352,7 +352,7 @@
       </div>
     </div>
 
-    <div class="modal hidden" id="modal">
+    <div class="modal hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <div class="modal-box">
         <div class="modal-title" id="modalTitle">Confirm</div>
         <div class="modal-msg" id="modalMsg"></div>

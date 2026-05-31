@@ -317,6 +317,27 @@ button:disabled { opacity: .45; cursor: not-allowed; }
     inset 0 1px 0 rgba(255,255,255,.10),
     inset 0 -1px 0 rgba(0,0,0,.20);
 }
+/* Distinct focus state so keyboard-only users on hover-capable devices can
+   tell which button has focus even when hover is active (a11y review). */
+.primary:focus-visible,
+.action:focus-visible,
+.ghost:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+/* Honor system reduced-motion: kill the cog spin, hover transforms, and
+   port-glow transitions for users who set the preference (a11y review). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+  .card:hover,
+  .cog:hover,
+  .primary:active:not(:disabled),
+  .big-auto:active:not(:disabled) { transform: none !important; }
+}
 .action {
   background: var(--panel-2);
   color: var(--text);
@@ -1032,7 +1053,11 @@ body.mode-minimal .app {
   transition: border-color .15s, background-color .15s;
 }
 .min-instr-select:hover { border-color: var(--gold); background-color: rgba(0,0,0,.20); }
-.min-instr-select:focus { border-color: var(--gold); outline: none; }
+.min-instr-select:focus-visible {
+  border-color: var(--gold);
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;          /* visible focus ring on top of the hover border (a11y review) */
+}
 .min-instr-select option { font-size: 14px; background: var(--panel-2); color: var(--text); }
 /* Path + free-space stats under the SD selector. Mono, dim, small caps —
    reads as the "subtext" line on a hi-fi component face. */
@@ -1073,7 +1098,7 @@ body.mode-minimal .app {
 }
 .min-state-text {
   font-family: var(--sans);              /* mono label -> sans value, the core hi-fi pattern */
-  font-size: clamp(11px, .85vw, 14px);   /* shrunk - was outweighing the LAST label visually */
+  font-size: clamp(12px, .85vw, 14px);   /* shrunk - was outweighing the LAST label visually; floor raised to 12px for a11y */
   color: var(--dim-bright, var(--text));
   flex: 1;
   min-width: 0;

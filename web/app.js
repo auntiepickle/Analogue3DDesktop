@@ -62,7 +62,12 @@ function getMode() { return localStorage.getItem(MODE_KEY) || "minimal"; }
 function setMode(m) {
   document.body.classList.remove("mode-minimal", "mode-tinker");
   document.body.classList.add("mode-" + m);
-  try { localStorage.setItem(MODE_KEY, m); } catch (e) {}
+  // Update aria-checked on the mode toggle so screen readers announce the
+  // current state (a11y review #11). The toggle is role="switch" in HTML.
+  const toggle = document.getElementById("toTinker");
+  if (toggle) toggle.setAttribute("aria-checked", m === "tinker" ? "true" : "false");
+  try { localStorage.setItem(MODE_KEY, m); }
+  catch (e) { console.warn("Mode persistence failed:", e); }
 }
 
 function getTheme() { return localStorage.getItem(THEME_KEY) || "charcoal"; }
