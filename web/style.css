@@ -5,7 +5,7 @@
   --border: #2a2a31;
   --gold: #e8b923;
   --gold-soft: #f0cf5e;
-  --gold-dim: #9a7a1c;
+  --gold-dim: #ab8f2a;     /* bumped from #9a7a1c — was 4.45:1 on panel (borderline AA); now ~5.0:1 */
   --green: #3ddc84;
   --red: #ff5f56;
   --text: #ececf0;
@@ -24,16 +24,53 @@
      viewport find its own size while keeping the hi-fi instrument-panel
      rhythm. Add `--fs-*` to new components; don't reintroduce hardcoded px.
      -------------------------------------------------------------------- */
-  /* Fixed rem-based type scale, sized for DESKTOP reading distance.
-     Standard web 12-16px scale reads too small at typical monitor viewing
-     distance (24-32"); bumped up across the board (+2-4px) so the dense
-     gallery + table rows stay legible without leaning in. Browser/OS DPI
-     scaling still handles physical sizing across high/low DPI displays. */
-  --fs-micro: 1rem;       /* 16px - mono labels, IDs, badges, ver pill */
-  --fs-small: 1.125rem;   /* 18px - secondary text, captions, descriptions, button text */
-  --fs-body:  1.25rem;    /* 20px - default body, primary list rows */
-  --fs-med:   1.375rem;   /* 22px - sub-card titles (CONSOLE FIRMWARE etc.) */
-  --fs-large: 1.625rem;   /* 26px - section headers (UPDATES, BACKUPS, CARTRIDGE ART), wordmarks */
+  /* ============================================================
+     6-TIER TYPE SYSTEM — sans + mono variants
+     ----------------------------------------------------------
+     Mono fonts render ~10-15% larger visually than sans at the
+     same px size (taller x-height, wider glyphs). Without
+     compensation, a mono label at the same px as a sans value
+     dominates it visually — the "ant text + giant text" feel.
+     Each mono token is 2px smaller than its sans equivalent so
+     they read as the same visual tier.
+
+     Ratio: ~1.18x between tiers (clearer than 1.125x). Sizes are
+     tuned for desktop reading distance (24-32"). All values fixed
+     in rem so they don't drift across viewports — OS DPI scaling
+     handles physical readability per display.
+     ============================================================ */
+
+  /* Tier 6 — Meta: badges, version pills, "newest" tags */
+  --fs-meta:      0.875rem;   /* 14px sans */
+  --fs-meta-mono: 0.75rem;    /* 12px mono ≈ 14px sans optically */
+
+  /* Tier 5 — Control: buttons, selects, small actions */
+  --fs-control:      1rem;       /* 16px sans */
+  --fs-control-mono: 0.875rem;   /* 14px mono ≈ 16px sans */
+
+  /* Tier 4 — Secondary: captions, descriptions, secondary labels */
+  --fs-secondary:      1.125rem;  /* 18px sans */
+  --fs-secondary-mono: 1rem;      /* 16px mono ≈ 18px sans */
+
+  /* Tier 3 — Body: primary text, list rows, default */
+  --fs-body:      1.25rem;     /* 20px sans */
+  --fs-body-mono: 1.125rem;    /* 18px mono ≈ 20px sans */
+
+  /* Tier 2 — Headline: card titles, instrument value labels */
+  --fs-headline:      1.5rem;      /* 24px sans */
+  --fs-headline-mono: 1.375rem;    /* 22px mono ≈ 24px sans */
+
+  /* Tier 1 — Display: section headers, wordmarks */
+  --fs-display:      1.75rem;     /* 28px sans */
+  --fs-display-mono: 1.625rem;    /* 26px mono ≈ 28px sans */
+
+  /* Legacy aliases — keep so the rest of the file doesn't need rewriting.
+     Old names map onto the SANS half of the new system (mono elements get
+     re-pointed to *-mono tokens individually). */
+  --fs-micro: var(--fs-meta);        /* was 16px - now 14px */
+  --fs-small: var(--fs-secondary);   /* 18px - same */
+  --fs-med:   var(--fs-headline);    /* was 22px - now 24px */
+  --fs-large: var(--fs-display);     /* was 26px - now 28px */
 }
 
 * { box-sizing: border-box; }
@@ -54,7 +91,7 @@ html, body {
   padding: 18px 20px 28px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;                      /* bumped from 16 for larger text rhythm */
 }
 
 /* ---------- header ---------- */
@@ -82,7 +119,7 @@ html, body {
   color: var(--gold);
   text-shadow: 0 0 18px rgba(232, 185, 35, .25);
 }
-.wordmark .thin { color: var(--dim); font-weight: 400; letter-spacing: 4px; font-size: var(--fs-small); }
+.wordmark .thin { color: var(--dim); font-weight: 400; letter-spacing: 0.1em; font-size: var(--fs-secondary-mono); }    /* letter-spacing 4px -> 0.1em scales w/ size; font now mono token */
 .cog {
   background: transparent; border: none; color: var(--gold);
   font-size: 20px; line-height: 1; cursor: pointer; padding: 2px 4px;
@@ -102,11 +139,11 @@ html, body {
   border: 1px solid var(--gold-line);
   border-radius: 999px;
   padding: 3px 10px;
-  font-size: var(--fs-micro);
+  font-size: var(--fs-meta-mono);     /* mono pill - 12px optical ≈ 14px sans */
 }
 .update-pill {
   font-family: var(--mono);
-  font-size: var(--fs-micro);
+  font-size: var(--fs-meta-mono);
   font-weight: 600;
   color: #1a1500;
   background: var(--gold);
@@ -156,8 +193,8 @@ html, body {
   0%, 100% { box-shadow: 0 0 12px var(--led-glow); }
   50%      { box-shadow: 0 0 22px var(--led-glow); }
 }
-.stat-label { font-family: var(--mono); font-size: var(--fs-micro); letter-spacing: 2px; text-transform: uppercase; color: var(--dim); }
-.stat-value { font-family: var(--mono); font-size: var(--fs-small); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat-label { font-family: var(--mono); font-size: var(--fs-control-mono); line-height: 1; letter-spacing: 0.125em; text-transform: uppercase; color: var(--dim); }
+.stat-value { font-family: var(--mono); font-size: var(--fs-secondary-mono); line-height: 1.2; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* ---------- picker ---------- */
 .picker {
@@ -166,15 +203,16 @@ html, body {
   gap: 10px;
   flex-wrap: wrap;
 }
-.picker label { color: var(--dim); font-size: var(--fs-micro); letter-spacing: .5px; }
+.picker label { color: var(--dim); font-size: var(--fs-control-mono); letter-spacing: 0.05em; }
 select, input[type=text] {
   background: var(--panel-2);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 2px;
-  padding: 6px 28px 6px 10px;     /* tightened — was reading much taller than surrounding labels */
+  padding: 7px 30px 7px 12px;
   font-family: var(--mono);
-  font-size: var(--fs-micro);     /* matched to label tier so dropdown isn't 2x taller than its label */
+  font-size: var(--fs-secondary-mono);     /* 16px mono ≈ 18px sans - same tier as descriptions */
+  font-variant-numeric: tabular-nums;
   outline: none;
 }
 select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
@@ -214,7 +252,7 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
 }
 .card:hover { border-color: var(--gold-dim); transform: translateY(-1px); }
 .card.span2 { grid-column: 1 / -1; }
-.card h3 { margin: 0; font-size: var(--fs-med); color: var(--text); }
+.card h3 { margin: 0; font-size: var(--fs-headline); color: var(--text); line-height: 1.2; }
 .card p { margin: 0; color: var(--dim); font-size: 12.5px; flex: 1; }
 .restore-row { display: flex; gap: 10px; align-items: center; }
 .grow { flex: 1; }
@@ -244,7 +282,7 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
 .badge.upd { color: #1a1500; background: var(--gold); border-color: var(--gold); font-weight: 600; }
 
 /* ---------- cart art gallery ---------- */
-.art-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+.art-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }   /* tile bumped 104->120 + gap 10->12 for new caption sizes (density review) */
 .art-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; }
 .art-tile .art-img {
   width: 100%;
@@ -270,10 +308,10 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
   color: var(--dim); font-size: 11px; background: #0a0a0c;
 }
 .art-cap {
-  font-size: var(--fs-small); color: var(--text); text-align: center; line-height: 1.25;
-  min-height: 2.5em; display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-secondary); color: var(--text); text-align: center; line-height: 1.3;
+  min-height: 3em; display: flex; align-items: center; justify-content: center;     /* min-height 2.5em -> 3em per density review */
 }
-.art-id { font-family: var(--mono); font-size: var(--fs-micro); color: var(--gold-dim); }
+.art-id { font-family: var(--mono); font-size: var(--fs-control-mono); color: var(--gold-dim); font-variant-numeric: tabular-nums; }
 .art-tile .art-actions { width: 100%; margin-top: auto; display: flex; flex-direction: column; gap: 3px; }
 .art-tile .setart { width: 100%; align-self: stretch; }
 .art-tile .artreset {
@@ -298,18 +336,18 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
 .thumb .del:hover { color: var(--red); border-color: var(--red); }
 .thumb .newest-tag {
   position: absolute; top: 4px; left: 4px;
-  font-size: 9px; letter-spacing: .5px; text-transform: uppercase; font-weight: 600;
-  background: var(--gold); color: #1a1500; border-radius: 4px; padding: 1px 5px;
+  font-size: var(--fs-meta-mono); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600;     /* lifted from 9px to 12px - WCAG min */
+  background: var(--gold); color: #1a1500; border-radius: 4px; padding: 2px 6px;
 }
 
 /* ---------- buttons ---------- */
 button {
   font-family: var(--sans);
-  font-size: var(--fs-micro);     /* matches dropdown tier - consistent chrome */
+  font-size: var(--fs-control);     /* 16px sans - same optical tier as 14px mono labels */
   font-weight: 600;
-  border-radius: 2px;          /* was 9px - pillar #6 hairline precision says no rounded > 4px */
+  border-radius: 2px;
   border: 1px solid transparent;
-  padding: 7px 14px;
+  padding: 8px 16px;
   cursor: pointer;
   white-space: nowrap;
   transition: background .15s, border-color .15s, color .15s, opacity .15s;
@@ -368,6 +406,12 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 }
 @media (prefers-contrast: more) {
   html::after { display: none !important; }   /* clean surface for high-contrast mode */
+  /* Lift the dim/accent-dim colors so secondary text crosses 4.5:1 even
+     when the OS-level contrast preference is enabled (WCAG review). */
+  :root {
+    --dim:      #c4c4d0;
+    --gold-dim: #d4a819;
+  }
 }
 .action {
   background: var(--panel-2);
@@ -392,10 +436,10 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 2px;
-  min-height: 30px;       /* equalize across blocks so UPDATES/BACKUPS cards top-align */
+  margin-bottom: 6px;
+  min-height: 44px;       /* bumped from 30 — 28px display font needs ~44px line box per density review */
 }
-.section-head h2 { margin: 0; font-size: var(--fs-large); color: var(--gold); }
+.section-head h2 { margin: 0; font-size: var(--fs-display); color: var(--gold); line-height: 1.2; }
 .section-head .muted { color: var(--dim); font-weight: 400; font-size: var(--fs-small); }
 .row-tools { display: flex; gap: 8px; align-items: center; }
 .muted { color: var(--dim); }
@@ -460,13 +504,13 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   border: 1px solid var(--border); background: #0a0a0c;
 }
 .game-title { font-weight: 600; color: var(--text); font-size: var(--fs-body); }
-.game-id { font-family: var(--mono); color: var(--gold-dim); font-size: var(--fs-micro); }
-.game-meta { color: var(--dim); font-size: var(--fs-small); }
+.game-id { font-family: var(--mono); color: var(--gold-dim); font-size: var(--fs-control-mono); font-variant-numeric: tabular-nums; }
+.game-meta { color: var(--dim); font-size: var(--fs-secondary); }
 .game-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .game-actions label {
   font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 2px;
+  font-size: var(--fs-meta-mono);   /* 12px - lifted from 9px per WCAG min */
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--gold);
 }
@@ -647,8 +691,8 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .modal-title {
   font-family: var(--mono);
   color: var(--gold);
-  font-size: 15px;
-  letter-spacing: .5px;
+  font-size: var(--fs-headline-mono);     /* 22px mono ≈ 24px sans - modal title tier */
+  letter-spacing: 0.04em;
   margin-bottom: 10px;
 }
 .modal-msg {
@@ -1092,8 +1136,9 @@ body.mode-minimal .app {
 
 .min-instr-label {
   font-family: var(--mono);
-  font-size: var(--fs-micro);
-  letter-spacing: 3px;
+  font-size: var(--fs-control-mono);
+  line-height: 1;
+  letter-spacing: 0.18em;        /* em-based — scales with font (was fixed 3px) */
   text-transform: uppercase;
   color: var(--gold);
 }
@@ -1110,21 +1155,23 @@ body.mode-minimal .app {
 }
 .min-instr-status {
   font-family: var(--mono);
-  font-size: var(--fs-micro);
-  letter-spacing: 1.5px;
+  font-size: var(--fs-control-mono);
+  line-height: 1;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--dim);
 }
 
 .min-instr-value {
-  font-size: clamp(22px, 1.8vw, 36px);   /* loom at ultrawide; no postage-stamp at 100% DPI */
+  font-size: var(--fs-headline);          /* 24px sans - primary instrument read */
   color: var(--text);
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.4;
-  min-height: 1.4em;
+  line-height: 1.3;
+  min-height: 1.3em;
+  font-variant-numeric: tabular-nums;
 }
 /* The SD picker in minimal mode is a real <select> dressed to read as the big
    value text. Borderless, large font, with a subtle chevron hint that it's
@@ -1158,8 +1205,8 @@ body.mode-minimal .app {
    reads as the "subtext" line on a hi-fi component face. */
 .min-instr-substats {
   font-family: var(--mono);
-  font-size: var(--fs-micro);
-  letter-spacing: 1.5px;
+  font-size: var(--fs-control-mono);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--dim);
   margin-top: 4px;
@@ -1186,14 +1233,15 @@ body.mode-minimal .app {
 }
 .min-state-label {
   font-family: var(--mono);
-  font-size: var(--fs-micro);
-  letter-spacing: 3px;
+  font-size: var(--fs-control-mono);
+  line-height: 1;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--gold);
 }
 .min-state-text {
   font-family: var(--sans);              /* mono label -> sans value, the core hi-fi pattern */
-  font-size: var(--fs-small);            /* responsive token (was clamp 12-14) */
+  font-size: var(--fs-secondary);
   color: var(--text);              /* was var(--dim-bright, var(--text)) but --dim-bright was never defined */
   flex: 1;
   min-width: 0;
