@@ -1311,8 +1311,15 @@ body.mode-tinker .tinker-view {
    actually fit at the 280px rail floor without ellipsing to "ANA...". */
 .adv-rail .topbar .wordmark .thin,
 .adv-rail .topbar .wordmark .model { display: none; }
-.adv-rail .topbar .ver { font-size: 10px; margin-left: auto; flex: 0 0 auto; }
-.adv-rail .topbar .mode-toggle-tinker { flex: 0 0 auto; font-size: 9px; padding: 4px 6px; }
+.adv-rail .topbar .ver {
+  font-size: 9px;
+  letter-spacing: .5px;
+  margin-left: auto;
+  flex: 0 0 auto;
+  padding: 1px 6px;          /* tighter pill so "ANALOGUE" wordmark survives at the 280px rail floor */
+  border-color: var(--gold-line);
+}
+.adv-rail .topbar .mode-toggle-tinker { flex: 0 0 auto; font-size: 9px; padding: 3px 5px; letter-spacing: 1.5px; }
 .adv-rail .topbar .cog { flex: 0 0 auto; font-size: 14px; }
 /* Rail status: each stat is its own inline pair (LED left of label+value).
    Adjudicator Conflict B: IA wins. A status LED is a prefix indicator,
