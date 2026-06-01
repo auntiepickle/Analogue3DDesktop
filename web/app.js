@@ -879,7 +879,9 @@ async function refreshSettings() {
   } catch (e) { return null; }
 }
 
+let _modalOpener = null;
 function openSettings() {
+  _modalOpener = document.activeElement;     // remember focus for return-on-close (a11y)
   refreshSettings();
   _renderThemePicker();
   const cb = $("clearToggle");
@@ -889,7 +891,10 @@ function openSettings() {
   }
   $("settingsModal").classList.remove("hidden");
 }
-function closeSettings() { $("settingsModal").classList.add("hidden"); }
+function closeSettings() {
+  $("settingsModal").classList.add("hidden");
+  if (_modalOpener && _modalOpener.focus) _modalOpener.focus();
+}
 
 /* ---------- styled confirm modal ---------- */
 function confirmDialog(message, opts) {
@@ -897,7 +902,7 @@ function confirmDialog(message, opts) {
   return new Promise((resolve) => {
     const modal = $("modal"), ok = $("modalOk"), cancel = $("modalCancel");
     $("modalMsg").textContent = message;
-    $("modalTitle").textContent = opts.title || "Please confirm";
+    $("modalTitle").textContent = opts.title || "Confirm";   /* pillar #4 — assume competence, no "Please" */
     ok.textContent = opts.okText || "Confirm";
     ok.classList.toggle("danger", !!opts.danger);
     modal.classList.remove("hidden");

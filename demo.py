@@ -385,8 +385,10 @@ def memory_thumbnail(root, folder, name):
                 buf = _io.BytesIO()
                 frame.save(buf, "JPEG", quality=72)
                 return "data:image/jpeg;base64," + _b64.b64encode(buf.getvalue()).decode("ascii")
-        except Exception:
-            pass
+        except Exception as e:
+            # Surface PIL/codec failures so demo-mode authors don't see blank
+            # thumbnails and assume it's a UI bug (demo reviewer #3).
+            print(f"[demo] memory_thumbnail PIL fallback: {e}", flush=True)
     # 2) Fallback: empty string (UI shows blank, current behavior).
     return ""
 
