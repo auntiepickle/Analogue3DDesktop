@@ -209,9 +209,9 @@ select, input[type=text] {
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 2px;
-  padding: 7px 30px 7px 12px;
+  padding: 6px 28px 6px 10px;
   font-family: var(--mono);
-  font-size: var(--fs-secondary-mono);     /* 16px mono ≈ 18px sans - same tier as descriptions */
+  font-size: var(--fs-control-mono);       /* 14px mono ≈ 16px sans - chrome tier, matches buttons optically */
   font-variant-numeric: tabular-nums;
   outline: none;
 }
@@ -308,10 +308,10 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
   color: var(--dim); font-size: 11px; background: #0a0a0c;
 }
 .art-cap {
-  font-size: var(--fs-secondary); color: var(--text); text-align: center; line-height: 1.3;
-  min-height: 3em; display: flex; align-items: center; justify-content: center;     /* min-height 2.5em -> 3em per density review */
+  font-size: var(--fs-meta); color: var(--text); text-align: center; line-height: 1.3;       /* dropped from secondary (18px) to meta (14px) — tile captions are small dense labels, not body */
+  min-height: 2.6em; display: flex; align-items: center; justify-content: center;
 }
-.art-id { font-family: var(--mono); font-size: var(--fs-control-mono); color: var(--gold-dim); font-variant-numeric: tabular-nums; }
+.art-id { font-family: var(--mono); font-size: var(--fs-meta-mono); color: var(--gold-dim); font-variant-numeric: tabular-nums; }     /* 12px mono - subordinate ID under tile caption */
 .art-tile .art-actions { width: 100%; margin-top: auto; display: flex; flex-direction: column; gap: 3px; }
 .art-tile .setart { width: 100%; align-self: stretch; }
 .art-tile .artreset {
@@ -343,11 +343,11 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
 /* ---------- buttons ---------- */
 button {
   font-family: var(--sans);
-  font-size: var(--fs-control);     /* 16px sans - same optical tier as 14px mono labels */
+  font-size: var(--fs-meta);            /* 14px sans - chrome should sit a tier BELOW body text */
   font-weight: 600;
   border-radius: 2px;
   border: 1px solid transparent;
-  padding: 8px 16px;
+  padding: 7px 14px;
   cursor: pointer;
   white-space: nowrap;
   transition: background .15s, border-color .15s, color .15s, opacity .15s;
@@ -448,7 +448,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .mem-controls { display: flex; align-items: center; gap: 10px; }
 .mem-controls .grow { flex: 1; }
 .mem-controls #memSearch, .mem-controls #artSearch { max-width: 280px; }
-.mem-controls #memPageInfo, .mem-controls #artPageInfo { font-size: var(--fs-small); white-space: nowrap; }
+.mem-controls #memPageInfo, .mem-controls #artPageInfo { font-size: var(--fs-meta); white-space: nowrap; }   /* pagination text - meta tier with the buttons */
 
 .mem-selbar {
   display: flex; align-items: center; gap: 10px;
@@ -505,7 +505,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 }
 .game-title { font-weight: 600; color: var(--text); font-size: var(--fs-body); }
 .game-id { font-family: var(--mono); color: var(--gold-dim); font-size: var(--fs-control-mono); font-variant-numeric: tabular-nums; }
-.game-meta { color: var(--dim); font-size: var(--fs-secondary); }
+.game-meta { color: var(--dim); font-size: var(--fs-meta); }    /* row meta is chrome, not content - meta tier with chevron + buttons */
 .game-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .game-actions label {
   font-family: var(--mono);
