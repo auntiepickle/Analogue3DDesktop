@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" font-family="ui-monospace, Menlo, Consolas, monospace">
-  <!-- Backdrop matches the app's --panel + faint dot grid pattern -->
+  <!-- Backdrop matches the app panel + faint dot grid pattern -->
   <rect width="1200" height="380" fill="#0d0d0f"/>
   <defs>
     <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
