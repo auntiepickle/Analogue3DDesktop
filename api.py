@@ -429,35 +429,49 @@ class Api:
 
     def auto(self, root):
         def task():
-            steps = ["Back up SD card (incl. save states)", "Update console firmware",
+            steps = ["Snapshot save states", "Back up SD card", "Update console firmware",
                      "Install cartridge art pack", "Update controllers"]
             self._steps_init(steps)
-            print("=== Auto: backup -> firmware -> art pack -> controllers ===")
+            print("=== Auto: snapshot -> backup -> firmware -> art pack -> controllers ===")
 
+            # Memories snapshot first — fast, browsable in the Memories restore
+            # picker, and survives even if a later step fails. The SD backup
+            # below also zips Memories, but as part of a full-card archive
+            # rather than a per-save-state snapshot the user can selectively
+            # restore from.
             self._step(0, "active")
-            sdcard.create_backup(root, progress=self._backup_progress_cb())
-            self._step(0, "done")
+            snap_path, n = savestates.archive_all(root)
+            if snap_path:
+                self._step_note(0, f"{n} states")
+                self._step(0, "done")
+            else:
+                self._step(0, "skip")
+                print("No save states on this card to snapshot.")
 
             self._step(1, "active")
+            sdcard.create_backup(root, progress=self._backup_progress_cb())
+            self._step(1, "done")
+
+            self._step(2, "active")
             ok = sdcard.install_firmware(root)
             if not ok:
                 print("Firmware step did not complete.")
-            self._step(1, "done" if ok else "fail")
+            self._step(2, "done" if ok else "fail")
 
-            self._step(2, "active")
+            self._step(3, "active")
             sdcard.install_labels(root, labels.custom_pack_path() if labels.has_custom_pack() else None)
-            self._step(2, "done")
+            self._step(3, "done")
 
             n = controller.connected_count()
             if n:
-                self._step(3, "active")
-                self._step_note(3, f"{n} connected")
+                self._step(4, "active")
+                self._step_note(4, f"{n} connected")
                 controller.update_all(progress=self._progress_cb(),
-                                      announce=self._flash_announce(n, step_index=3))
-                self._step(3, "done")
-                self._step_note(3, "")
+                                      announce=self._flash_announce(n, step_index=4))
+                self._step(4, "done")
+                self._step_note(4, "")
             else:
-                self._step(3, "skip")
+                self._step(4, "skip")
                 print("No controller connected - skipped.")
             print("\nAll done. Safely eject the card.")
         return _run(task)

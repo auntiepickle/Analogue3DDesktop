@@ -1233,7 +1233,10 @@ function init() {
   document.querySelectorAll("[data-action]").forEach((btn) => {
     btn.addEventListener("click", () => handlers[btn.dataset.action]());
   });
-  // kebab menus: toggle on the button, close on any other click
+  // kebab menus: toggle on the button, close on any other click. Each panel
+  // (.block) creates its own stacking context in Funtastic mode (backdrop-
+  // filter), so an open menu would be painted over by a sibling block;
+  // .menu-open on the parent block raises its z-index above siblings.
   document.addEventListener("click", (e) => {
     const menuBtn = e.target.closest(".menu-btn");
     let toOpen = null;
@@ -1242,7 +1245,12 @@ function init() {
       if (menu && menu.classList.contains("hidden")) toOpen = menu;
     }
     document.querySelectorAll(".menu:not(.hidden)").forEach((m) => m.classList.add("hidden"));
-    if (toOpen) toOpen.classList.remove("hidden");
+    document.querySelectorAll(".block.menu-open").forEach((b) => b.classList.remove("menu-open"));
+    if (toOpen) {
+      toOpen.classList.remove("hidden");
+      const block = toOpen.closest(".block");
+      if (block) block.classList.add("menu-open");
+    }
   });
   $("refreshBtn").addEventListener("click", refresh);
   const minRefresh = $("minRefreshBtn");
@@ -1263,6 +1271,7 @@ function init() {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       document.querySelectorAll(".menu:not(.hidden)").forEach((m) => m.classList.add("hidden"));
+      document.querySelectorAll(".block.menu-open").forEach((b) => b.classList.remove("menu-open"));
       if ($("modal").classList.contains("hidden")) closeSettings();
     }
   });
