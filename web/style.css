@@ -337,6 +337,13 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   .cog:hover,
   .primary:active:not(:disabled),
   .big-auto:active:not(:disabled) { transform: none !important; }
+  /* Drop the bg drift + film grain too — the static surface is what users
+     who set reduced-motion + high-contrast want. */
+  body.clear::before { animation: none !important; }
+  html::after { display: none !important; }
+}
+@media (prefers-contrast: more) {
+  html::after { display: none !important; }   /* clean surface for high-contrast mode */
 }
 .action {
   background: var(--panel-2);
@@ -690,6 +697,28 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   50%      { box-shadow: 0 0 9px var(--led-glow, var(--green)), 0 0 3px var(--led-glow, var(--green)); }
 }
 .led.on { animation: a3d-led-breathe 3.6s ease-in-out infinite; }
+/* De-sync the breathing per-LED so the panel doesn't pulse in lockstep
+   (lockstep reads as mechanical / digital; offset reads as analog / live).
+   The negative delays start each LED at a different phase from page-load. */
+.min-instruments .min-instr:nth-child(1) .led.on { animation-delay: -.4s; }
+.min-instruments .min-instr:nth-child(2) .led.on { animation-delay: -1.7s; }
+.min-instruments .min-instr:nth-child(3) .led.on { animation-delay: -2.9s; }
+.adv-rail .stat:nth-of-type(2) .led.on { animation-delay: -1.3s; }
+
+/* Analog warmth: a fixed, very-faint film-grain overlay over the whole app
+   so the surfaces don't read as perfectly-rendered digital. 2.5% opacity is
+   subliminal — eye reads it as "physical, slightly noisy" without noticing.
+   Lives on html::after so it sits above panels but doesn't trap input. */
+html::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: .025;
+  mix-blend-mode: overlay;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><filter id="n"><feTurbulence baseFrequency=".9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 .95  0 0 0 0 .85  0 0 0 1 0"/></filter><rect width="100%25" height="100%25" filter="url(%23n)"/></svg>');
+}
 body.clear .n64-ports .port.lit .port-ring,
 body.clear .n64-ports .port.lit .port-socket {
   filter: drop-shadow(0 0 5px var(--gold)) drop-shadow(0 0 2px color-mix(in oklab, var(--gold) 35%, transparent));
@@ -790,7 +819,7 @@ body.clear {
 body.clear::before {
   content: "";
   position: fixed;
-  inset: 0;
+  inset: -2%;            /* slight overhang so the drift never reveals an edge */
   pointer-events: none;
   z-index: 0;
   background:
@@ -799,6 +828,17 @@ body.clear::before {
     radial-gradient(ellipse 50% 40% at 50% 50%, color-mix(in oklab, var(--gold) 14%, transparent), transparent 60%),
     repeating-linear-gradient(180deg, transparent 0 3px, rgba(255,255,255,.032) 3px 4px),
     repeating-linear-gradient(90deg, transparent 0 3px, rgba(255,255,255,.012) 3px 4px);
+  animation: a3d-bg-drift 22s ease-in-out infinite;
+  will-change: transform;
+}
+/* Slowest-bit-alive on the Funtastic vignette: barely-perceptible drift so
+   the case glow feels like translucent material under shifting light, not a
+   static layer. ±0.7% translate over 22s is subliminal — the eye reads it
+   as "alive" without noticing the motion explicitly. Killed by the
+   prefers-reduced-motion block. */
+@keyframes a3d-bg-drift {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(.7%, -.5%, 0); }
 }
 /* Ensure interactive content stays above the fixed bg layer. */
 body.clear .app,
