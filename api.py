@@ -22,7 +22,7 @@ import webbrowser
 import analogue3d
 from analogue3d import sdcard, controller, savestates, labels, saves, config, ui, updates
 
-APP_VERSION = "0.2.2"
+APP_VERSION = "0.3.0"
 
 # Demo / fake-data mode: when A3D_DEMO=1, the read-only methods (detect, versions,
 # list_backups, list_memories, list_snapshots, cart_art_games, controller_versions)
@@ -146,7 +146,7 @@ class Api:
         return APP_VERSION
 
     def update_check(self):
-        """Is a newer desktop-app release out? Cached daily, silent offline.
+        """Is a newer desktop-app release out? Cached hourly, silent offline.
         Returns {current, latest, url, update_available} or None."""
         try:
             return updates.check(APP_VERSION, updates.GUI_REPO)
