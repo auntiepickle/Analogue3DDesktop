@@ -1525,6 +1525,7 @@ body.mode-tinker .restore-row { min-width: 0; flex-wrap: wrap; }
 body.mode-tinker .restore-row > select { flex: 1 1 auto; min-width: 160px; }   /* enough to fit full "2026-05-31 12:34" backup date instead of collapsing to "2..." */
 @media (max-width: 1700px) {
   body.mode-tinker .adv-main { grid-template-columns: 1fr; }   /* was max-width: 1200px - too aggressive 2-col, BACKUPS got cut off at 1536px CSS viewports */
+  body.mode-tinker .block > .grid2 { grid-template-columns: 1fr; }   /* inner CONSOLE-FW + CONTROLLER / BACK-UP + RESTORE were also overflowing — stack them */
 }
 /* On true ultrawides, let Updates+Backups+a third cell share a row. */
 @media (min-width: 3000px) {
@@ -1548,6 +1549,12 @@ body.mode-tinker .block > .grid2 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 16px;
+}
+/* This media query MUST come AFTER the auto-fit rule above — otherwise the
+   later auto-fit overrides the 1fr collapse and BACKUPS spills off-screen
+   at 1536px CSS viewports. */
+@media (max-width: 1700px) {
+  body.mode-tinker .block > .grid2 { grid-template-columns: 1fr; }
 }
 body.mode-tinker .block > .section-head { margin-bottom: 16px; }
 body.mode-tinker .block > .section-head h2 {
