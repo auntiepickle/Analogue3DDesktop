@@ -99,4 +99,3 @@ Built around an **instrument-panel** metaphor — hi-fi hardware, not a dashboar
 - [**docs/BRANDING.md**](docs/BRANDING.md) — six brand pillars, voice rules, the wordmark.
 - [**docs/THEMING.md**](docs/THEMING.md) — how the 10 themes work, rules when adding an 11th.
 - [**docs/REDESIGN.md**](docs/REDESIGN.md) — what the dual-mode UI redesign changed and why.
-- [**docs/CLI-UPDATES.md**](docs/CLI-UPDATES.md) — landing the same language in the CLI (separate PR).

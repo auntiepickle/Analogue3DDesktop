@@ -13,64 +13,16 @@
   --mono: ui-monospace, "Cascadia Code", "Consolas", "SF Mono", monospace;
   --sans: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
 
-  /* --------------------------------------------------------------------
-     Type scale tokens.
-     Each step is a fluid clamp(floor, viewport-relative, ceiling). Floors
-     are sized for legibility at low CSS-viewport widths (1280px = 1920×1080
-     at 150% Windows scaling). Ceilings cap on ultrawide so chrome doesn't
-     visually bloat past 3000-ish px. The previous design used hardcoded
-     10-14px values for many small labels; users at 100% DPI on a wide
-     monitor reported the chrome reading too small. This system lets each
-     viewport find its own size while keeping the hi-fi instrument-panel
-     rhythm. Add `--fs-*` to new components; don't reintroduce hardcoded px.
-     -------------------------------------------------------------------- */
-  /* ============================================================
-     6-TIER TYPE SYSTEM — sans + mono variants
-     ----------------------------------------------------------
-     Mono fonts render ~10-15% larger visually than sans at the
-     same px size (taller x-height, wider glyphs). Without
-     compensation, a mono label at the same px as a sans value
-     dominates it visually — the "ant text + giant text" feel.
-     Each mono token is 2px smaller than its sans equivalent so
-     they read as the same visual tier.
-
-     Ratio: ~1.18x between tiers (clearer than 1.125x). Sizes are
-     tuned for desktop reading distance (24-32"). All values fixed
-     in rem so they don't drift across viewports — OS DPI scaling
-     handles physical readability per display.
-     ============================================================ */
-
-  /* Tier 6 — Meta: badges, pills, micro-labels */
-  --fs-meta:      0.75rem;    /* 12px sans */
-  --fs-meta-mono: 0.625rem;   /* 10px mono ≈ 12px sans optically */
-
-  /* Tier 5 — Control: buttons, selects, small actions */
-  --fs-control:      0.8125rem;  /* 13px sans */
-  --fs-control-mono: 0.75rem;    /* 12px mono ≈ 13px sans */
-
-  /* Tier 4 — Secondary: captions, descriptions, secondary labels */
-  --fs-secondary:      0.9375rem;  /* 15px sans */
-  --fs-secondary-mono: 0.8125rem;  /* 13px mono ≈ 15px sans */
-
-  /* Tier 3 — Body: primary text, list rows, default */
-  --fs-body:      1.0625rem;   /* 17px sans */
-  --fs-body-mono: 0.9375rem;   /* 15px mono ≈ 17px sans */
-
-  /* Tier 2 — Headline: card titles, instrument values */
-  --fs-headline:      1.25rem;     /* 20px sans */
-  --fs-headline-mono: 1.125rem;    /* 18px mono ≈ 20px sans */
-
-  /* Tier 1 — Display: section headers, wordmarks */
-  --fs-display:      1.5rem;      /* 24px sans */
-  --fs-display-mono: 1.375rem;    /* 22px mono ≈ 24px sans */
-
-  /* Legacy aliases — keep so the rest of the file doesn't need rewriting.
-     Old names map onto the SANS half of the new system (mono elements get
-     re-pointed to *-mono tokens individually). */
-  --fs-micro: var(--fs-meta);        /* was 16px - now 14px */
-  --fs-small: var(--fs-secondary);   /* 18px - same */
-  --fs-med:   var(--fs-headline);    /* was 22px - now 24px */
-  --fs-large: var(--fs-display);     /* was 26px - now 28px */
+  /* 6-tier type system — sans + mono variants. Mono renders ~10-15% larger
+     than sans at the same px (taller x-height, wider glyphs), so the mono
+     token at each tier is ~2px smaller to read as the same visual weight.
+     Ratio ~1.18x between tiers. Fixed in rem; OS DPI handles physical size. */
+  --fs-meta:      0.75rem;    --fs-meta-mono:      0.625rem;
+  --fs-control:   0.8125rem;  --fs-control-mono:   0.75rem;
+  --fs-secondary: 0.9375rem;  --fs-secondary-mono: 0.8125rem;
+  --fs-body:      1.0625rem;  --fs-body-mono:      0.9375rem;
+  --fs-headline:  1.25rem;    --fs-headline-mono:  1.125rem;
+  --fs-display:   1.5rem;     --fs-display-mono:   1.375rem;
 }
 
 * { box-sizing: border-box; }
@@ -101,11 +53,6 @@ html, body {
   gap: 14px;
   padding-bottom: 4px;
 }
-.dots { display: flex; gap: 7px; }
-.dot { width: 11px; height: 11px; border-radius: 50%; opacity: .9; }
-.dot.red { background: var(--red); }
-.dot.gold { background: var(--gold); }
-.dot.green { background: var(--green); }
 .wordmark {
   font-family: var(--mono);
   font-weight: 700;
@@ -230,16 +177,11 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
   border-radius: 2px;
   padding: 16px 18px;
 }
-.hero-text h2 { margin: 0 0 4px; color: var(--gold); font-size: var(--fs-large); }
-.hero-text p { margin: 0; color: var(--dim); font-size: var(--fs-small); max-width: 560px; }
+.hero-text h2 { margin: 0 0 4px; color: var(--gold); font-size: var(--fs-display); }
+.hero-text p { margin: 0; color: var(--dim); font-size: var(--fs-secondary); max-width: 560px; }
 .hero .primary { margin-left: auto; }
 
 /* ---------- grid ---------- */
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
 .card {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -440,7 +382,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   min-height: 44px;       /* bumped from 30 — 28px display font needs ~44px line box per density review */
 }
 .section-head h2 { margin: 0; font-size: var(--fs-display); color: var(--gold); line-height: 1.2; }
-.section-head .muted { color: var(--dim); font-weight: 400; font-size: var(--fs-small); }
+.section-head .muted { color: var(--dim); font-weight: 400; font-size: var(--fs-secondary); }
 .row-tools { display: flex; gap: 8px; align-items: center; }
 .muted { color: var(--dim); }
 .pad { padding: 8px 2px; margin: 0; }
@@ -471,7 +413,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 }
 .menu-item {
   text-align: left; background: transparent; border: none; color: var(--text);
-  padding: 8px 10px; border-radius: 6px; font: inherit; font-size: var(--fs-small);
+  padding: 8px 10px; border-radius: 6px; font: inherit; font-size: var(--fs-secondary);
   cursor: pointer; white-space: nowrap;
 }
 .menu-item:hover:not(:disabled) { background: rgba(232, 185, 35, .12); color: var(--gold); }
@@ -531,7 +473,6 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .keep-input::-webkit-outer-spin-button,
 .keep-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .keep-input:focus { outline: none; border-color: var(--gold); }
-.cap-warn { color: var(--gold); }
 
 .thumbs {
   display: none;
@@ -967,6 +908,7 @@ body.clear .adv-rail .hero .primary { backdrop-filter: none; -webkit-backdrop-fi
   transition: border-color .12s;
 }
 .clear-toggle:hover { border-color: var(--gold-line); }
+.clear-toggle:focus-within { border-color: var(--gold); outline: 2px solid var(--gold); outline-offset: 1px; }
 .clear-toggle input { accent-color: var(--gold); }
 .clear-toggle .clear-name {
   font-family: var(--mono);
@@ -996,6 +938,7 @@ body.clear .adv-rail .hero .primary { backdrop-filter: none; -webkit-backdrop-fi
   transition: border-color .12s;
 }
 .theme-swatch:hover { border-color: var(--gold-line); }
+.theme-swatch:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .theme-swatch.active { border-color: var(--gold); }
 .theme-swatch .dot {
   width: 20px;
@@ -1031,7 +974,6 @@ body.clear .adv-rail .hero .primary { backdrop-filter: none; -webkit-backdrop-fi
 
 /* First-paint default: hide tinker so a fresh launch flashes minimal, never the busy tinker view. */
 body:not(.mode-tinker) #tinkerView { display: none; }
-body.mode-minimal #tinkerView { display: none; }
 body.mode-tinker #minimalView { display: none; }
 
 /* Advanced mode: use the whole viewport. Was clamped to 1400 which left ~45%
@@ -1278,9 +1220,17 @@ body.mode-minimal .app {
 }
 .big-auto:disabled { opacity: .45; cursor: not-allowed; }
 
-/* (Dropped the legacy .mode-toggle rule — toggle lives in the header now as
-   .mode-toggle-inline / .mode-toggle-tinker, and no element used .mode-toggle
-   after the redesign.) */
+/* Sub-label under DO EVERYTHING — tells a first-time user what clicking does. */
+.big-auto-sub {
+  margin: 10px 0 0;
+  text-align: center;
+  color: var(--dim);
+  font-size: var(--fs-secondary);
+  max-width: 64ch;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.4;
+}
 
 /* Promoted into the minimal-mode header: discoverable on first look. */
 .mode-toggle-inline {

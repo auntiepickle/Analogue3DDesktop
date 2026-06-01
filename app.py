@@ -12,6 +12,29 @@ import sys
 import json
 
 _WIN_STATE = os.path.join(os.path.expanduser("~"), ".analogue3d", "desktop_window.json")
+_SINGLETON_MUTEX = None     # module-level so the handle survives main() return
+
+
+def _foreground_existing_and_exit():
+    """On Windows, a second launch finds the running app's window and brings
+    it forward instead of spawning a second WebView2 host against the same
+    profile (which corrupts both)."""
+    if sys.platform != "win32":
+        return False
+    import ctypes
+    MUTEX_NAME = "Global\\auntiepickle.analogue3ddesktop.singleton"
+    ERROR_ALREADY_EXISTS = 183
+    global _SINGLETON_MUTEX
+    _SINGLETON_MUTEX = ctypes.windll.kernel32.CreateMutexW(None, False, MUTEX_NAME)
+    if not _SINGLETON_MUTEX:
+        return False
+    if ctypes.windll.kernel32.GetLastError() == ERROR_ALREADY_EXISTS:
+        hwnd = ctypes.windll.user32.FindWindowW(None, "Analogue 3D Desktop")
+        if hwnd:
+            ctypes.windll.user32.ShowWindow(hwnd, 9)      # SW_RESTORE
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
+        return True
+    return False
 
 
 def _load_window_state():
@@ -32,6 +55,8 @@ def _save_window_state(state):
 
 
 def main():
+    if _foreground_existing_and_exit():
+        sys.exit(0)
     try:
         import webview
     except ImportError:
@@ -112,15 +137,10 @@ def main():
         except Exception:
             pass
 
-    # Persist the WebView2 profile (cookies + localStorage) so the user's
-    # picked theme/mode survives a restart. pywebview defaults to
-    # private_mode=True, which wipes a3d:theme / a3d:mode / a3d:clear on every
-    # exit — that's why the theme picker felt amnesiac.
+    # private_mode=False so theme/mode/clear in localStorage survive a restart.
+    # Wipe the HTTP/Code/GPU caches on launch so a release-to-release UI update
+    # isn't shadowed by cached bytes — Local Storage lives in a sibling dir.
     storage = os.path.join(os.path.expanduser("~"), ".analogue3d", "webview")
-    # Drop the HTTP/JS code cache on every launch so an updated build's new
-    # HTML/CSS/JS isn't shadowed by the prior version's cached bytes. Local
-    # Storage (where theme/mode prefs live) sits in a sibling dir and is
-    # preserved.
     import shutil
     _cache_root = os.path.join(storage, "EBWebView", "Default")
     for _sub in ("Cache", "Code Cache", "GPUCache"):

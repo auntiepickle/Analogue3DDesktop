@@ -39,13 +39,9 @@ const THEME_KEY = "a3d:theme";
 const CLEAR_KEY = "a3d:clear";
 const LAUNCH_TINKER_KEY = "a3d:launchTinker";
 
-/* N64-edition-inspired themes. Each just overrides the gold tokens via a body
-   class so all existing var(--gold) references re-theme automatically. Order is
-   the order shown in the Settings swatch picker. */
-/* Themes mirror Analogue 3D + Analogue Pocket + N64 Funtastic colorways.
-   Gold + White are the actual Analogue 3D editions. Glow is the Analogue
-   Pocket Glow series. The rest are N64 Funtastic accents the user can
-   layer with the Funtastic translucent finish in Settings. */
+/* Mirrors Analogue 3D (Gold, White), Pocket (Glow), and N64 Funtastic
+   accents. Each id maps to a `.theme-<id>` body class that overrides the
+   gold tokens, so all `var(--gold)` references re-theme automatically. */
 const THEMES = [
   { id: "gold",      name: "Gold",      dot: "#e8b923" },
   { id: "white",     name: "White",     dot: "#f0eee6" },
@@ -75,7 +71,7 @@ function _clearHashOverride() {
     catch (e) { location.hash = ""; }
   }
 }
-function setMode(m) {
+function setMode(m, persist) {
   document.body.classList.remove("mode-minimal", "mode-tinker");
   document.body.classList.add("mode-" + m);
   // Update aria-checked on BOTH mode toggles (More Controls in minimal +
@@ -85,9 +81,11 @@ function setMode(m) {
   const toMinimal = document.getElementById("toMinimal");
   if (toTinker) toTinker.setAttribute("aria-checked", m === "tinker" ? "true" : "false");
   if (toMinimal) toMinimal.setAttribute("aria-checked", m === "minimal" ? "true" : "false");
-  _clearHashOverride();    // user-initiated pick beats any A3D_MODE env override
-  try { localStorage.setItem(MODE_KEY, m); }
-  catch (e) { console.warn("Mode persistence failed:", e); }
+  if (persist !== false) {
+    _clearHashOverride();    // user-initiated pick beats any A3D_MODE env override
+    try { localStorage.setItem(MODE_KEY, m); }
+    catch (e) { console.warn("Mode persistence failed:", e); }
+  }
 }
 
 function getTheme() {
@@ -95,9 +93,7 @@ function getTheme() {
   // render screenshots in each colorway without manipulating localStorage.
   const m = (location.hash || "").match(/[#&]theme=([a-z]+)/);
   if (m) return m[1];
-  let t = localStorage.getItem(THEME_KEY) || "gold";
-  if (t === "charcoal") t = "gold";    // legacy alias — picker entry renamed
-  return t;
+  return localStorage.getItem(THEME_KEY) || "gold";
 }
 function setTheme(id) {
   _clearHashOverride();    // user-initiated pick beats any A3D_THEME env override
@@ -901,6 +897,16 @@ async function refreshSettings() {
 }
 
 let _modalOpener = null;
+function _trapTab(modal, e) {
+  if (e.key !== "Tab") return;
+  const all = modal.querySelectorAll(
+    'button, [href], input:not([type=hidden]), select, textarea, [tabindex]:not([tabindex="-1"])');
+  const visible = [...all].filter(el => !el.disabled && el.offsetParent !== null);
+  if (!visible.length) return;
+  const first = visible[0], last = visible[visible.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
 function openSettings() {
   _modalOpener = document.activeElement;     // remember focus for return-on-close (a11y)
   refreshSettings();
@@ -915,10 +921,19 @@ function openSettings() {
     lt.checked = getLaunchTinker();
     lt.onchange = (e) => setLaunchTinker(e.target.checked);
   }
-  $("settingsModal").classList.remove("hidden");
+  const modal = $("settingsModal");
+  modal.classList.remove("hidden");
+  modal.onkeydown = (e) => _trapTab(modal, e);
+  // Move focus into the modal so Tab cycles inside it from the first stop.
+  setTimeout(() => {
+    const f = modal.querySelector('button:not([disabled]), input:not([disabled])');
+    if (f) f.focus();
+  }, 0);
 }
 function closeSettings() {
-  $("settingsModal").classList.add("hidden");
+  const modal = $("settingsModal");
+  modal.classList.add("hidden");
+  modal.onkeydown = null;
   if (_modalOpener && _modalOpener.focus) _modalOpener.focus();
 }
 
@@ -1230,6 +1245,8 @@ function init() {
     if (toOpen) toOpen.classList.remove("hidden");
   });
   $("refreshBtn").addEventListener("click", refresh);
+  const minRefresh = $("minRefreshBtn");
+  if (minRefresh) minRefresh.addEventListener("click", refresh);
   $("clearBtn").addEventListener("click", () => { el.console.innerHTML = ""; });
   $("memRefresh").addEventListener("click", refreshMemories);
   $("checkUpdates").addEventListener("click", refreshVersions);
@@ -1390,10 +1407,16 @@ function init() {
 }
 
 // Apply saved mode + theme + clear at script-load time so the chosen view +
-// accent + finish paint on the first frame - waiting for pywebviewready would
-// flash the default state first. The "Always launch in Tinker" Setting
-// short-circuits the last-used mode.
-setMode(getLaunchTinker() ? "tinker" : getMode());
+// accent + finish paint on the first frame. Priority: URL hash (screenshot
+// capture) > "Always start with full controls" setting > stored MODE_KEY >
+// default. When the setting forces tinker, we do NOT persist — so toggling
+// the setting off later still lands on the user's actual last pick.
+(function _bootMode() {
+  const hash = (location.hash || "").match(/[#&]mode=([a-z]+)/);
+  if (hash) { setMode(hash[1]); return; }
+  if (getLaunchTinker()) { setMode("tinker", false); return; }
+  setMode(getMode());
+})();
 setTheme(getTheme());
 setClear(getClear());
 

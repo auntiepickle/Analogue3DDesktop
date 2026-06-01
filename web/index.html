@@ -27,6 +27,7 @@
                most consequential affordance after the primary action. Discoverable on
                first look instead of buried below the Auto button. -->
           <button class="ghost mode-toggle-inline" id="toTinker" title="Show more controls" role="switch" aria-checked="false" aria-label="Show more controls (Advanced mode)">More&nbsp;Controls &#9662;</button>
+          <button class="ghost cog" id="minRefreshBtn" title="Rescan drives and controllers" aria-label="Rescan">&#8635;</button>
           <button class="cog" id="minSettingsBtn" title="Settings" aria-label="Settings">&#9881;</button>
         </header>
 
@@ -116,7 +117,8 @@
 
         </div>
 
-        <button class="primary big-auto" data-action="auto" id="minAutoBtn">DO EVERYTHING &nbsp;&rsaquo;</button>
+        <button class="primary big-auto" data-action="auto" id="minAutoBtn">Do everything &nbsp;&rsaquo;</button>
+        <p class="big-auto-sub">Backs up the card, updates console firmware, installs the art pack, and refreshes every controller.</p>
       </div>
     </section>
 
@@ -329,20 +331,19 @@
         <div class="modal-title" id="settingsModalTitle">Settings</div>
         <div class="settings-group">
           <div class="settings-label">Theme</div>
-          <div class="settings-desc">N64 console colors.</div>
+          <div class="settings-desc">Accent color used across the app.</div>
           <div class="theme-picker" id="themePicker"></div>
           <label class="clear-toggle" for="clearToggle">
             <input type="checkbox" id="clearToggle" />
-            <span class="clear-name">Funtastic</span>
+            <span class="clear-name">Translucent panels <span class="muted">(Funtastic)</span></span>
           </label>
         </div>
 
         <div class="settings-group">
           <div class="settings-label">Startup</div>
-          <div class="settings-desc">Open straight to the full controls instead of the simple view.</div>
           <label class="clear-toggle" for="launchTinkerToggle">
             <input type="checkbox" id="launchTinkerToggle" />
-            <span class="clear-name">Always start in Tinker</span>
+            <span class="clear-name">Always start with full controls</span>
           </label>
         </div>
 

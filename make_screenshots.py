@@ -112,5 +112,8 @@ if __name__ == "__main__":
                                    background_color="#0d0d0f")
     api.attach_window(window)
     threading.Thread(target=worker, args=(window,), daemon=True).start()
-    webview.start()
+    # private_mode=True so the script's setMode('tinker')/setMode('minimal')
+    # writes don't pollute the developer's real ~/.analogue3d/webview Local
+    # Storage (app.py runs persistent, so the same profile would be shared).
+    webview.start(private_mode=True)
     print("done")
