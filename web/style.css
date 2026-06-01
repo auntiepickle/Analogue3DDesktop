@@ -844,11 +844,11 @@ body.clear::before {
   0%, 100% { transform: translate3d(0, 0, 0); }
   50%      { transform: translate3d(.7%, -.5%, 0); }
 }
-/* Ensure interactive content stays above the fixed bg layer. */
-body.clear .app,
-body.clear .modal,
-body.clear .toast,
-body.clear .busy { position: relative; z-index: 1; }
+/* Ensure the main .app surface stays above the fixed bg pseudo. Modals,
+   toasts, and the busy overlay already use `position: fixed` (which creates
+   their own stacking context above the bg pseudo at z-index:0) — adding
+   position:relative to them broke the modal centering. */
+body.clear .app { position: relative; z-index: 1; }
 
 body.clear .min-panel,
 body.clear .adv-rail,
