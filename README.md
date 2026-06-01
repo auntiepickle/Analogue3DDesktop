@@ -6,10 +6,11 @@
 
 **One button to keep your Analogue 3D current — or every knob if you want them.**
 
-A black-and-gold desktop app for the Analogue 3D. Update the console, flash your
-8BitDo 64 controllers, back up save states, and install cartridge art — in
-**Minimal mode** (one big DO EVERYTHING button) or **Tinker mode** (every
-control on one panel). It's the friendly face on the same engine as the
+A desktop app for the Analogue 3D — in any of ten accent themes mirroring the
+console's own editions. Update the console, flash your 8BitDo 64 controllers,
+back up save states, and install cartridge art — in **Minimal mode** (one big
+DO EVERYTHING button) or **Tinker mode** (every control on one panel). It's
+the friendly face on the same engine as the
 [Analogue 3D Utility](https://github.com/auntiepickle/Analogue3DUtility) CLI.
 
 ## Two faces, one engine
