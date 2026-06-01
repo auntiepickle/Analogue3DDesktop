@@ -24,15 +24,16 @@
      viewport find its own size while keeping the hi-fi instrument-panel
      rhythm. Add `--fs-*` to new components; don't reintroduce hardcoded px.
      -------------------------------------------------------------------- */
-  /* Fixed rem-based type scale — does NOT vary with viewport width.
-     Browser/OS DPI scaling handles physical readability. Standard web
-     pattern, predictable across resolutions, no surprise inflation on
-     ultrawide / deflation on small CSS viewports. */
-  --fs-micro: 0.75rem;    /* 12px - mono labels, IDs, badges */
-  --fs-small: 0.875rem;   /* 14px - secondary text, captions, descriptions */
-  --fs-body:  1rem;       /* 16px - default body, primary list rows */
-  --fs-med:   1.125rem;   /* 18px - sub-card titles (CONSOLE FIRMWARE etc.) */
-  --fs-large: 1.375rem;   /* 22px - section headers (UPDATES, BACKUPS, CARTRIDGE ART), wordmarks */
+  /* Fixed rem-based type scale, sized for DESKTOP reading distance.
+     Standard web 12-16px scale reads too small at typical monitor viewing
+     distance (24-32"); bumped up across the board (+2-4px) so the dense
+     gallery + table rows stay legible without leaning in. Browser/OS DPI
+     scaling still handles physical sizing across high/low DPI displays. */
+  --fs-micro: 0.875rem;   /* 14px - mono labels, IDs, badges, ver pill */
+  --fs-small: 1rem;       /* 16px - secondary text, captions, descriptions, button text */
+  --fs-body:  1.125rem;   /* 18px - default body, primary list rows */
+  --fs-med:   1.25rem;    /* 20px - sub-card titles (CONSOLE FIRMWARE etc.) */
+  --fs-large: 1.5rem;     /* 24px - section headers (UPDATES, BACKUPS, CARTRIDGE ART), wordmarks */
 }
 
 * { box-sizing: border-box; }
