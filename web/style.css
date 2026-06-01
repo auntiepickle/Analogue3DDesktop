@@ -40,29 +40,29 @@
      handles physical readability per display.
      ============================================================ */
 
-  /* Tier 6 — Meta: badges, version pills, "newest" tags */
-  --fs-meta:      0.875rem;   /* 14px sans */
-  --fs-meta-mono: 0.75rem;    /* 12px mono ≈ 14px sans optically */
+  /* Tier 6 — Meta: badges, pills, micro-labels */
+  --fs-meta:      0.75rem;    /* 12px sans */
+  --fs-meta-mono: 0.625rem;   /* 10px mono ≈ 12px sans optically */
 
   /* Tier 5 — Control: buttons, selects, small actions */
-  --fs-control:      1rem;       /* 16px sans */
-  --fs-control-mono: 0.875rem;   /* 14px mono ≈ 16px sans */
+  --fs-control:      0.8125rem;  /* 13px sans */
+  --fs-control-mono: 0.75rem;    /* 12px mono ≈ 13px sans */
 
   /* Tier 4 — Secondary: captions, descriptions, secondary labels */
-  --fs-secondary:      1.125rem;  /* 18px sans */
-  --fs-secondary-mono: 1rem;      /* 16px mono ≈ 18px sans */
+  --fs-secondary:      0.9375rem;  /* 15px sans */
+  --fs-secondary-mono: 0.8125rem;  /* 13px mono ≈ 15px sans */
 
   /* Tier 3 — Body: primary text, list rows, default */
-  --fs-body:      1.25rem;     /* 20px sans */
-  --fs-body-mono: 1.125rem;    /* 18px mono ≈ 20px sans */
+  --fs-body:      1.0625rem;   /* 17px sans */
+  --fs-body-mono: 0.9375rem;   /* 15px mono ≈ 17px sans */
 
-  /* Tier 2 — Headline: card titles, instrument value labels */
-  --fs-headline:      1.5rem;      /* 24px sans */
-  --fs-headline-mono: 1.375rem;    /* 22px mono ≈ 24px sans */
+  /* Tier 2 — Headline: card titles, instrument values */
+  --fs-headline:      1.25rem;     /* 20px sans */
+  --fs-headline-mono: 1.125rem;    /* 18px mono ≈ 20px sans */
 
   /* Tier 1 — Display: section headers, wordmarks */
-  --fs-display:      1.75rem;     /* 28px sans */
-  --fs-display-mono: 1.625rem;    /* 26px mono ≈ 28px sans */
+  --fs-display:      1.5rem;      /* 24px sans */
+  --fs-display-mono: 1.375rem;    /* 22px mono ≈ 24px sans */
 
   /* Legacy aliases — keep so the rest of the file doesn't need rewriting.
      Old names map onto the SANS half of the new system (mono elements get
