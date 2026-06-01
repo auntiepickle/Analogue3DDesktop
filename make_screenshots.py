@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Regenerate the README screenshots from the live GUI.
+"""Regenerate the README hero screenshot from the live demo GUI.
 
-Launches the real app, lets it auto-detect the SD card, then scrolls to each
-section and grabs the window's client area (no OS chrome). DPI-aware so the
-client rect and screen coordinates line up on scaled displays.
+Launches the real app in demo mode, maximizes the window, waits for the
+gallery art to load, and grabs the client area (no OS chrome). DPI-aware so
+the client rect and screen coordinates line up on scaled displays.
 
     python make_screenshots.py
 """
@@ -13,6 +13,11 @@ import time
 import ctypes
 import ctypes.wintypes as wt
 import threading
+
+# Demo + theme + mode — set BEFORE the engine imports read env
+os.environ.setdefault("A3D_DEMO", "1")
+os.environ.setdefault("A3D_THEME", "gold")
+os.environ.setdefault("A3D_MODE", "tinker")
 
 # DPI-aware BEFORE webview loads, so GetClientRect + screen coords are physical px
 try:
@@ -28,9 +33,16 @@ from PIL import ImageGrab
 from api import Api
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-INDEX = os.path.join(HERE, "web", "index.html")
 SHOTS = os.path.join(HERE, "assets", "screenshots")
 TITLE = "Analogue 3D Desktop"
+
+# Same theme/mode → URL-hash bridge that app.py uses so getTheme()/getMode()
+# in web/app.js pick up our env overrides.
+_idx = os.path.join(HERE, "web", "index.html")
+_parts = []
+if os.environ.get("A3D_THEME"): _parts.append("theme=" + os.environ["A3D_THEME"])
+if os.environ.get("A3D_MODE"):  _parts.append("mode=" + os.environ["A3D_MODE"])
+INDEX = ("file:///" + _idx.replace(os.sep, "/") + "#" + "&".join(_parts)) if _parts else _idx
 
 user32 = ctypes.windll.user32
 
@@ -69,26 +81,24 @@ def grab(window, name, js, settle=1.4):
     print("saved", name, img.size)
 
 
-SCROLL_TO = ("(function(t){var s=[].slice.call(document.querySelectorAll('section'))"
-             ".filter(function(x){var h=x.querySelector('h2');return h&&h.textContent"
-             ".indexOf(t)>=0})[0];if(s)s.scrollIntoView({block:'start'});})")
-
-
 def worker(window):
-    time.sleep(6)  # load + SD detect + art/saves populate
-    grab(window, "main.png", "window.scrollTo(0,0)")
-    grab(window, "cartart.png", SCROLL_TO + "('Cartridge')", settle=2.2)
-    # expand the first save-state game so the thumbnails show
-    window.evaluate_js("var h=document.querySelector('.game-head'); if(h) h.click();")
-    time.sleep(2.5)
-    grab(window, "savestates.png", SCROLL_TO + "('Save states')", settle=1.6)
+    time.sleep(7)  # demo init + art + galleries populate
+    # Tinker (advanced) mode — the full instrument-panel grid
+    window.evaluate_js("if(window.setMode) setMode('tinker');")
+    grab(window, "main.png", "window.scrollTo(0,0)", settle=1.8)
+    # Minimal mode — the friendly "Do everything" face
+    window.evaluate_js("if(window.setMode) setMode('minimal');")
+    grab(window, "minimal.png", "window.scrollTo(0,0)", settle=1.8)
     window.destroy()
 
 
 if __name__ == "__main__":
     api = Api()
-    window = webview.create_window(TITLE, INDEX, js_api=api, on_top=True,
-                                   width=1000, height=820, background_color="#0d0d0f")
+    # maximized=True puts the window at the user's actual screen size — the
+    # layout the user sees day-to-day, which is what the README should show.
+    window = webview.create_window(TITLE, INDEX, js_api=api,
+                                   width=1000, height=820, maximized=True,
+                                   background_color="#0d0d0f")
     api.attach_window(window)
     threading.Thread(target=worker, args=(window,), daemon=True).start()
     webview.start()

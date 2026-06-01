@@ -34,8 +34,23 @@ CLI: the shared `analogue3d` Python package does the real work, and this app is 
 
 ## Screenshots
 
+**Tinker mode** — the full instrument panel. A persistent rail with SD card,
+controller, and a one-click **AUTO** action; the **UPDATES** block (console
+firmware + per-controller flash with a determinate progress bar); **BACKUPS**
+(zip Library/Settings/Memories, restore, clean); and the **CARTRIDGE ART**
+gallery with your games' box art — paginate, filter, install a pack, or set a
+custom image per cartridge.
+
 <p align="center">
-  <img src="assets/screenshots/main.png?v=0.4.0" alt="Advanced mode: persistent rail with SD card + controller status and the AUTO action, plus the main grid showing UPDATES (console firmware + controller flash) and BACKUPS (back up + restore/clean), with the start of the CARTRIDGE ART gallery below" width="92%">
+  <img src="assets/screenshots/main.png?v=0.5.0" alt="Tinker mode: persistent rail with SD card + controller status and the AUTO action, plus the main grid showing UPDATES (console firmware + controller flash) and BACKUPS (back up + restore/clean), with the CARTRIDGE ART gallery of real game boxes below" width="92%">
+</p>
+
+**Minimal mode** — the friendly face. SD card · console · controller status
+across the top, one big **DO EVERYTHING** button below. Same engine, same
+themes, no extra surface area to read.
+
+<p align="center">
+  <img src="assets/screenshots/minimal.png?v=0.5.0" alt="Minimal mode: SD card connected, console up to date, controller status with version arrow, and a single big DO EVERYTHING action" width="92%">
 </p>
 
 ## Colorways
