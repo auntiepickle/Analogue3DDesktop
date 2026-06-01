@@ -25,7 +25,7 @@ html, body {
   /* Scale with viewport (not just OS DPI). Ceiling raised to 20px so the
      entire UI keeps growing past the ~3050px point where 0.78vw hits 16px -
      otherwise everything feels tiny on 3440 ultrawides. */
-  font-size: clamp(15px, 1.05vw, 28px);   /* bumped curve — was clamp(14px, .85vw, 24px), still too small at 1440p/4K */
+  font-size: clamp(13px, 0.78vw, 20px);
 }
 
 .app {
@@ -250,10 +250,10 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
   color: var(--dim); font-size: 11px; background: #0a0a0c;
 }
 .art-cap {
-  font-size: .8em; color: var(--text); text-align: center; line-height: 1.25;       /* was 11px - relative now */
+  font-size: 11px; color: var(--text); text-align: center; line-height: 1.25;
   min-height: 2.5em; display: flex; align-items: center; justify-content: center;
 }
-.art-id { font-family: var(--mono); font-size: .75em; color: var(--gold-dim); }     /* was 10px */
+.art-id { font-family: var(--mono); font-size: 10px; color: var(--gold-dim); }
 .art-tile .art-actions { width: 100%; margin-top: auto; display: flex; flex-direction: column; gap: 3px; }
 .art-tile .setart { width: 100%; align-self: stretch; }
 .art-tile .artreset {
@@ -439,9 +439,9 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   object-fit: cover; border-radius: 4px;
   border: 1px solid var(--border); background: #0a0a0c;
 }
-.game-title { font-weight: 600; color: var(--text); font-size: 1em; }            /* was 14px — relative so it tracks the html clamp on ultrawides */
-.game-id { font-family: var(--mono); color: var(--gold-dim); font-size: .85em; }  /* was 12px */
-.game-meta { color: var(--dim); font-size: .85em; }                                /* was 12px */
+.game-title { font-weight: 600; color: var(--text); font-size: 14px; }
+.game-id { font-family: var(--mono); color: var(--gold-dim); font-size: 12px; }
+.game-meta { color: var(--dim); font-size: 12px; }
 .game-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .game-actions label {
   font-family: var(--mono);
