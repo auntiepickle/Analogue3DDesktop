@@ -25,7 +25,7 @@ html, body {
   /* Scale with viewport (not just OS DPI). Ceiling raised to 20px so the
      entire UI keeps growing past the ~3050px point where 0.78vw hits 16px -
      otherwise everything feels tiny on 3440 ultrawides. */
-  font-size: clamp(13px, 0.78vw, 20px);
+  font-size: clamp(14px, 0.85vw, 24px);   /* ceiling 20 -> 24 so ultrawides aren't squinting */
 }
 
 .app {
@@ -429,7 +429,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   cursor: pointer;
 }
 .game-head .chev {
-  color: var(--gold-dim); width: 14px; font-size: 11px; flex: none;
+  color: var(--gold-dim); width: 18px; font-size: 15px; flex: none;
   transition: transform .15s ease, color .15s ease; display: inline-block;
 }
 .game-head:hover .chev { color: var(--gold); }

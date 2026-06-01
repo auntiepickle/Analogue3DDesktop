@@ -60,10 +60,19 @@ const THEMES = [
 
 function getMode() {
   // URL hash override (set by app.py when A3D_MODE env is present) — used for
-  // screenshot capture in advanced mode without flipping localStorage.
+  // screenshot capture in advanced mode without flipping localStorage. Only
+  // honoured if the user hasn't picked a theme/mode this session.
   const m = (location.hash || "").match(/[#&]mode=([a-z]+)/);
   if (m) return m[1];
   return localStorage.getItem(MODE_KEY) || "minimal";
+}
+/* When the user explicitly picks something, drop any A3D_* hash override so
+   subsequent getX() calls reflect the click instead of re-applying the env. */
+function _clearHashOverride() {
+  if (location.hash && /theme=|mode=/.test(location.hash)) {
+    try { history.replaceState(null, "", location.pathname + location.search); }
+    catch (e) { location.hash = ""; }
+  }
 }
 function setMode(m) {
   document.body.classList.remove("mode-minimal", "mode-tinker");
@@ -75,6 +84,7 @@ function setMode(m) {
   const toMinimal = document.getElementById("toMinimal");
   if (toTinker) toTinker.setAttribute("aria-checked", m === "tinker" ? "true" : "false");
   if (toMinimal) toMinimal.setAttribute("aria-checked", m === "minimal" ? "true" : "false");
+  _clearHashOverride();    // user-initiated pick beats any A3D_MODE env override
   try { localStorage.setItem(MODE_KEY, m); }
   catch (e) { console.warn("Mode persistence failed:", e); }
 }
@@ -89,6 +99,7 @@ function getTheme() {
   return t;
 }
 function setTheme(id) {
+  _clearHashOverride();    // user-initiated pick beats any A3D_THEME env override
   THEMES.forEach((t) => document.body.classList.remove("theme-" + t.id));
   document.body.classList.add("theme-" + id);
   try { localStorage.setItem(THEME_KEY, id); } catch (e) {}
