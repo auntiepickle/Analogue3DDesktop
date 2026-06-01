@@ -781,9 +781,11 @@ body.clear .min-panel,
 body.clear .adv-rail,
 body.clear .block,
 body.clear .console-wrap {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,0) 25%),
-    color-mix(in oklab, var(--panel) 42%, transparent);
+  /* Dropped the white top-gradient shine — it was scrolling with each panel
+     and breaking the "fixed glass surface" illusion (user-reported "white
+     effect scrolls with the region"). The inset 1px top rim in the box-
+     shadow below still gives the glass-edge cue without the scroll artifact. */
+  background: color-mix(in oklab, var(--panel) 42%, transparent);
   backdrop-filter: blur(36px) saturate(175%) brightness(1.12);
   -webkit-backdrop-filter: blur(36px) saturate(175%) brightness(1.12);
   border: 1px solid var(--gold-line);
@@ -802,9 +804,9 @@ body.clear .console-wrap {
 
 body.clear .min-instr,
 body.clear .card {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,0) 25%),
-    color-mix(in oklab, var(--panel-2) 38%, transparent);
+  /* Same fix as the panel rule above: drop the scrolling white top-gradient.
+     inset 1px box-shadow handles the glass top-edge cue. */
+  background: color-mix(in oklab, var(--panel-2) 38%, transparent);
   backdrop-filter: blur(28px) saturate(175%) brightness(1.08);
   -webkit-backdrop-filter: blur(28px) saturate(175%) brightness(1.08);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
@@ -1382,7 +1384,7 @@ body.mode-tinker .block input[type="text"] {
   overflow: hidden; text-overflow: ellipsis;
 }
 body.mode-tinker .restore-row { min-width: 0; flex-wrap: wrap; }
-body.mode-tinker .restore-row > select { flex: 1 1 0; min-width: 0; }
+body.mode-tinker .restore-row > select { flex: 1 1 auto; min-width: 160px; }   /* enough to fit full "2026-05-31 12:34" backup date instead of collapsing to "2..." */
 @media (max-width: 1200px) {
   body.mode-tinker .adv-main { grid-template-columns: 1fr; }
 }
