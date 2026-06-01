@@ -24,14 +24,20 @@
      viewport find its own size while keeping the hi-fi instrument-panel
      rhythm. Add `--fs-*` to new components; don't reintroduce hardcoded px.
      -------------------------------------------------------------------- */
-  --fs-micro: clamp(11px, 0.70vw, 14px);   /* mono accent labels, IDs, ver pill, picker labels */
-  --fs-small: clamp(13px, 0.90vw, 17px);   /* status text, captions, meta, descriptions */
-  --fs-body:  clamp(14px, 1.00vw, 19px);   /* default body text (was implicit ~14.98 at 1920) */
-  --fs-med:   clamp(15px, 1.15vw, 22px);   /* primary text — game titles, button text */
+  /* Fixed rem-based type scale — does NOT vary with viewport width.
+     Browser/OS DPI scaling handles physical readability. Standard web
+     pattern, predictable across resolutions, no surprise inflation on
+     ultrawide / deflation on small CSS viewports. */
+  --fs-micro: 0.75rem;    /* 12px - mono labels, IDs, badges */
+  --fs-small: 0.875rem;   /* 14px - secondary text, captions, descriptions */
+  --fs-body:  1rem;       /* 16px - default body, primary list rows */
+  --fs-med:   1.125rem;   /* 18px - sub-card titles (CONSOLE FIRMWARE etc.) */
+  --fs-large: 1.375rem;   /* 22px - section headers (UPDATES, BACKUPS, CARTRIDGE ART), wordmarks */
 }
 
 * { box-sizing: border-box; }
 
+html { font-size: 16px; }       /* fixed root — keeps rems predictable across all viewports */
 html, body {
   margin: 0;
   height: 100%;
@@ -75,7 +81,7 @@ html, body {
   color: var(--gold);
   text-shadow: 0 0 18px rgba(232, 185, 35, .25);
 }
-.wordmark .thin { color: var(--dim); font-weight: 400; letter-spacing: 4px; font-size: 13px; }
+.wordmark .thin { color: var(--dim); font-weight: 400; letter-spacing: 4px; font-size: var(--fs-small); }
 .cog {
   background: transparent; border: none; color: var(--gold);
   font-size: 20px; line-height: 1; cursor: pointer; padding: 2px 4px;
@@ -167,7 +173,7 @@ select, input[type=text] {
   border-radius: 2px;
   padding: 8px 28px 8px 10px;     /* right pad reserves space for native chevron - was overlapping text */
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: var(--fs-small);
   outline: none;
 }
 select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
@@ -185,7 +191,7 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
   border-radius: 2px;
   padding: 16px 18px;
 }
-.hero-text h2 { margin: 0 0 4px; color: var(--gold); font-size: 17px; }
+.hero-text h2 { margin: 0 0 4px; color: var(--gold); font-size: var(--fs-large); }
 .hero-text p { margin: 0; color: var(--dim); font-size: var(--fs-small); max-width: 560px; }
 .hero .primary { margin-left: auto; }
 
@@ -207,7 +213,7 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
 }
 .card:hover { border-color: var(--gold-dim); transform: translateY(-1px); }
 .card.span2 { grid-column: 1 / -1; }
-.card h3 { margin: 0; font-size: 15px; color: var(--text); }
+.card h3 { margin: 0; font-size: var(--fs-med); color: var(--text); }
 .card p { margin: 0; color: var(--dim); font-size: 12.5px; flex: 1; }
 .restore-row { display: flex; gap: 10px; align-items: center; }
 .grow { flex: 1; }
@@ -388,7 +394,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   margin-bottom: 2px;
   min-height: 30px;       /* equalize across blocks so UPDATES/BACKUPS cards top-align */
 }
-.section-head h2 { margin: 0; font-size: 16px; color: var(--gold); }
+.section-head h2 { margin: 0; font-size: var(--fs-large); color: var(--gold); }
 .section-head .muted { color: var(--dim); font-weight: 400; font-size: var(--fs-small); }
 .row-tools { display: flex; gap: 8px; align-items: center; }
 .muted { color: var(--dim); }
@@ -452,7 +458,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   object-fit: cover; border-radius: 4px;
   border: 1px solid var(--border); background: #0a0a0c;
 }
-.game-title { font-weight: 600; color: var(--text); font-size: var(--fs-med); }
+.game-title { font-weight: 600; color: var(--text); font-size: var(--fs-body); }
 .game-id { font-family: var(--mono); color: var(--gold-dim); font-size: var(--fs-micro); }
 .game-meta { color: var(--dim); font-size: var(--fs-small); }
 .game-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
