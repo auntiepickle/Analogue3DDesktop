@@ -81,11 +81,22 @@ def grab(window, name, js, settle=1.4):
     print("saved", name, img.size)
 
 
+SCROLL_TO = ("(function(t){var s=[].slice.call(document.querySelectorAll('section'))"
+             ".filter(function(x){var h=x.querySelector('h2');return h&&h.textContent"
+             ".indexOf(t)>=0})[0];if(s)s.scrollIntoView({block:'start'});})")
+
+
 def worker(window):
     time.sleep(7)  # demo init + art + galleries populate
     # Tinker (advanced) mode — the full instrument-panel grid
     window.evaluate_js("if(window.setMode) setMode('tinker');")
     grab(window, "main.png", "window.scrollTo(0,0)", settle=1.8)
+    # Save states / Memories — scroll there and expand the first game so the
+    # screenshot thumbnails show. This is the genuinely novel surface.
+    grab(window, "savestates.png", SCROLL_TO + "('Save states')", settle=1.6)
+    window.evaluate_js("var h=document.querySelector('.game-head'); if(h) h.click();")
+    time.sleep(2.0)
+    grab(window, "savestates.png", SCROLL_TO + "('Save states')", settle=1.4)
     # Minimal mode — the friendly "Do everything" face
     window.evaluate_js("if(window.setMode) setMode('minimal');")
     grab(window, "minimal.png", "window.scrollTo(0,0)", settle=1.8)
