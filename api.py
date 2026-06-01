@@ -22,7 +22,19 @@ import webbrowser
 import analogue3d
 from analogue3d import sdcard, controller, savestates, labels, saves, config, ui, updates
 
-APP_VERSION = "0.2.2"
+APP_VERSION = "0.3.0"
+
+# Demo / fake-data mode: when A3D_DEMO=1, the read-only methods (detect, versions,
+# list_backups, list_memories, list_snapshots, cart_art_games, controller_versions)
+# return canned data from demo.py instead of hitting the SD card. Lets us iterate
+# on the design at real density (~120 games, plenty of save states) without
+# needing the hardware. Write actions still go through the engine.
+DEMO = os.environ.get("A3D_DEMO") == "1"
+demo = None
+if DEMO:
+    import demo as _demo_module
+    demo = _demo_module
+    print("[demo mode] using fake test data from demo.py", flush=True)
 
 # The GUI does its own confirmations; the engine must never block on a terminal
 # prompt (there's no stdin behind a webview).
@@ -134,7 +146,7 @@ class Api:
         return APP_VERSION
 
     def update_check(self):
-        """Is a newer desktop-app release out? Cached daily, silent offline.
+        """Is a newer desktop-app release out? Cached hourly, silent offline.
         Returns {current, latest, url, update_available} or None."""
         try:
             return updates.check(APP_VERSION, updates.GUI_REPO)
@@ -288,6 +300,24 @@ class Api:
                 "default_root": config.default_backup_root(),
                 "legacy_root": config.legacy_backup_root()}
 
+    def pick_sd_folder(self):
+        """Open a native folder picker so the user can choose an SD card root by
+        clicking, not typing. Returns the picked path, or "" if they cancelled
+        or there's no window context. Bound to the "Enter a path manually..."
+        option in the SD picker so it acts like a proper file-explorer browse."""
+        w = self._window
+        if w is None:
+            return ""
+        try:
+            import webview
+            picked = w.create_file_dialog(webview.FOLDER_DIALOG)
+        except Exception as e:
+            print("Could not open the folder picker: " + str(e))
+            return ""
+        if not picked:
+            return ""
+        return picked[0] if isinstance(picked, (list, tuple)) else picked
+
     def set_backup_location(self):
         def task():
             w = self._window
@@ -315,6 +345,7 @@ class Api:
         return _run(task)
 
     def detect(self):
+        if DEMO: return demo.detect()
         cards = []
         try:
             for d in sdcard.get_potential_sd_cards():
@@ -334,6 +365,7 @@ class Api:
         return {"cards": cards, "controllers": controllers}
 
     def list_backups(self):
+        if DEMO: return demo.list_backups()
         out = []
         d = _backup_dir()
         if os.path.isdir(d):
@@ -397,41 +429,62 @@ class Api:
 
     def auto(self, root):
         def task():
-            steps = ["Back up SD card (incl. save states)", "Update console firmware",
+            steps = ["Snapshot save states", "Back up SD card", "Update console firmware",
                      "Install cartridge art pack", "Update controllers"]
             self._steps_init(steps)
-            print("=== Auto: backup -> firmware -> art pack -> controllers ===")
+            print("=== Auto: snapshot -> backup -> firmware -> art pack -> controllers ===")
 
+            # Memories snapshot first — fast, browsable in the Memories restore
+            # picker, and survives even if a later step fails. Failures here
+            # MUST NOT abort the broader SD-card backup that follows (the more
+            # important safety net) — most likely failure mode is the backup
+            # share being offline, which would block both, but disk-full /
+            # ACL / write-protect on the snapshot dir alone shouldn't take
+            # the whole flow down.
             self._step(0, "active")
-            sdcard.create_backup(root, progress=self._backup_progress_cb())
-            self._step(0, "done")
+            try:
+                snap_path, n = savestates.archive_all(root)
+                if snap_path:
+                    self._step_note(0, f"{n} states")
+                    self._step(0, "done")
+                else:
+                    self._step(0, "skip")
+                    print("No save states on this card to snapshot.")
+            except Exception as e:
+                self._step(0, "fail")
+                print(f"Snapshot failed: {e}. Continuing with SD backup.")
 
             self._step(1, "active")
+            sdcard.create_backup(root, progress=self._backup_progress_cb())
+            self._step(1, "done")
+
+            self._step(2, "active")
             ok = sdcard.install_firmware(root)
             if not ok:
                 print("Firmware step did not complete.")
-            self._step(1, "done" if ok else "fail")
+            self._step(2, "done" if ok else "fail")
 
-            self._step(2, "active")
+            self._step(3, "active")
             sdcard.install_labels(root, labels.custom_pack_path() if labels.has_custom_pack() else None)
-            self._step(2, "done")
+            self._step(3, "done")
 
             n = controller.connected_count()
             if n:
-                self._step(3, "active")
-                self._step_note(3, f"{n} connected")
+                self._step(4, "active")
+                self._step_note(4, f"{n} connected")
                 controller.update_all(progress=self._progress_cb(),
-                                      announce=self._flash_announce(n, step_index=3))
-                self._step(3, "done")
-                self._step_note(3, "")
+                                      announce=self._flash_announce(n, step_index=4))
+                self._step(4, "done")
+                self._step_note(4, "")
             else:
-                self._step(3, "skip")
+                self._step(4, "skip")
                 print("No controller connected - skipped.")
             print("\nAll done. Safely eject the card.")
         return _run(task)
 
     # ---------- save states (Memories) ----------
     def list_memories(self, root):
+        if DEMO: return demo.list_memories(root)
         try:
             games = savestates.find_game_states(root)
         except Exception:
@@ -450,6 +503,7 @@ class Api:
         return {"available": bool(out), "keep_default": savestates.DEFAULT_KEEP, "games": out}
 
     def memory_thumbnail(self, root, folder, name):
+        if DEMO: return demo.memory_thumbnail(root, folder, name)
         base = savestates.memories_dir(root)
         path = os.path.join(base, os.path.basename(folder), os.path.basename(name))
         if not os.path.isfile(path):
@@ -529,6 +583,7 @@ class Api:
 
     # ---------- archive snapshots ----------
     def list_snapshots(self):
+        if DEMO: return demo.list_snapshots()
         out = []
         for s in savestates.list_snapshots():
             m = re.search(r"(\d{4})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})(?:_(.+?))?\.zip$", s["name"])
@@ -639,6 +694,7 @@ class Api:
 
     # ---------- cartridge art ----------
     def cart_art_games(self, root, source=None):
+        if DEMO: return demo.cart_art_games(root, source)
         games = {}
         try:
             for g in savestates.find_game_states(root):
@@ -677,6 +733,7 @@ class Api:
         return _labels_db(root)
 
     def cart_art(self, root, cart_id, source=None):
+        if DEMO: return demo.cart_art(cart_id)
         db = self._art_source_db(root, source)
         if not os.path.isfile(db):
             return ""
@@ -759,6 +816,7 @@ class Api:
 
     # ---------- firmware versions ----------
     def versions(self, root):
+        if DEMO: return demo.versions(root)
         out = {"console_current": None, "console_latest": None,
                "console_update": False, "controllers": 0,
                "ctrl_current": None, "ctrl_latest": None, "ctrl_update": False}
@@ -811,6 +869,7 @@ class Api:
         return out
 
     def controller_versions(self):
+        if DEMO: return demo.controller_versions()
         try:
             vers = controller.fetch_firmware_list()
         except Exception as e:

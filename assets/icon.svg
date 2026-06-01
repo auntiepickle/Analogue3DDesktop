@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Analogue 3D Desktop">
+  <!-- Canonical brand mark: the Analogue 3D 4-port indicator, with port 1 lit.
+       Derived from the in-app .n64-ports SVG so the icon and the runtime
+       visual share the same geometry. Sized to 256x256, scales cleanly to
+       16/32/128/512/1024 via PNG export. -->
+  <defs>
+    <linearGradient id="bgg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1a1a20"/>
+      <stop offset="1" stop-color="#0c0c10"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#e8b923" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#e8b923" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.5"/>
+    </filter>
+  </defs>
+
+  <!-- Casing -->
+  <rect width="256" height="256" rx="32" fill="url(#bgg)"/>
+  <rect x="6" y="6" width="244" height="244" rx="28" fill="none" stroke="rgba(232,185,35,.32)" stroke-width="1.2"/>
+
+  <!-- Lit-port halo (port 1) -->
+  <circle cx="64" cy="128" r="60" fill="url(#halo)"/>
+
+  <!-- The four ports, mirror of the runtime SVG (proportionally scaled to the 256 icon).
+       Layout: cx = 64, 117, 170, 223; cy = 128; r = 28; socket = stadium 32x18 at top. -->
+  <g stroke-linecap="round">
+
+    <!-- Port 1 (lit) -->
+    <circle cx="64" cy="128" r="28" fill="none" stroke="#e8b923" stroke-width="2.4" filter="url(#glow)"/>
+    <circle cx="64" cy="128" r="28" fill="none" stroke="#e8b923" stroke-width="1.8"/>
+    <rect x="48" y="111" width="32" height="18" rx="9" fill="none" stroke="#e8b923" stroke-width="1.8"/>
+    <circle cx="56" cy="118" r="1.8" fill="#e8b923"/>
+    <circle cx="64" cy="118" r="1.8" fill="#e8b923"/>
+    <circle cx="72" cy="118" r="1.8" fill="#e8b923"/>
+
+    <!-- Port 2 (dim) -->
+    <circle cx="117" cy="128" r="28" fill="none" stroke="#5a5a64" stroke-width="1.5"/>
+    <rect x="101" y="111" width="32" height="18" rx="9" fill="none" stroke="#5a5a64" stroke-width="1.5"/>
+    <circle cx="109" cy="118" r="1.6" fill="#5a5a64"/>
+    <circle cx="117" cy="118" r="1.6" fill="#5a5a64"/>
+    <circle cx="125" cy="118" r="1.6" fill="#5a5a64"/>
+
+    <!-- Port 3 (dim) -->
+    <circle cx="170" cy="128" r="28" fill="none" stroke="#5a5a64" stroke-width="1.5"/>
+    <rect x="154" y="111" width="32" height="18" rx="9" fill="none" stroke="#5a5a64" stroke-width="1.5"/>
+    <circle cx="162" cy="118" r="1.6" fill="#5a5a64"/>
+    <circle cx="170" cy="118" r="1.6" fill="#5a5a64"/>
+    <circle cx="178" cy="118" r="1.6" fill="#5a5a64"/>
+
+    <!-- Port 4 (dim) -->
+    <circle cx="223" cy="128" r="28" fill="none" stroke="#5a5a64" stroke-width="1.5"/>
+    <rect x="207" y="111" width="32" height="18" rx="9" fill="none" stroke="#5a5a64" stroke-width="1.5"/>
+    <circle cx="215" cy="118" r="1.6" fill="#5a5a64"/>
+    <circle cx="223" cy="118" r="1.6" fill="#5a5a64"/>
+    <circle cx="231" cy="118" r="1.6" fill="#5a5a64"/>
+
+  </g>
+</svg>

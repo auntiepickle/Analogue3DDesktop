@@ -9,50 +9,178 @@
 <body>
   <div class="app">
 
+    <!-- =================== MINIMAL MODE =================== -->
+    <!-- The "plug in, hit one button, done" view. Default mode.
+         Design language: monospace technical labels, hairline gold borders,
+         sharp corners, single accent. Instruments arranged horizontally on
+         wide screens (hi-fi front panel), stacked when narrow. -->
+    <section class="minimal-view" id="minimalView">
+      <div class="min-panel">
+
+        <header class="min-header">
+          <div class="wordmark">
+            <span class="gold">ANALOGUE<span class="model">&nbsp;3D</span></span><span class="thin">DESKTOP</span>
+          </div>
+          <span class="ver" id="minVersion">v0.0</span>
+          <button class="update-pill hidden" id="minAppUpdate" title="A newer version is available">Update available</button>
+          <!-- Mode toggle promoted to header (IA-adjudicated): mode switching is the
+               most consequential affordance after the primary action. Discoverable on
+               first look instead of buried below the Auto button. -->
+          <button class="ghost mode-toggle-inline" id="toTinker" title="Show more controls" role="switch" aria-checked="false" aria-label="Show more controls (Advanced mode)">More&nbsp;Controls &#9662;</button>
+          <button class="ghost cog" id="minRefreshBtn" title="Rescan drives and controllers" aria-label="Rescan">&#8635;</button>
+          <button class="cog" id="minSettingsBtn" title="Settings" aria-label="Settings">&#9881;</button>
+        </header>
+
+        <!-- LAST line promoted above the instruments (IA-adjudicated): the user's
+             most-critical question is "when did I last back up" - it should land
+             before the eye walks through the hardware status row. -->
+        <div class="min-state">
+          <span class="min-state-label">LAST</span>
+          <span class="min-state-text" id="minLastState">no backup yet</span>
+        </div>
+
+        <div class="min-instruments">
+
+          <div class="min-instr" id="minSdInstr">
+            <div class="min-instr-label">SD CARD</div>
+            <div class="min-instr-led-row">
+              <span class="led off" id="minSdLed" aria-hidden="true"></span>
+              <span class="min-instr-status" id="minSdStatus">scanning</span>
+            </div>
+            <!-- Native select so users can pick another card without dropping
+                 into Advanced. Options mirror #sdSelect in JS; change fires the
+                 same setSdPath() path. Styled to read as a big-value field. -->
+            <select class="min-instr-value min-instr-select" id="minSdValue" aria-label="Pick SD card">
+              <option value="">&mdash;</option>
+            </select>
+            <!-- Stats listed beneath the big value (path + free space), so the
+                 selected line stays short and never has to truncate. -->
+            <div class="min-instr-substats" id="minSdStats"></div>
+          </div>
+
+          <div class="min-instr" id="minFwInstr">
+            <div class="min-instr-label">CONSOLE</div>
+            <div class="min-instr-led-row">
+              <span class="led off" id="minFwLed" aria-hidden="true"></span>
+              <span class="min-instr-status" id="minFwStatus">checking</span>
+            </div>
+            <div class="min-instr-value" id="minFwValue">&mdash;</div>
+          </div>
+
+          <div class="min-instr" id="minCtrlInstr">
+            <div class="min-instr-label">CONTROLLER</div>
+            <div class="min-instr-led-row">
+              <span class="led off" id="minCtrlLed" aria-hidden="true"></span>
+              <span class="min-instr-status" id="minCtrlStatus">none</span>
+            </div>
+            <!-- N64 front-face 4-port indicator: short/wide trapezoidal sockets +
+                 small LED above each. .lit on a <g class="port"> when a controller
+                 is in that slot. The shape itself is the meaning - users recognize
+                 the N64 silhouette instantly. -->
+            <!-- Real Analogue 3D ports per user reference: circular recess +
+                 trapezoid socket cutout + 3 contact pins. Not just 4 trapezoids. -->
+            <!-- Real Analogue 3D ports per user close-up reference (image 41):
+                 circular recess + stadium/pill-shaped inner socket + 3 contact
+                 pins at the TOP of the socket (where the connector pins land). -->
+            <svg class="n64-ports" id="minCtrlPorts" viewBox="0 0 240 56" aria-label="controllers">
+              <g class="port" data-port="1">
+                <circle cx="30"  cy="28" r="22" class="port-ring"/>
+                <rect x="18"  y="18" width="24" height="14" rx="7" class="port-socket"/>
+                <circle cx="25" cy="23" r="1.4" class="port-pin"/>
+                <circle cx="30" cy="23" r="1.4" class="port-pin"/>
+                <circle cx="35" cy="23" r="1.4" class="port-pin"/>
+              </g>
+              <g class="port" data-port="2">
+                <circle cx="90"  cy="28" r="22" class="port-ring"/>
+                <rect x="78"  y="18" width="24" height="14" rx="7" class="port-socket"/>
+                <circle cx="85" cy="23" r="1.4" class="port-pin"/>
+                <circle cx="90" cy="23" r="1.4" class="port-pin"/>
+                <circle cx="95" cy="23" r="1.4" class="port-pin"/>
+              </g>
+              <g class="port" data-port="3">
+                <circle cx="150" cy="28" r="22" class="port-ring"/>
+                <rect x="138" y="18" width="24" height="14" rx="7" class="port-socket"/>
+                <circle cx="145" cy="23" r="1.4" class="port-pin"/>
+                <circle cx="150" cy="23" r="1.4" class="port-pin"/>
+                <circle cx="155" cy="23" r="1.4" class="port-pin"/>
+              </g>
+              <g class="port" data-port="4">
+                <circle cx="210" cy="28" r="22" class="port-ring"/>
+                <rect x="198" y="18" width="24" height="14" rx="7" class="port-socket"/>
+                <circle cx="205" cy="23" r="1.4" class="port-pin"/>
+                <circle cx="210" cy="23" r="1.4" class="port-pin"/>
+                <circle cx="215" cy="23" r="1.4" class="port-pin"/>
+              </g>
+            </svg>
+            <div class="min-instr-value" id="minCtrlValue"><span class="muted">none connected</span></div>
+          </div>
+
+        </div>
+
+        <button class="primary big-auto" data-action="auto" id="minAutoBtn">Do everything &nbsp;&rsaquo;</button>
+        <p class="big-auto-sub">Snapshots save states, backs up the card, updates console firmware, installs the art pack, and updates every connected controller.</p>
+      </div>
+    </section>
+
+    <!-- =================== ADVANCED MODE (internally "tinker") =================== -->
+    <!-- Sidebar (rail) holds the command center: wordmark, status, picker, Auto.
+         Main holds the dense sections (Updates, Backups, Cart art, Memories, Console). -->
+    <div class="tinker-view" id="tinkerView">
+
+    <aside class="adv-rail">
+
     <!-- Header -->
     <header class="topbar">
       <div class="wordmark">
-        <span class="gold">ANALOGUE&nbsp;3D</span><span class="thin">DESKTOP</span>
+        <span class="gold">ANALOGUE<span class="model">&nbsp;3D</span></span><span class="thin">DESKTOP</span>
       </div>
       <div class="ver" id="version">v0.0</div>
       <button class="update-pill hidden" id="appUpdate" title="A newer version is available">Update available</button>
+      <button class="ghost sm mode-toggle-tinker" id="toMinimal" title="Back to the minimal view" role="switch" aria-checked="true" aria-label="Back to minimal view">&#9652;&nbsp; Minimal</button>
       <button class="cog" id="settingsBtn" title="Settings" aria-label="Settings">&#9881;</button>
     </header>
 
     <!-- Status strip -->
     <section class="status">
       <div class="stat" id="sdStat">
-        <span class="led off" id="sdLed"></span>
+        <span class="led off" id="sdLed" aria-hidden="true"></span>
         <div class="stat-body">
           <div class="stat-label">SD CARD</div>
           <div class="stat-value" id="sdValue">scanning&hellip;</div>
         </div>
       </div>
       <div class="stat" id="padStat">
-        <span class="led off" id="padLed"></span>
+        <span class="led off" id="padLed" aria-hidden="true"></span>
         <div class="stat-body">
           <div class="stat-label">CONTROLLER</div>
           <div class="stat-value" id="padValue">&mdash;</div>
         </div>
       </div>
-      <button class="ghost" id="refreshBtn" title="Re-scan drives and controllers">Refresh</button>
+      <button class="ghost" id="refreshBtn" title="Re-scan drives and controllers">Rescan devices</button>
     </section>
 
     <!-- SD picker -->
     <section class="picker">
       <label for="sdSelect">Target SD card</label>
       <select id="sdSelect"></select>
+      <!-- Free-space / strong-match stats listed beneath the picker so the
+           selected-state value text stays short and doesn't truncate. -->
+      <div class="picker-stats" id="sdPickerStats"></div>
       <input type="text" id="manualPath" class="hidden" placeholder="e.g. H:\ or /Volumes/ANALOGUE 3D" />
     </section>
 
     <!-- Hero: Auto -->
     <section class="hero" id="autoCard">
       <div class="hero-text">
-        <h2>Auto &mdash; do everything</h2>
-        <p>Back up the card, update console firmware, install the art pack, and update every connected controller.</p>
+        <h2>Auto</h2>
+        <p>Snapshot save states, back up the card, update console firmware, install the art pack, and update every connected controller.</p>
       </div>
-      <button class="primary" data-action="auto">Run Auto</button>
+      <button class="primary" data-action="auto">Do everything</button>
     </section>
+
+    </aside><!-- /adv-rail -->
+
+    <main class="adv-main">
 
     <!-- UPDATES -->
     <section class="block">
@@ -63,7 +191,7 @@
       <div class="grid2">
         <article class="card">
           <h3>Console firmware</h3>
-          <div class="ver-line" id="consoleVer"><span class="muted">click "Check for updates"</span></div>
+          <div class="ver-line" id="consoleVer"><span class="muted">&mdash;</span></div>
           <button class="action" data-action="firmware">Update firmware</button>
         </article>
         <article class="card">
@@ -96,6 +224,7 @@
             <div class="menu-wrap">
               <button class="action danger menu-btn" title="Delete options">Delete&nbsp;&#9662;</button>
               <div class="menu hidden">
+                <div class="menu-header">SD card backups</div>
                 <button class="menu-item danger" data-action="deleteBackup">Delete this backup</button>
                 <button class="menu-item danger" data-action="cleanBackups">Delete all but the latest</button>
               </div>
@@ -106,7 +235,7 @@
     </section>
 
     <!-- CARTRIDGE ART -->
-    <section class="block">
+    <section class="block span2">
       <div class="section-head">
         <h2>Cartridge art</h2>
         <div class="row-tools">
@@ -131,11 +260,11 @@
     </section>
 
     <!-- SAVE STATES (Memories) -->
-    <section class="block memories-wrap">
+    <section class="block memories-wrap span2">
       <div class="section-head">
         <h2>Save states <span class="muted">/ Memories</span></h2>
         <div class="row-tools">
-          <button class="action" data-action="archiveMem">Archive all</button>
+          <button class="action" data-action="archiveMem">Snapshot save states</button>
           <button class="ghost sm" id="memRefresh">Refresh</button>
         </div>
       </div>
@@ -163,6 +292,7 @@
           <div class="menu-wrap">
             <button class="action danger menu-btn" title="Delete options">Delete&nbsp;&#9662;</button>
             <div class="menu hidden">
+              <div class="menu-header">Save-state snapshots</div>
               <button class="menu-item danger" data-action="deleteSnapshot">Delete this snapshot</button>
               <button class="menu-item danger" data-action="cleanSnapshots">Delete all but the latest</button>
             </div>
@@ -177,13 +307,17 @@
     </section>
 
     <!-- Console -->
-    <section class="console-wrap">
+    <section class="console-wrap span2">
       <div class="console-head">
         <span>Console</span>
         <button class="ghost sm" id="clearBtn">Clear</button>
       </div>
       <pre id="console" class="console" aria-live="polite"></pre>
     </section>
+
+    </main><!-- /adv-main -->
+
+    </div><!-- /tinker-view -->
 
     <div class="busy hidden" id="busy">
       <div class="busy-box">
@@ -194,9 +328,27 @@
       </div>
     </div>
 
-    <div class="modal hidden" id="settingsModal">
+    <div class="modal hidden" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
       <div class="modal-box settings-box">
-        <div class="modal-title">Settings</div>
+        <div class="modal-title" id="settingsModalTitle">Settings</div>
+        <div class="settings-group">
+          <div class="settings-label">Theme</div>
+          <div class="settings-desc">Accent color used across the app.</div>
+          <div class="theme-picker" id="themePicker"></div>
+          <label class="clear-toggle" for="clearToggle">
+            <input type="checkbox" id="clearToggle" />
+            <span class="clear-name">Translucent panels <span class="muted">(Funtastic)</span></span>
+          </label>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-label">Startup</div>
+          <label class="clear-toggle" for="launchTinkerToggle">
+            <input type="checkbox" id="launchTinkerToggle" />
+            <span class="clear-name">Always start with full controls</span>
+          </label>
+        </div>
+
         <div class="settings-group">
           <div class="settings-label">Backup location</div>
           <div class="settings-desc">Where SD backups, save-state snapshots, and game-save backups are written.</div>
@@ -212,9 +364,9 @@
       </div>
     </div>
 
-    <div class="modal hidden" id="modal">
+    <div class="modal hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <div class="modal-box">
-        <div class="modal-title" id="modalTitle">Please confirm</div>
+        <div class="modal-title" id="modalTitle">Confirm</div>
         <div class="modal-msg" id="modalMsg"></div>
         <div class="modal-actions">
           <button class="ghost" id="modalCancel">Cancel</button>

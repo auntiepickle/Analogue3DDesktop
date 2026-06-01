@@ -12,6 +12,29 @@ import sys
 import json
 
 _WIN_STATE = os.path.join(os.path.expanduser("~"), ".analogue3d", "desktop_window.json")
+_SINGLETON_MUTEX = None     # module-level so the handle survives main() return
+
+
+def _foreground_existing_and_exit():
+    """On Windows, a second launch finds the running app's window and brings
+    it forward instead of spawning a second WebView2 host against the same
+    profile (which corrupts both)."""
+    if sys.platform != "win32":
+        return False
+    import ctypes
+    MUTEX_NAME = "Global\\auntiepickle.analogue3ddesktop.singleton"
+    ERROR_ALREADY_EXISTS = 183
+    global _SINGLETON_MUTEX
+    _SINGLETON_MUTEX = ctypes.windll.kernel32.CreateMutexW(None, False, MUTEX_NAME)
+    if not _SINGLETON_MUTEX:
+        return False
+    if ctypes.windll.kernel32.GetLastError() == ERROR_ALREADY_EXISTS:
+        hwnd = ctypes.windll.user32.FindWindowW(None, "Analogue 3D Desktop")
+        if hwnd:
+            ctypes.windll.user32.ShowWindow(hwnd, 9)      # SW_RESTORE
+            ctypes.windll.user32.SetForegroundWindow(hwnd)
+        return True
+    return False
 
 
 def _load_window_state():
@@ -23,15 +46,21 @@ def _load_window_state():
 
 
 def _save_window_state(state):
+    # Atomic write via temp+replace so a power loss mid-write can't leave a
+    # 0-byte file that wipes the user's maximized-state memory.
     try:
         os.makedirs(os.path.dirname(_WIN_STATE), exist_ok=True)
-        with open(_WIN_STATE, "w", encoding="utf-8") as f:
+        tmp = _WIN_STATE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
             json.dump(state, f)
+        os.replace(tmp, _WIN_STATE)
     except OSError:
         pass
 
 
 def main():
+    if _foreground_existing_and_exit():
+        sys.exit(0)
     try:
         import webview
     except ImportError:
@@ -52,6 +81,15 @@ def main():
     here = os.path.dirname(os.path.abspath(__file__))
     index = os.path.join(here, "web", "index.html")
     icon = os.path.join(here, "assets", "icon.ico")
+
+    # Screenshot-capture aid: A3D_THEME=jungle / A3D_MODE=tinker launches with
+    # those picks via URL hash, no localStorage manipulation. Read by
+    # getTheme() / getMode() in app.js.
+    _hash_parts = []
+    if os.environ.get("A3D_THEME"): _hash_parts.append("theme=" + os.environ["A3D_THEME"])
+    if os.environ.get("A3D_MODE"):  _hash_parts.append("mode=" + os.environ["A3D_MODE"])
+    if _hash_parts:
+        index = "file:///" + index.replace(os.sep, "/") + "#" + "&".join(_hash_parts)
 
     if sys.platform == "win32":
         try:
@@ -103,7 +141,20 @@ def main():
         except Exception:
             pass
 
-    start_kwargs = {}
+    # private_mode=False so theme/mode/clear in localStorage survive a restart.
+    # Wipe the HTTP/Code/GPU caches on launch so a release-to-release UI update
+    # isn't shadowed by cached bytes — Local Storage lives in a sibling dir.
+    # Surface failures (ACL, file lock) to stderr instead of silently ignoring;
+    # a stale-cache-induced UI bug would otherwise be unreproducible from logs.
+    storage = os.path.join(os.path.expanduser("~"), ".analogue3d", "webview")
+    import shutil
+    _cache_root = os.path.join(storage, "EBWebView", "Default")
+    for _sub in ("Cache", "Code Cache", "GPUCache"):
+        _p = os.path.join(_cache_root, _sub)
+        if os.path.isdir(_p):
+            shutil.rmtree(_p, onerror=lambda f, p, ei: sys.stderr.write(
+                f"warn: couldn't wipe {p}: {ei[1]}\n"))
+    start_kwargs = {"private_mode": False, "storage_path": storage}
     if os.path.isfile(icon):
         start_kwargs["icon"] = icon
     webview.start(**start_kwargs)

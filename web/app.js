@@ -22,9 +22,264 @@ const el = {
   busy: $("busy"), busyText: $("busyText"), busySpin: $("busySpin"),
   busySteps: $("busySteps"),
   busyProg: $("busyProg"), busyBar: $("busyBar"), busyProgLabel: $("busyProgLabel"),
+  // Minimal mode mirrors of the status surface above. Populated from the same
+  // detect()/versions()/list_backups() data via _syncMinimal* so both views stay
+  // in lockstep. New layout has separate LED-row status (one mono word) and
+  // value (the actual version / label).
+  minVersion: $("minVersion"), minAppUpdate: $("minAppUpdate"),
+  minSdLed: $("minSdLed"), minSdStatus: $("minSdStatus"), minSdValue: $("minSdValue"),
+  minFwLed: $("minFwLed"), minFwStatus: $("minFwStatus"), minFwValue: $("minFwValue"),
+  minCtrlLed: $("minCtrlLed"), minCtrlStatus: $("minCtrlStatus"), minCtrlValue: $("minCtrlValue"),
+  minLastState: $("minLastState"),
 };
 
 const MANUAL = "__manual__";
+const MODE_KEY = "a3d:mode";
+const THEME_KEY = "a3d:theme";
+const CLEAR_KEY = "a3d:clear";
+const LAUNCH_TINKER_KEY = "a3d:launchTinker";
+
+/* Mirrors Analogue 3D (Gold, White), Pocket (Glow), and N64 Funtastic
+   accents. Each id maps to a `.theme-<id>` body class that overrides the
+   gold tokens, so all `var(--gold)` references re-theme automatically. */
+const THEMES = [
+  { id: "gold",      name: "Gold",      dot: "#e8b923" },
+  { id: "white",     name: "White",     dot: "#f0eee6" },
+  { id: "glow",      name: "Glow",      dot: "#c4f070" },
+  { id: "ice",       name: "Ice",       dot: "#58c7e3" },
+  { id: "jungle",    name: "Jungle",    dot: "#3fcb6b" },
+  { id: "watermelon",name: "Watermelon",dot: "#ff5b6b" },
+  { id: "grape",     name: "Grape",     dot: "#a663ff" },
+  { id: "fire",      name: "Fire",      dot: "#ff7430" },
+  { id: "atomic",    name: "Atomic",    dot: "#b066ff" },
+  { id: "smoke",     name: "Smoke",     dot: "#cfd1d5" },
+];
+
+function getMode() {
+  // URL hash override (set by app.py when A3D_MODE env is present) — used for
+  // screenshot capture in advanced mode without flipping localStorage. Only
+  // honoured if the user hasn't picked a theme/mode this session.
+  const m = (location.hash || "").match(/[#&]mode=([a-z]+)/);
+  if (m) return m[1];
+  return localStorage.getItem(MODE_KEY) || "minimal";
+}
+/* When the user explicitly picks something, drop any A3D_* hash override so
+   subsequent getX() calls reflect the click instead of re-applying the env. */
+function _clearHashOverride() {
+  if (location.hash && /theme=|mode=/.test(location.hash)) {
+    try { history.replaceState(null, "", location.pathname + location.search); }
+    catch (e) { location.hash = ""; }
+  }
+}
+function setMode(m, persist) {
+  document.body.classList.remove("mode-minimal", "mode-tinker");
+  document.body.classList.add("mode-" + m);
+  // Update aria-checked on BOTH mode toggles (More Controls in minimal +
+  // Minimal in advanced) so screen readers announce the current state for
+  // whichever toggle the user reaches (a11y + code review).
+  const toTinker = document.getElementById("toTinker");
+  const toMinimal = document.getElementById("toMinimal");
+  if (toTinker) toTinker.setAttribute("aria-checked", m === "tinker" ? "true" : "false");
+  if (toMinimal) toMinimal.setAttribute("aria-checked", m === "minimal" ? "true" : "false");
+  if (persist !== false) {
+    _clearHashOverride();    // user-initiated pick beats any A3D_MODE env override
+    try { localStorage.setItem(MODE_KEY, m); }
+    catch (e) { console.warn("Mode persistence failed:", e); }
+  }
+}
+
+function getTheme() {
+  // URL hash override (set by app.py when A3D_THEME env is present) — used to
+  // render screenshots in each colorway without manipulating localStorage.
+  const m = (location.hash || "").match(/[#&]theme=([a-z]+)/);
+  if (m) return m[1];
+  return localStorage.getItem(THEME_KEY) || "gold";
+}
+function setTheme(id) {
+  _clearHashOverride();    // user-initiated pick beats any A3D_THEME env override
+  THEMES.forEach((t) => document.body.classList.remove("theme-" + t.id));
+  document.body.classList.add("theme-" + id);
+  try { localStorage.setItem(THEME_KEY, id); } catch (e) {}
+  _renderThemePicker();
+}
+
+function getLaunchTinker() {
+  return localStorage.getItem(LAUNCH_TINKER_KEY) === "1";
+}
+function setLaunchTinker(on) {
+  try { localStorage.setItem(LAUNCH_TINKER_KEY, on ? "1" : "0"); } catch (e) {}
+  const cb = $("launchTinkerToggle");
+  if (cb) cb.checked = !!on;
+}
+
+function getClear() {
+  // Funtastic translucent finish is the default - it's THE look. If the user
+  // explicitly opts out we honor that, but a fresh launch should land on the
+  // best version of the design.
+  const v = localStorage.getItem(CLEAR_KEY);
+  return v === null ? true : v === "1";
+}
+function setClear(on) {
+  document.body.classList.toggle("clear", !!on);
+  try { localStorage.setItem(CLEAR_KEY, on ? "1" : "0"); } catch (e) {}
+  const cb = $("clearToggle");
+  if (cb) cb.checked = !!on;
+}
+
+function _renderThemePicker() {
+  const host = $("themePicker");
+  if (!host) return;
+  const cur = getTheme();
+  host.innerHTML = "";
+  THEMES.forEach((t) => {
+    const sw = document.createElement("button");
+    sw.className = "theme-swatch" + (t.id === cur ? " active" : "");
+    sw.dataset.theme = t.id;
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    dot.style.background = t.dot;
+    dot.style.boxShadow = `0 0 10px ${t.dot}66`;
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = t.name;
+    sw.appendChild(dot); sw.appendChild(name);
+    sw.addEventListener("click", () => setTheme(t.id));
+    host.appendChild(sw);
+  });
+}
+
+/* Light up the N64-front 4-port indicator according to how many controllers
+   are detected. The SVG sits in minimal mode's CONTROLLER instrument; lit
+   ports use the .lit class which CSS handles for glow + theme color. */
+function updateControllerPorts(n) {
+  const svg = document.getElementById("minCtrlPorts");
+  if (!svg) return;
+  svg.querySelectorAll(".port").forEach((p) => {
+    const i = parseInt(p.dataset.port, 10);
+    p.classList.toggle("lit", i <= n);
+  });
+}
+
+/* Mirror the tinker-view status into the minimal instruments so a user who
+   switches modes mid-session sees a coherent screen. Reads from the tinker
+   DOM rather than threading data through every call site - prototype-level,
+   intentionally light-touch. Each instrument has a small status word (e.g.
+   "CONNECTED" / "UPDATE" / "NONE") and a bigger value line below it. */
+function _syncMinimal() {
+  if (!el.minSdLed) return;
+  updateControllerPorts(controllerCount);
+
+  // -- SD CARD --
+  el.minSdLed.className = el.sdLed.className;
+  const sdText = el.sdValue.textContent || "";
+  if (el.sdLed.className.indexOf("on") !== -1) {
+    el.minSdStatus.textContent = "connected";
+  } else if (sdText.toLowerCase().indexOf("not detected") !== -1) {
+    el.minSdStatus.textContent = "not found";
+  } else {
+    el.minSdStatus.textContent = "pick a drive";
+  }
+  // Mirror the advanced sdSelect options into minSdValue (the minimal-mode
+  // selector). Closed-state text stays short — just the volume label — so
+  // it never truncates. The stats line below carries path + free space.
+  if (el.minSdValue && el.minSdValue.tagName === "SELECT") {
+    const upstream = Array.from(el.sdSelect.options).map(o => o.value + "\t" + o.textContent);
+    const current = Array.from(el.minSdValue.options).map(o => o.value + "\t" + o.textContent);
+    if (upstream.join("|") !== current.join("|")) {
+      el.minSdValue.innerHTML = "";
+      Array.from(el.sdSelect.options).forEach((src) => {
+        const o = document.createElement("option");
+        o.value = src.value;
+        // Just the [label] for the closed value. Source text is now "path [label]".
+        if (src.value && src.value !== MANUAL) {
+          // Match the LAST bracket pair — paths can contain brackets themselves
+          // (e.g. "E:\[Backup]\... [ANALOGUE 3D]"), and the volume label is at
+          // the end of the picker option string.
+          const matches = src.textContent.match(/\[([^\]]+)\](?!.*\[)/);
+          o.textContent = matches ? matches[1] : src.textContent;
+        } else {
+          o.textContent = src.textContent;     // "Enter a path manually..." kept verbatim
+        }
+        el.minSdValue.appendChild(o);
+      });
+    }
+    el.minSdValue.value = el.sdSelect.value;
+  }
+  // Stats line beneath the minimal SD value: drive path + free space.
+  const minStats = document.getElementById("minSdStats");
+  if (minStats) {
+    const sel = el.sdSelect.options[el.sdSelect.selectedIndex];
+    const free = sel && sel.dataset.freeGb ? `${sel.dataset.freeGb} GB free` : "";
+    const path = sel ? sel.value : "";
+    minStats.textContent = path && free ? `${path}  ·  ${free}` : (path || "");
+  }
+
+  // -- CONSOLE FIRMWARE --
+  const okBadge = el.consoleVer.querySelector(".badge.ok");
+  const updBadge = el.consoleVer.querySelector(".badge.upd");
+  if (okBadge) {
+    el.minFwLed.className = "led on";
+    el.minFwStatus.textContent = "up to date";
+  } else if (updBadge) {
+    el.minFwLed.className = "led warn";          // theme accent: attention
+    el.minFwStatus.textContent = "update";
+  } else if (el.consoleVer.querySelector(".muted")) {
+    el.minFwLed.className = "led off";
+    el.minFwStatus.textContent = "—";
+  } else {
+    el.minFwLed.className = "led off";
+    el.minFwStatus.textContent = "no fw";
+  }
+  // Render the version line; strip the badge (status is shown separately).
+  el.minFwValue.innerHTML = el.consoleVer.innerHTML;
+  const fwBadge = el.minFwValue.querySelector(".badge");
+  if (fwBadge) fwBadge.remove();
+
+  // -- CONTROLLER --
+  el.minCtrlLed.className = el.padLed.className;
+  if (el.padLed.className.indexOf("on") !== -1) {
+    el.minCtrlStatus.textContent = "connected";
+    el.minCtrlValue.innerHTML = el.ctrlVer.innerHTML;
+    const cBadge = el.minCtrlValue.querySelector(".badge");
+    if (cBadge) cBadge.remove();
+  } else {
+    el.minCtrlStatus.textContent = "none";
+    el.minCtrlValue.textContent = "—";
+  }
+}
+
+/* The LAST state line: when's the most recent backup, and how big. Reads from
+   the same `backups` array refreshBackups() populates. */
+function _syncMinimalLast() {
+  if (!el.minLastState) return;
+  if (!backups || !backups.length) {
+    el.minLastState.textContent = "no backup yet";
+    return;
+  }
+  const newest = backups[0];
+  el.minLastState.textContent =
+    `backup ${_relativeWhen(newest.when)}  ·  ${humanSize(newest.bytes)}`;
+}
+
+function _relativeWhen(whenStr) {
+  // when format is "YYYY-MM-DD HH:MM" (see api.list_backups).
+  if (!whenStr) return "—";
+  const parts = whenStr.split(" ");
+  const d = parts[0]; const t = parts[1] || "00:00";
+  if (!d || d.split("-").length !== 3) return whenStr;
+  const [y, mo, da] = d.split("-").map(Number);
+  const [h, mi] = t.split(":").map(Number);
+  const then = new Date(y, mo - 1, da, h || 0, mi || 0);
+  const diff = Date.now() - then.getTime();
+  if (diff < 0) return whenStr;
+  const hour = 3600000, day = 86400000;
+  if (diff < hour) return "just now";
+  if (diff < day) return "today";
+  const days = Math.floor(diff / day);
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days} days ago`;
+  return whenStr;   // exact for older
+}
 
 function humanSize(n) {
   if (n < 1024) return n + " B";
@@ -152,6 +407,19 @@ function syncManual() {
   if (manual) el.manualPath.focus();
 }
 
+/* Stats line under the advanced TARGET SD CARD picker — free space + a
+   "best-match" marker — surfaced beneath the dropdown instead of inline so
+   the selected-option text stays short and stops truncating. */
+function renderSdPickerStats() {
+  const stats = document.getElementById("sdPickerStats");
+  if (!stats) return;
+  const sel = el.sdSelect.options[el.sdSelect.selectedIndex];
+  if (!sel || !sel.dataset.freeGb) { stats.textContent = ""; return; }
+  const free = `${sel.dataset.freeGb} GB free`;
+  const star = sel.dataset.strong ? "  ·  best match ★" : "";
+  stats.textContent = `${free}${star}`;
+}
+
 /* ---------- refresh detected state ---------- */
 async function refresh() {
   let data;
@@ -171,7 +439,12 @@ async function refresh() {
     const o = document.createElement("option");
     o.value = c.path;
     const label = c.label ? ` [${c.label}]` : "";
-    o.textContent = `${c.path}${label}  (${c.free_gb} GB free)${c.strong ? "  ★" : ""}`;
+    // Short option text: path + label only. Free space + strong-match marker
+    // are listed beneath the picker (#sdPickerStats) so the selected-state
+    // doesn't truncate.
+    o.textContent = `${c.path}${label}`;
+    o.dataset.freeGb = c.free_gb;
+    o.dataset.strong = c.strong ? "1" : "";
     el.sdSelect.appendChild(o);
   });
   const manualOpt = document.createElement("option");
@@ -190,6 +463,7 @@ async function refresh() {
     el.sdSelect.value = MANUAL;
   }
   syncManual();
+  renderSdPickerStats();
 
   // status LEDs
   if (strong) {
@@ -211,6 +485,7 @@ async function refresh() {
   await refreshBackups();
   await refreshMemories();
   await refreshArt();
+  _syncMinimal();
 }
 
 /* Lightweight background poll: keep the status strip (controllers / SD) live
@@ -235,11 +510,13 @@ async function pollStatus() {
   if (controllerChanged) {
     await refreshVersions();
   }
+  _syncMinimal();
 }
 
 let backups = [];
 async function refreshBackups() {
   try { backups = await api().list_backups(); } catch (e) { backups = []; }
+  _syncMinimalLast();   // keep the minimal-mode LAST line in lockstep
   const prev = el.backupSelect.value;
   el.backupSelect.innerHTML = "";
   if (!backups.length) {
@@ -279,7 +556,7 @@ async function refreshMemories() {
 let memGames = [];
 let memKeepDefault = 5;
 let memPage = 0;
-const MEM_PAGE_SIZE = 8;
+const MEM_PAGE_SIZE = 16;   /* was 8 - sparse on ultrawide where the thumb grid fits ~23 across */
 let selectedStates = new Set();   // keys: "<folder><name>"
 let selectAnchor = null;          // {folder, idx} for shift-range selection
 
@@ -469,6 +746,7 @@ async function refreshVersions() {
   consoleUpToDate = !!(v.console_current && v.console_latest && !v.console_update);
   applyGating();
   await populateCtrlVersions();
+  _syncMinimal();
 }
 
 async function populateCtrlVersions() {
@@ -490,7 +768,7 @@ async function populateCtrlVersions() {
 /* ---------- cartridge art ---------- */
 let artGames = [];
 let artPage = 0;
-const ART_PAGE_SIZE = 18;
+const ART_PAGE_SIZE = 24;   /* was 18 - sparse rows on ultrawide where 26+ tiles fit per row */
 
 async function syncCustomPackOption() {
   let has = false;
@@ -618,8 +896,46 @@ async function refreshSettings() {
   } catch (e) { return null; }
 }
 
-function openSettings() { refreshSettings(); $("settingsModal").classList.remove("hidden"); }
-function closeSettings() { $("settingsModal").classList.add("hidden"); }
+let _modalOpener = null;
+function _trapTab(modal, e) {
+  if (e.key !== "Tab") return;
+  const all = modal.querySelectorAll(
+    'button, [href], input:not([type=hidden]), select, textarea, [tabindex]:not([tabindex="-1"])');
+  const visible = [...all].filter(el => !el.disabled && el.offsetParent !== null);
+  if (!visible.length) return;
+  const first = visible[0], last = visible[visible.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
+function openSettings() {
+  _modalOpener = document.activeElement;     // remember focus for return-on-close (a11y)
+  refreshSettings();
+  _renderThemePicker();
+  const cb = $("clearToggle");
+  if (cb) {
+    cb.checked = getClear();
+    cb.onchange = (e) => setClear(e.target.checked);
+  }
+  const lt = $("launchTinkerToggle");
+  if (lt) {
+    lt.checked = getLaunchTinker();
+    lt.onchange = (e) => setLaunchTinker(e.target.checked);
+  }
+  const modal = $("settingsModal");
+  modal.classList.remove("hidden");
+  modal.onkeydown = (e) => _trapTab(modal, e);
+  // Move focus into the modal so Tab cycles inside it from the first stop.
+  setTimeout(() => {
+    const f = modal.querySelector('button:not([disabled]), input:not([disabled])');
+    if (f) f.focus();
+  }, 0);
+}
+function closeSettings() {
+  const modal = $("settingsModal");
+  modal.classList.add("hidden");
+  modal.onkeydown = null;
+  if (_modalOpener && _modalOpener.focus) _modalOpener.focus();
+}
 
 /* ---------- styled confirm modal ---------- */
 function confirmDialog(message, opts) {
@@ -627,7 +943,7 @@ function confirmDialog(message, opts) {
   return new Promise((resolve) => {
     const modal = $("modal"), ok = $("modalOk"), cancel = $("modalCancel");
     $("modalMsg").textContent = message;
-    $("modalTitle").textContent = opts.title || "Please confirm";
+    $("modalTitle").textContent = opts.title || "Confirm";   /* pillar #4 — assume competence, no "Please" */
     ok.textContent = opts.okText || "Confirm";
     ok.classList.toggle("danger", !!opts.danger);
     modal.classList.remove("hidden");
@@ -872,15 +1188,17 @@ async function deleteSelectedStates() {
 async function checkAppUpdate() {
   let info = null;
   try { info = await api().update_check(); } catch (e) {}
-  const btn = el.appUpdate;
+  const btns = [el.appUpdate, el.minAppUpdate].filter(Boolean);
   if (info && info.update_available) {
-    btn.textContent = `Update available: v${info.latest}`;
-    btn.title = `You have v${info.current} — v${info.latest} is out. Click to download and install it.`;
-    btn.onclick = () => startSelfUpdate(info);
-    btn.classList.remove("hidden");
+    btns.forEach((btn) => {
+      btn.textContent = `Update available: v${info.latest}`;
+      btn.title = `You have v${info.current} — v${info.latest} is out. Click to download and install it.`;
+      btn.onclick = () => startSelfUpdate(info);
+      btn.classList.remove("hidden");
+    });
     log(`A newer version is available: v${info.latest} (you have v${info.current}).`, "sys");
   } else {
-    btn.classList.add("hidden");
+    btns.forEach((btn) => btn.classList.add("hidden"));
   }
 }
 
@@ -908,10 +1226,17 @@ async function startSelfUpdate(info) {
 }
 
 function init() {
+  $("toTinker").addEventListener("click", () => setMode("tinker"));
+  $("toMinimal").addEventListener("click", () => setMode("minimal"));
+  $("minSettingsBtn").addEventListener("click", openSettings);
+
   document.querySelectorAll("[data-action]").forEach((btn) => {
     btn.addEventListener("click", () => handlers[btn.dataset.action]());
   });
-  // kebab menus: toggle on the button, close on any other click
+  // kebab menus: toggle on the button, close on any other click. Each panel
+  // (.block) creates its own stacking context in Funtastic mode (backdrop-
+  // filter), so an open menu would be painted over by a sibling block;
+  // .menu-open on the parent block raises its z-index above siblings.
   document.addEventListener("click", (e) => {
     const menuBtn = e.target.closest(".menu-btn");
     let toOpen = null;
@@ -920,9 +1245,16 @@ function init() {
       if (menu && menu.classList.contains("hidden")) toOpen = menu;
     }
     document.querySelectorAll(".menu:not(.hidden)").forEach((m) => m.classList.add("hidden"));
-    if (toOpen) toOpen.classList.remove("hidden");
+    document.querySelectorAll(".block.menu-open").forEach((b) => b.classList.remove("menu-open"));
+    if (toOpen) {
+      toOpen.classList.remove("hidden");
+      const block = toOpen.closest(".block");
+      if (block) block.classList.add("menu-open");
+    }
   });
   $("refreshBtn").addEventListener("click", refresh);
+  const minRefresh = $("minRefreshBtn");
+  if (minRefresh) minRefresh.addEventListener("click", refresh);
   $("clearBtn").addEventListener("click", () => { el.console.innerHTML = ""; });
   $("memRefresh").addEventListener("click", refreshMemories);
   $("checkUpdates").addEventListener("click", refreshVersions);
@@ -939,6 +1271,7 @@ function init() {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       document.querySelectorAll(".menu:not(.hidden)").forEach((m) => m.classList.add("hidden"));
+      document.querySelectorAll(".block.menu-open").forEach((b) => b.classList.remove("menu-open"));
       if ($("modal").classList.contains("hidden")) closeSettings();
     }
   });
@@ -1012,14 +1345,65 @@ function init() {
     e.preventDefault();
     deleteSelectedStates();
   });
-  el.sdSelect.addEventListener("change", () => { syncManual(); refresh(); });
+  // When "Enter a path manually..." is picked, open the native folder picker
+  // so the user can browse to a drive rather than typing. The picked path
+  // populates the manualPath input + fires refresh; cancel reverts to whatever
+  // card was selected before.
+  function revertSdSelection(prev) {
+    if (!prev) return;
+    el.sdSelect.value = prev;
+    if (el.minSdValue && el.minSdValue.tagName === "SELECT") el.minSdValue.value = prev;
+    syncManual();
+    renderSdPickerStats();
+  }
+  async function handleManualPick(prev) {
+    try {
+      const picked = await api().pick_sd_folder();
+      if (picked) {
+        el.manualPath.value = picked;
+        refresh();
+      } else {
+        revertSdSelection(prev);      // user cancelled — restore previous on BOTH selects
+      }
+    } catch (e) {
+      log("Folder picker failed: " + e, "err");
+      revertSdSelection(prev);
+    }
+  }
+  let _lastSdValue = el.sdSelect.value;
+  el.sdSelect.addEventListener("change", () => {
+    syncManual();
+    renderSdPickerStats();
+    if (el.sdSelect.value === MANUAL) {
+      handleManualPick(_lastSdValue);
+    } else {
+      _lastSdValue = el.sdSelect.value;
+      refresh();
+    }
+  });
+  if (el.minSdValue && el.minSdValue.tagName === "SELECT") {
+    el.minSdValue.addEventListener("change", () => {
+      el.sdSelect.value = el.minSdValue.value;
+      syncManual();
+      renderSdPickerStats();
+      if (el.minSdValue.value === MANUAL) {
+        handleManualPick(_lastSdValue);
+      } else {
+        _lastSdValue = el.minSdValue.value;
+        refresh();
+      }
+    });
+  }
   el.manualPath.addEventListener("change", refresh);
   el.artSource.addEventListener("change", () => {
     el.artUrl.classList.toggle("hidden", el.artSource.value !== "url");
     refreshArt();  // preview the selected pack's icons + recompute Revert visibility
   });
 
-  api().version().then((v) => { el.version.textContent = "v" + v; }).catch(() => {});
+  api().version().then((v) => {
+    el.version.textContent = "v" + v;
+    if (el.minVersion) el.minVersion.textContent = "v" + v;
+  }).catch(() => {});
   checkAppUpdate();
   log("Analogue 3D Desktop ready.", "sys");
   refreshSettings().then((s) => {
@@ -1030,6 +1414,20 @@ function init() {
   refresh().then(refreshVersions);
   setInterval(pollStatus, 2500);  // keep the status strip live (plug/unplug)
 }
+
+// Apply saved mode + theme + clear at script-load time so the chosen view +
+// accent + finish paint on the first frame. Priority: URL hash (screenshot
+// capture) > "Always start with full controls" setting > stored MODE_KEY >
+// default. When the setting forces tinker, we do NOT persist — so toggling
+// the setting off later still lands on the user's actual last pick.
+(function _bootMode() {
+  const hash = (location.hash || "").match(/[#&]mode=([a-z]+)/);
+  if (hash) { setMode(hash[1], false); return; }     // ephemeral — for screenshot capture
+  if (getLaunchTinker()) { setMode("tinker", false); return; }
+  setMode(getMode());
+})();
+setTheme(getTheme());
+setClear(getClear());
 
 if (window.pywebview && window.pywebview.api) {
   init();
