@@ -27,7 +27,9 @@ control on one panel). It's the friendly face on the same engine as the
   </tr>
 </table>
 
-**Memories — the save-state browser.** Per-game, paginated, filterable, with screenshot thumbnails. Snapshot the lot before you touch anything; trim a game to its newest N; restore one game or all of them.
+### Memories — the save-state browser
+
+Per-game, paginated, filterable, with screenshot thumbnails. Snapshot the lot before you touch anything; trim a game to its newest N; restore one game or all of them.
 
 <p align="center">
   <img src="assets/screenshots/savestates.png" alt="Save states browser: Mario Kart 64 expanded showing four save-state thumbnails with timestamps; per-game rows for Super Smash Bros, Mario Party, Zelda Majora's Mask, GoldenEye 007, Mega Man 64, and more, each with KEEP LATEST and trim controls" width="92%">
@@ -42,9 +44,8 @@ control on one panel). It's the friendly face on the same engine as the
 - **Browse every save state with its screenshot** — paginate, filter, snapshot everything before risky business, then restore one game or the whole library.
 - **Install cartridge art** — pull the [RetroGameCorps](https://github.com/retrogamecorps/Analogue-3D-Images) pack, or set a custom image per cartridge.
 - **Back up the SD card** — Library, Settings, and Memories zipped into one archive; restore or clean older backups in place.
-- **Do everything in one click** — back up, update console, install art, flash every controller, with a live step checklist.
 
-Backup location is configurable (defaults to `~/Documents/Analogue3D`) and shared with the CLI.
+The **AUTO** action (and Minimal mode's **DO EVERYTHING** button) runs the lot — back up, update console, install art, flash every controller — with a live step checklist. Backup location is configurable (defaults to `~/Documents/Analogue3D`) and shared with the CLI.
 
 ## Colorways
 
