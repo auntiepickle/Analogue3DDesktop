@@ -12,6 +12,22 @@
   --dim: #9d9da9;          /* nudged brighter (was #8b8b95) so secondary text reads on Funtastic */
   --mono: ui-monospace, "Cascadia Code", "Consolas", "SF Mono", monospace;
   --sans: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+
+  /* --------------------------------------------------------------------
+     Type scale tokens.
+     Each step is a fluid clamp(floor, viewport-relative, ceiling). Floors
+     are sized for legibility at low CSS-viewport widths (1280px = 1920×1080
+     at 150% Windows scaling). Ceilings cap on ultrawide so chrome doesn't
+     visually bloat past 3000-ish px. The previous design used hardcoded
+     10-14px values for many small labels; users at 100% DPI on a wide
+     monitor reported the chrome reading too small. This system lets each
+     viewport find its own size while keeping the hi-fi instrument-panel
+     rhythm. Add `--fs-*` to new components; don't reintroduce hardcoded px.
+     -------------------------------------------------------------------- */
+  --fs-micro: clamp(11px, 0.70vw, 14px);   /* mono accent labels, IDs, ver pill, picker labels */
+  --fs-small: clamp(13px, 0.90vw, 17px);   /* status text, captions, meta, descriptions */
+  --fs-body:  clamp(14px, 1.00vw, 19px);   /* default body text (was implicit ~14.98 at 1920) */
+  --fs-med:   clamp(15px, 1.15vw, 22px);   /* primary text — game titles, button text */
 }
 
 * { box-sizing: border-box; }
@@ -22,10 +38,7 @@ html, body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
-  /* Scale with viewport (not just OS DPI). Ceiling raised to 20px so the
-     entire UI keeps growing past the ~3050px point where 0.78vw hits 16px -
-     otherwise everything feels tiny on 3440 ultrawides. */
-  font-size: clamp(13px, 0.78vw, 20px);
+  font-size: var(--fs-body);
 }
 
 .app {
@@ -82,11 +95,11 @@ html, body {
   border: 1px solid var(--gold-line);
   border-radius: 999px;
   padding: 3px 10px;
-  font-size: 12px;
+  font-size: var(--fs-micro);
 }
 .update-pill {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   font-weight: 600;
   color: #1a1500;
   background: var(--gold);
@@ -136,8 +149,8 @@ html, body {
   0%, 100% { box-shadow: 0 0 12px var(--led-glow); }
   50%      { box-shadow: 0 0 22px var(--led-glow); }
 }
-.stat-label { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); }
-.stat-value { font-family: var(--mono); font-size: 13px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat-label { font-family: var(--mono); font-size: var(--fs-micro); letter-spacing: 2px; text-transform: uppercase; color: var(--dim); }
+.stat-value { font-family: var(--mono); font-size: var(--fs-small); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---------- picker ---------- */
 .picker {
@@ -146,7 +159,7 @@ html, body {
   gap: 10px;
   flex-wrap: wrap;
 }
-.picker label { color: var(--dim); font-size: 12px; letter-spacing: .5px; }
+.picker label { color: var(--dim); font-size: var(--fs-micro); letter-spacing: .5px; }
 select, input[type=text] {
   background: var(--panel-2);
   color: var(--text);
@@ -173,7 +186,7 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
   padding: 16px 18px;
 }
 .hero-text h2 { margin: 0 0 4px; color: var(--gold); font-size: 17px; }
-.hero-text p { margin: 0; color: var(--dim); font-size: 13px; max-width: 560px; }
+.hero-text p { margin: 0; color: var(--dim); font-size: var(--fs-small); max-width: 560px; }
 .hero .primary { margin-left: auto; }
 
 /* ---------- grid ---------- */
@@ -250,10 +263,10 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
   color: var(--dim); font-size: 11px; background: #0a0a0c;
 }
 .art-cap {
-  font-size: 11px; color: var(--text); text-align: center; line-height: 1.25;
+  font-size: var(--fs-small); color: var(--text); text-align: center; line-height: 1.25;
   min-height: 2.5em; display: flex; align-items: center; justify-content: center;
 }
-.art-id { font-family: var(--mono); font-size: 10px; color: var(--gold-dim); }
+.art-id { font-family: var(--mono); font-size: var(--fs-micro); color: var(--gold-dim); }
 .art-tile .art-actions { width: 100%; margin-top: auto; display: flex; flex-direction: column; gap: 3px; }
 .art-tile .setart { width: 100%; align-self: stretch; }
 .art-tile .artreset {
@@ -285,7 +298,7 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
 /* ---------- buttons ---------- */
 button {
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: var(--fs-small);
   font-weight: 600;
   border-radius: 2px;          /* was 9px - pillar #6 hairline precision says no rounded > 4px */
   border: 1px solid transparent;
@@ -376,7 +389,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   min-height: 30px;       /* equalize across blocks so UPDATES/BACKUPS cards top-align */
 }
 .section-head h2 { margin: 0; font-size: 16px; color: var(--gold); }
-.section-head .muted { color: var(--dim); font-weight: 400; font-size: 13px; }
+.section-head .muted { color: var(--dim); font-weight: 400; font-size: var(--fs-small); }
 .row-tools { display: flex; gap: 8px; align-items: center; }
 .muted { color: var(--dim); }
 .pad { padding: 8px 2px; margin: 0; }
@@ -384,7 +397,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .mem-controls { display: flex; align-items: center; gap: 10px; }
 .mem-controls .grow { flex: 1; }
 .mem-controls #memSearch, .mem-controls #artSearch { max-width: 280px; }
-.mem-controls #memPageInfo, .mem-controls #artPageInfo { font-size: 12px; white-space: nowrap; }
+.mem-controls #memPageInfo, .mem-controls #artPageInfo { font-size: var(--fs-small); white-space: nowrap; }
 
 .mem-selbar {
   display: flex; align-items: center; gap: 10px;
@@ -407,7 +420,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 }
 .menu-item {
   text-align: left; background: transparent; border: none; color: var(--text);
-  padding: 8px 10px; border-radius: 6px; font: inherit; font-size: 13px;
+  padding: 8px 10px; border-radius: 6px; font: inherit; font-size: var(--fs-small);
   cursor: pointer; white-space: nowrap;
 }
 .menu-item:hover:not(:disabled) { background: rgba(232, 185, 35, .12); color: var(--gold); }
@@ -439,9 +452,9 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   object-fit: cover; border-radius: 4px;
   border: 1px solid var(--border); background: #0a0a0c;
 }
-.game-title { font-weight: 600; color: var(--text); font-size: 14px; }
-.game-id { font-family: var(--mono); color: var(--gold-dim); font-size: 12px; }
-.game-meta { color: var(--dim); font-size: 12px; }
+.game-title { font-weight: 600; color: var(--text); font-size: var(--fs-med); }
+.game-id { font-family: var(--mono); color: var(--gold-dim); font-size: var(--fs-micro); }
+.game-meta { color: var(--dim); font-size: var(--fs-small); }
 .game-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .game-actions label {
   font-family: var(--mono);
@@ -1072,7 +1085,7 @@ body.mode-minimal .app {
 
 .min-instr-label {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   letter-spacing: 3px;
   text-transform: uppercase;
   color: var(--gold);
@@ -1090,7 +1103,7 @@ body.mode-minimal .app {
 }
 .min-instr-status {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--dim);
@@ -1138,7 +1151,7 @@ body.mode-minimal .app {
    reads as the "subtext" line on a hi-fi component face. */
 .min-instr-substats {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--dim);
@@ -1166,14 +1179,14 @@ body.mode-minimal .app {
 }
 .min-state-label {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--fs-micro);
   letter-spacing: 3px;
   text-transform: uppercase;
   color: var(--gold);
 }
 .min-state-text {
   font-family: var(--sans);              /* mono label -> sans value, the core hi-fi pattern */
-  font-size: clamp(12px, .85vw, 14px);   /* shrunk - was outweighing the LAST label visually; floor raised to 12px for a11y */
+  font-size: var(--fs-small);            /* responsive token (was clamp 12-14) */
   color: var(--text);              /* was var(--dim-bright, var(--text)) but --dim-bright was never defined */
   flex: 1;
   min-width: 0;
