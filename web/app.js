@@ -58,7 +58,13 @@ const THEMES = [
   { id: "smoke",     name: "Smoke",     dot: "#cfd1d5" },
 ];
 
-function getMode() { return localStorage.getItem(MODE_KEY) || "minimal"; }
+function getMode() {
+  // URL hash override (set by app.py when A3D_MODE env is present) — used for
+  // screenshot capture in advanced mode without flipping localStorage.
+  const m = (location.hash || "").match(/[#&]mode=([a-z]+)/);
+  if (m) return m[1];
+  return localStorage.getItem(MODE_KEY) || "minimal";
+}
 function setMode(m) {
   document.body.classList.remove("mode-minimal", "mode-tinker");
   document.body.classList.add("mode-" + m);

@@ -97,17 +97,6 @@ on Windows the target machine just needs the Microsoft Edge WebView2 Runtime (sh
 Windows 11 and current Windows 10). The `.dmg`/`.zip` packaging and macOS signing happen
 in CI (see `.github/workflows/release.yml`).
 
-## Design language
-
-The Desktop app is designed around an **instrument-panel** metaphor — hi-fi hardware, not a dashboard. Mono uppercase labels paired with sans values, hairline 1px borders, one accent at a time, imperative copy. Theming follows the actual Analogue 3D + Pocket + N64 Funtastic editions.
-
-Reference:
-
-- **[docs/BRANDING.md](docs/BRANDING.md)** — six brand pillars, voice rules, the wordmark, logo concept.
-- **[docs/THEMING.md](docs/THEMING.md)** — how the 10 themes work, the rules when adding an 11th, the Funtastic translucent overlay.
-- **[docs/REDESIGN.md](docs/REDESIGN.md)** — what the `feat/dual-mode-ui` redesign changed and why.
-- **[docs/CLI-UPDATES.md](docs/CLI-UPDATES.md)** — reviewer-driven recommendations for landing the same language in the CLI (separate PR).
-
 ## How it's wired
 
 - `app.py` — launches the native window and sets the taskbar identity + icon.
@@ -119,3 +108,13 @@ Reference:
 
 The CLI (`python a3d.py` in the core repo) and this GUI are two faces on the same
 `analogue3d` engine.
+
+## Design language
+
+The Desktop app is built around an **instrument-panel** metaphor — hi-fi hardware, not a dashboard. Mono uppercase labels paired with sans values, hairline 1px borders, one accent at a time, imperative copy. Theming follows the actual Analogue 3D, Analogue Pocket, and N64 Funtastic editions.
+
+- **[docs/BRANDING.md](docs/BRANDING.md)** — six brand pillars, voice rules, the wordmark, logo concept.
+- **[docs/THEMING.md](docs/THEMING.md)** — how the 10 themes work, rules when adding an 11th, the Funtastic translucent overlay.
+- **[docs/REDESIGN.md](docs/REDESIGN.md)** — what the dual-mode UI redesign changed and why.
+- **[docs/CLI-UPDATES.md](docs/CLI-UPDATES.md)** — reviewer-driven recommendations for landing the same language in the CLI (separate PR).
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — testing notes (incl. demo + theme env vars), code style, voice.

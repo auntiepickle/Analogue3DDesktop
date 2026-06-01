@@ -675,8 +675,21 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .n64-ports .port.lit .port-socket {
   stroke: var(--gold);
   filter: drop-shadow(0 0 3px var(--gold));
+  animation: a3d-port-breathe 4.2s ease-in-out infinite;
 }
 .n64-ports .port.lit .port-pin { fill: var(--gold); }
+/* Slightest-bit-alive: a slow ambient breathe on lit ports + connected LEDs.
+   ~4s cycle, just enough motion to read as "powered, live". Killed by
+   @media (prefers-reduced-motion: reduce) at the bottom of this file. */
+@keyframes a3d-port-breathe {
+  0%, 100% { filter: drop-shadow(0 0 3px var(--gold)); }
+  50%      { filter: drop-shadow(0 0 5px var(--gold)) drop-shadow(0 0 2px color-mix(in oklab, var(--gold) 40%, transparent)); }
+}
+@keyframes a3d-led-breathe {
+  0%, 100% { box-shadow: 0 0 6px var(--led-glow, var(--green)); }
+  50%      { box-shadow: 0 0 9px var(--led-glow, var(--green)), 0 0 3px var(--led-glow, var(--green)); }
+}
+.led.on { animation: a3d-led-breathe 3.6s ease-in-out infinite; }
 body.clear .n64-ports .port.lit .port-ring,
 body.clear .n64-ports .port.lit .port-socket {
   filter: drop-shadow(0 0 5px var(--gold)) drop-shadow(0 0 2px color-mix(in oklab, var(--gold) 35%, transparent));

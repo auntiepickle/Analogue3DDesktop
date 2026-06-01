@@ -188,7 +188,10 @@ def list_backups():
     out = []
     now = datetime.now()
     days_ago = [0, 0, 1, 2, 5, 9, 14, 21, 30]
-    labels_by_day = {0: "before-firmware", 2: "before-art-pack", 14: "before-Auto"}
+    # Pedagogical labels ("before-firmware" / "before-art-pack" / "before-Auto")
+    # tipped demo screenshots off as synthetic. Real users rarely label backups
+    # with the reason. Drop them.
+    labels_by_day = {}
     for i, d in enumerate(days_ago):
         ts = now - timedelta(days=d, hours=(i * 3) % 12)
         when = ts.strftime("%Y-%m-%d %H:%M")
@@ -389,10 +392,12 @@ def memory_thumbnail(root, folder, name):
 
 
 def versions(root):
+    # Controller a tick behind so demo screenshots show one "Update" state
+    # somewhere — "all up to date" everywhere read as synthetic.
     return {
         "console_current": "1.3.0", "console_latest": "1.3.0",
         "console_update": False, "controllers": 1,
-        "ctrl_current": "2.04", "ctrl_latest": "2.04", "ctrl_update": False,
+        "ctrl_current": "2.03", "ctrl_latest": "2.04", "ctrl_update": True,
     }
 
 

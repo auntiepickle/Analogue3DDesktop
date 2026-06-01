@@ -53,11 +53,14 @@ def main():
     index = os.path.join(here, "web", "index.html")
     icon = os.path.join(here, "assets", "icon.ico")
 
-    # Screenshot-capture aid: A3D_THEME=jungle launches with that theme picked
-    # via URL hash, no localStorage manipulation. Read by getTheme() in app.js.
-    _theme_override = os.environ.get("A3D_THEME")
-    if _theme_override:
-        index = "file:///" + index.replace(os.sep, "/") + "#theme=" + _theme_override
+    # Screenshot-capture aid: A3D_THEME=jungle / A3D_MODE=tinker launches with
+    # those picks via URL hash, no localStorage manipulation. Read by
+    # getTheme() / getMode() in app.js.
+    _hash_parts = []
+    if os.environ.get("A3D_THEME"): _hash_parts.append("theme=" + os.environ["A3D_THEME"])
+    if os.environ.get("A3D_MODE"):  _hash_parts.append("mode=" + os.environ["A3D_MODE"])
+    if _hash_parts:
+        index = "file:///" + index.replace(os.sep, "/") + "#" + "&".join(_hash_parts)
 
     if sys.platform == "win32":
         try:
