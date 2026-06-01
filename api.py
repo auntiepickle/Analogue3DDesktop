@@ -435,18 +435,24 @@ class Api:
             print("=== Auto: snapshot -> backup -> firmware -> art pack -> controllers ===")
 
             # Memories snapshot first — fast, browsable in the Memories restore
-            # picker, and survives even if a later step fails. The SD backup
-            # below also zips Memories, but as part of a full-card archive
-            # rather than a per-save-state snapshot the user can selectively
-            # restore from.
+            # picker, and survives even if a later step fails. Failures here
+            # MUST NOT abort the broader SD-card backup that follows (the more
+            # important safety net) — most likely failure mode is the backup
+            # share being offline, which would block both, but disk-full /
+            # ACL / write-protect on the snapshot dir alone shouldn't take
+            # the whole flow down.
             self._step(0, "active")
-            snap_path, n = savestates.archive_all(root)
-            if snap_path:
-                self._step_note(0, f"{n} states")
-                self._step(0, "done")
-            else:
-                self._step(0, "skip")
-                print("No save states on this card to snapshot.")
+            try:
+                snap_path, n = savestates.archive_all(root)
+                if snap_path:
+                    self._step_note(0, f"{n} states")
+                    self._step(0, "done")
+                else:
+                    self._step(0, "skip")
+                    print("No save states on this card to snapshot.")
+            except Exception as e:
+                self._step(0, "fail")
+                print(f"Snapshot failed: {e}. Continuing with SD backup.")
 
             self._step(1, "active")
             sdcard.create_backup(root, progress=self._backup_progress_cb())

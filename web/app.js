@@ -1422,7 +1422,7 @@ function init() {
 // the setting off later still lands on the user's actual last pick.
 (function _bootMode() {
   const hash = (location.hash || "").match(/[#&]mode=([a-z]+)/);
-  if (hash) { setMode(hash[1]); return; }
+  if (hash) { setMode(hash[1], false); return; }     // ephemeral — for screenshot capture
   if (getLaunchTinker()) { setMode("tinker", false); return; }
   setMode(getMode());
 })();

@@ -577,7 +577,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   gap: 12px;
   font-family: var(--mono);
   color: var(--gold);
-  z-index: 10;
+  z-index: 30;       /* above modals (20) and any .block.menu-open (20) */
   backdrop-filter: blur(3px);
 }
 .busy-box {

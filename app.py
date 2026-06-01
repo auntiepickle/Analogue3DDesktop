@@ -46,10 +46,14 @@ def _load_window_state():
 
 
 def _save_window_state(state):
+    # Atomic write via temp+replace so a power loss mid-write can't leave a
+    # 0-byte file that wipes the user's maximized-state memory.
     try:
         os.makedirs(os.path.dirname(_WIN_STATE), exist_ok=True)
-        with open(_WIN_STATE, "w", encoding="utf-8") as f:
+        tmp = _WIN_STATE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
             json.dump(state, f)
+        os.replace(tmp, _WIN_STATE)
     except OSError:
         pass
 
@@ -140,11 +144,16 @@ def main():
     # private_mode=False so theme/mode/clear in localStorage survive a restart.
     # Wipe the HTTP/Code/GPU caches on launch so a release-to-release UI update
     # isn't shadowed by cached bytes — Local Storage lives in a sibling dir.
+    # Surface failures (ACL, file lock) to stderr instead of silently ignoring;
+    # a stale-cache-induced UI bug would otherwise be unreproducible from logs.
     storage = os.path.join(os.path.expanduser("~"), ".analogue3d", "webview")
     import shutil
     _cache_root = os.path.join(storage, "EBWebView", "Default")
     for _sub in ("Cache", "Code Cache", "GPUCache"):
-        shutil.rmtree(os.path.join(_cache_root, _sub), ignore_errors=True)
+        _p = os.path.join(_cache_root, _sub)
+        if os.path.isdir(_p):
+            shutil.rmtree(_p, onerror=lambda f, p, ei: sys.stderr.write(
+                f"warn: couldn't wipe {p}: {ei[1]}\n"))
     start_kwargs = {"private_mode": False, "storage_path": storage}
     if os.path.isfile(icon):
         start_kwargs["icon"] = icon
