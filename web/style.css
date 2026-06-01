@@ -1419,8 +1419,9 @@ body.mode-tinker .tinker-view {
 }
 .adv-rail .stat-label {
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 2px;
+  font-size: var(--fs-control-mono);     /* was 10px - 12px mono ≈ 13px sans */
+  line-height: 1;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--gold);
   white-space: nowrap;          /* "SD CARD" must not wrap to 2 lines at narrow rail */
@@ -1428,7 +1429,7 @@ body.mode-tinker .tinker-view {
 }
 .adv-rail .stat-value {
   font-family: var(--sans);
-  font-size: 12px;
+  font-size: var(--fs-secondary);    /* was 12px - 15px sans */
   font-weight: 500;
   color: var(--text);
   white-space: nowrap;
@@ -1449,7 +1450,7 @@ body.mode-tinker .tinker-view {
    minimal-mode substats so both modes are consistent. */
 .picker-stats {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--fs-meta-mono);
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--dim);
@@ -1460,8 +1461,8 @@ body.mode-tinker .tinker-view {
 }
 .adv-rail .picker label {
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 2px;
+  font-size: var(--fs-control-mono);    /* was 10px - 12px mono */
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--gold);            /* technical-control label, not generic UI */
   display: block;
@@ -1551,8 +1552,8 @@ body.mode-tinker .block > .grid2 {
 body.mode-tinker .block > .section-head { margin-bottom: 16px; }
 body.mode-tinker .block > .section-head h2 {
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 4px;            /* aggressive retro receiver feel */
+  font-size: var(--fs-body-mono);          /* was 11px - lifted to 15px mono ≈ 17px sans */
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--gold);
   font-weight: 700;
@@ -1566,11 +1567,11 @@ body.mode-tinker .card {
 }
 body.mode-tinker .card h3 {
   font-family: var(--mono);
-  font-size: 10px;                /* subordinate to 11px section-head via SIZE + spacing, not just color */
-  letter-spacing: 2px;
+  font-size: var(--fs-secondary-mono);   /* was 10px - lifted to 13px mono ≈ 15px sans */
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text);             /* gold section-head stays visual anchor */
-  margin: 0 0 10px;
+  color: var(--text);
+  margin: 0 0 12px;
 }
 body.mode-tinker .console-wrap {
   background: var(--panel);
