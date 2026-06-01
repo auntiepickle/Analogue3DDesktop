@@ -1066,13 +1066,13 @@ body.mode-minimal .app {
   background: var(--panel);
   border: 1px solid var(--gold-line);
   border-radius: 2px;
-  padding: clamp(20px, 2vw, 32px) clamp(24px, 2.4vw, 40px) clamp(18px, 1.6vw, 28px);   /* trimmed - was 28-52/32-64/24-40, panel was too tall for ~1000px CSS viewports */
+  padding: clamp(28px, 3vw, 52px) clamp(32px, 4vw, 64px) clamp(24px, 2vw, 40px);
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, .4) inset,
     0 32px 120px rgba(0, 0, 0, .6);
   display: flex;
   flex-direction: column;
-  gap: clamp(16px, 1.4vw, 22px);            /* trimmed gap so 3 cards + header + button fit in typical fullscreen */
+  gap: clamp(24px, 2.4vw, 36px);
 }
 
 .min-header {
@@ -1124,10 +1124,10 @@ body.mode-minimal .app {
   background: var(--panel-2);
   border: 1px solid var(--border);     /* was --gold-line at 35% opacity — vanished against the panel; --border is theme-stable and reads as a discrete instrument module (border-pro design pass) */
   border-radius: 2px;
-  padding: clamp(14px, 1.3vw, 22px) clamp(16px, 1.5vw, 24px);   /* trimmed — was 18-28 / 20-30 */
+  padding: clamp(18px, 1.6vw, 28px) clamp(20px, 1.8vw, 30px);
   display: flex;
   flex-direction: column;
-  gap: clamp(8px, 0.7vw, 12px);
+  gap: clamp(10px, 1vw, 14px);
   min-width: 0;
   /* Removed overflow:hidden — was clipping the lit-port drop-shadow into a
      square. Long values are already truncated by .min-instr-value's own
@@ -1523,8 +1523,8 @@ body.mode-tinker .block input[type="text"] {
 }
 body.mode-tinker .restore-row { min-width: 0; flex-wrap: wrap; }
 body.mode-tinker .restore-row > select { flex: 1 1 auto; min-width: 160px; }   /* enough to fit full "2026-05-31 12:34" backup date instead of collapsing to "2..." */
-@media (max-width: 1700px) {
-  body.mode-tinker .adv-main { grid-template-columns: 1fr; }   /* was max-width: 1200px - too aggressive 2-col, BACKUPS got cut off at 1536px CSS viewports */
+@media (max-width: 1200px) {
+  body.mode-tinker .adv-main { grid-template-columns: 1fr; }
 }
 /* On true ultrawides, let Updates+Backups+a third cell share a row. */
 @media (min-width: 3000px) {
