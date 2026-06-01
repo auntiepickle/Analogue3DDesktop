@@ -35,13 +35,7 @@ CLI: the shared `analogue3d` Python package does the real work, and this app is 
 ## Screenshots
 
 <p align="center">
-  <img src="assets/screenshots/main.png?v=0.3.0" alt="Minimal mode: ANALOGUE 3D wordmark, LAST line, three instrument cards (SD CARD / CONSOLE / CONTROLLER) with the 4-port indicator, big DO EVERYTHING button" width="90%">
-</p>
-<p align="center">
-  <img src="assets/screenshots/cartart.png?v=0.2.0" alt="Cartridge art gallery" width="90%">
-</p>
-<p align="center">
-  <img src="assets/screenshots/savestates.png?v=0.2.0" alt="Save-state (Memories) manager and snapshots" width="90%">
+  <img src="assets/screenshots/main.png?v=0.4.0" alt="Advanced mode: persistent rail with SD card + controller status and the AUTO action, plus the main grid showing UPDATES (console firmware + controller flash) and BACKUPS (back up + restore/clean), with the start of the CARTRIDGE ART gallery below" width="92%">
 </p>
 
 ## Colorways
