@@ -112,7 +112,20 @@ def main():
         except Exception:
             pass
 
-    start_kwargs = {}
+    # Persist the WebView2 profile (cookies + localStorage) so the user's
+    # picked theme/mode survives a restart. pywebview defaults to
+    # private_mode=True, which wipes a3d:theme / a3d:mode / a3d:clear on every
+    # exit — that's why the theme picker felt amnesiac.
+    storage = os.path.join(os.path.expanduser("~"), ".analogue3d", "webview")
+    # Drop the HTTP/JS code cache on every launch so an updated build's new
+    # HTML/CSS/JS isn't shadowed by the prior version's cached bytes. Local
+    # Storage (where theme/mode prefs live) sits in a sibling dir and is
+    # preserved.
+    import shutil
+    _cache_root = os.path.join(storage, "EBWebView", "Default")
+    for _sub in ("Cache", "Code Cache", "GPUCache"):
+        shutil.rmtree(os.path.join(_cache_root, _sub), ignore_errors=True)
+    start_kwargs = {"private_mode": False, "storage_path": storage}
     if os.path.isfile(icon):
         start_kwargs["icon"] = icon
     webview.start(**start_kwargs)

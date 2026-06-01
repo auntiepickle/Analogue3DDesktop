@@ -37,6 +37,7 @@ const MANUAL = "__manual__";
 const MODE_KEY = "a3d:mode";
 const THEME_KEY = "a3d:theme";
 const CLEAR_KEY = "a3d:clear";
+const LAUNCH_TINKER_KEY = "a3d:launchTinker";
 
 /* N64-edition-inspired themes. Each just overrides the gold tokens via a body
    class so all existing var(--gold) references re-theme automatically. Order is
@@ -104,6 +105,15 @@ function setTheme(id) {
   document.body.classList.add("theme-" + id);
   try { localStorage.setItem(THEME_KEY, id); } catch (e) {}
   _renderThemePicker();
+}
+
+function getLaunchTinker() {
+  return localStorage.getItem(LAUNCH_TINKER_KEY) === "1";
+}
+function setLaunchTinker(on) {
+  try { localStorage.setItem(LAUNCH_TINKER_KEY, on ? "1" : "0"); } catch (e) {}
+  const cb = $("launchTinkerToggle");
+  if (cb) cb.checked = !!on;
 }
 
 function getClear() {
@@ -900,6 +910,11 @@ function openSettings() {
     cb.checked = getClear();
     cb.onchange = (e) => setClear(e.target.checked);
   }
+  const lt = $("launchTinkerToggle");
+  if (lt) {
+    lt.checked = getLaunchTinker();
+    lt.onchange = (e) => setLaunchTinker(e.target.checked);
+  }
   $("settingsModal").classList.remove("hidden");
 }
 function closeSettings() {
@@ -1376,8 +1391,9 @@ function init() {
 
 // Apply saved mode + theme + clear at script-load time so the chosen view +
 // accent + finish paint on the first frame - waiting for pywebviewready would
-// flash the default state first.
-setMode(getMode());
+// flash the default state first. The "Always launch in Tinker" Setting
+// short-circuits the last-used mode.
+setMode(getLaunchTinker() ? "tinker" : getMode());
 setTheme(getTheme());
 setClear(getClear());
 
