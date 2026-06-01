@@ -269,8 +269,15 @@ def list_snapshots():
 
 
 def cart_art_games(root, source=None):
+    # Lead the gallery with the VERIFIED title<->cart_id pairs so the first
+    # screenful shows tiles whose art ACTUALLY matches the title. Extras
+    # (arbitrary pairings) follow alphabetically. Earlier sorting whole-
+    # alphabetically broke this — "1080 Snowboarding" came first with a
+    # random cart_id, looking like a demo bug.
+    verified = [t for _, t in VERIFIED_TITLES]
+    extras = sorted(_EXTRA_TITLES, key=lambda t: t.lower())
     items = []
-    for title in sorted(GAMES, key=lambda t: t.lower()):
+    for title in verified + extras:
         items.append({
             "cart_id": _cart_id(title),
             "title": title,
