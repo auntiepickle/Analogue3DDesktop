@@ -767,13 +767,31 @@ body.theme-glow {
 body.clear {
   --gold-faint: color-mix(in oklab, var(--gold) 38%, transparent);
   --gold-line:  color-mix(in oklab, var(--gold) 72%, transparent);
-  /* Was: 3 radial-gradients + 2 repeating-linear-gradients with
-     background-attachment:fixed. WebView2 doesn't honor `fixed` reliably
-     when paired with backdrop-filter ancestors, so the radial bg "scrolled"
-     with content at high DPI. Simpler solid bg + the panel backdrop-blur
-     does the Funtastic translucent read without the scroll artifact. */
   background: var(--bg);
 }
+/* Move the Funtastic vignette + dot-grid pattern into a TRULY-fixed
+   pseudo-element. WebView2 ignores `background-attachment: fixed` when
+   backdrop-filter ancestors are in play (the entire panel system), so the
+   bg used to scroll with content at high DPI. position:fixed on a ::before
+   sidesteps the whole issue — the layer stays anchored to the viewport. */
+body.clear::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 22% 12%, var(--gold-faint), transparent 65%),
+    radial-gradient(ellipse 80% 65% at 78% 88%, var(--gold-faint), transparent 65%),
+    radial-gradient(ellipse 50% 40% at 50% 50%, color-mix(in oklab, var(--gold) 14%, transparent), transparent 60%),
+    repeating-linear-gradient(180deg, transparent 0 3px, rgba(255,255,255,.032) 3px 4px),
+    repeating-linear-gradient(90deg, transparent 0 3px, rgba(255,255,255,.012) 3px 4px);
+}
+/* Ensure interactive content stays above the fixed bg layer. */
+body.clear .app,
+body.clear .modal,
+body.clear .toast,
+body.clear .busy { position: relative; z-index: 1; }
 
 body.clear .min-panel,
 body.clear .adv-rail,
@@ -796,11 +814,8 @@ body.clear .console-wrap {
     inset 0 1px 0 rgba(255,255,255,.18),
     inset 0 -4px 8px rgba(0,0,0,.25),
     inset 0 0 0 1px rgba(0,0,0,.22),
-    0 30px 90px rgba(0,0,0,.50);
-  /* Removed the outer `0 0 30px var(--gold) 18%` accent halo — it travelled
-     with each panel during scroll, which was the second "scrolling gold"
-     artifact the user reported. Inset rim + drop shadow + the gold-line
-     hairline border are enough to read as a translucent floating object. */
+    0 30px 90px rgba(0,0,0,.50),
+    0 0 30px color-mix(in oklab, var(--gold) 18%, transparent);   /* gold halo: the iconic Funtastic case-glow */
 }
 
 body.clear .min-instr,
