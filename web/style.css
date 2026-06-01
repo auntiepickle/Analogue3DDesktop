@@ -29,11 +29,11 @@
      distance (24-32"); bumped up across the board (+2-4px) so the dense
      gallery + table rows stay legible without leaning in. Browser/OS DPI
      scaling still handles physical sizing across high/low DPI displays. */
-  --fs-micro: 0.875rem;   /* 14px - mono labels, IDs, badges, ver pill */
-  --fs-small: 1rem;       /* 16px - secondary text, captions, descriptions, button text */
-  --fs-body:  1.125rem;   /* 18px - default body, primary list rows */
-  --fs-med:   1.25rem;    /* 20px - sub-card titles (CONSOLE FIRMWARE etc.) */
-  --fs-large: 1.5rem;     /* 24px - section headers (UPDATES, BACKUPS, CARTRIDGE ART), wordmarks */
+  --fs-micro: 1rem;       /* 16px - mono labels, IDs, badges, ver pill */
+  --fs-small: 1.125rem;   /* 18px - secondary text, captions, descriptions, button text */
+  --fs-body:  1.25rem;    /* 20px - default body, primary list rows */
+  --fs-med:   1.375rem;   /* 22px - sub-card titles (CONSOLE FIRMWARE etc.) */
+  --fs-large: 1.625rem;   /* 26px - section headers (UPDATES, BACKUPS, CARTRIDGE ART), wordmarks */
 }
 
 * { box-sizing: border-box; }
