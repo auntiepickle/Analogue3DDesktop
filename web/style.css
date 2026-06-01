@@ -35,6 +35,7 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  zoom: 1.25;                       /* uniform 1.25x scale - everything proportional (no piecemeal font rebalancing) */
 }
 
 /* ---------- header ---------- */
