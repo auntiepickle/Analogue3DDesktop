@@ -172,9 +172,9 @@ select, input[type=text] {
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 2px;
-  padding: 8px 28px 8px 10px;     /* right pad reserves space for native chevron - was overlapping text */
+  padding: 6px 28px 6px 10px;     /* tightened — was reading much taller than surrounding labels */
   font-family: var(--mono);
-  font-size: var(--fs-small);
+  font-size: var(--fs-micro);     /* matched to label tier so dropdown isn't 2x taller than its label */
   outline: none;
 }
 select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
@@ -305,11 +305,11 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
 /* ---------- buttons ---------- */
 button {
   font-family: var(--sans);
-  font-size: var(--fs-small);
+  font-size: var(--fs-micro);     /* matches dropdown tier - consistent chrome */
   font-weight: 600;
   border-radius: 2px;          /* was 9px - pillar #6 hairline precision says no rounded > 4px */
   border: 1px solid transparent;
-  padding: 9px 16px;
+  padding: 7px 14px;
   cursor: pointer;
   white-space: nowrap;
   transition: background .15s, border-color .15s, color .15s, opacity .15s;
