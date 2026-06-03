@@ -237,11 +237,15 @@ function _syncMinimal() {
 
   // -- CONTROLLER --
   el.minCtrlLed.className = el.padLed.className;
-  if (el.padLed.className.indexOf("on") !== -1) {
+  if (controllerCount > 0) {
     el.minCtrlStatus.textContent = "connected";
     el.minCtrlValue.innerHTML = el.ctrlVer.innerHTML;
     const cBadge = el.minCtrlValue.querySelector(".badge");
     if (cBadge) cBadge.remove();
+  } else if (controllerSwitchModeCount > 0) {
+    el.minCtrlStatus.textContent = "in S mode";
+    const pl = controllerSwitchModeCount === 1 ? "controller" : "controllers";
+    el.minCtrlValue.textContent = `${controllerSwitchModeCount} ${pl} — flip back switch to D`;
   } else {
     el.minCtrlStatus.textContent = "none";
     el.minCtrlValue.textContent = "—";
@@ -300,6 +304,20 @@ function log(text, cls) {
 /* ---------- busy state + live progress ---------- */
 let consoleUpToDate = false;
 let controllerCount = 0;
+let controllerSwitchModeCount = 0;     // pads stuck in S-mode (Nintendo emulation)
+
+/* Status text for the controller surface. A pad in the S position on the
+   back switch reports as a Nintendo N64 controller and the flash protocol
+   can't reach it — when N == 0 but switch-mode > 0, tell the user instead
+   of silently saying "none connected." */
+function _ctrlStatusText(n, switchN) {
+  if (n > 0) return `${n} connected`;
+  if (switchN > 0) {
+    const pl = switchN === 1 ? "controller" : "controllers";
+    return `${switchN} ${pl} in S mode — flip the back switch to D to update`;
+  }
+  return "none connected";
+}
 let busyNow = false;
 let lastCardSig = null;
 let flashTarget = null;
@@ -478,9 +496,11 @@ async function refresh() {
   }
 
   const n = data.controllers || 0;
+  const sn = data.controllers_switch_mode || 0;
   controllerCount = n;
-  el.padLed.className = n > 0 ? "led on" : "led off";
-  el.padValue.textContent = n === 0 ? "none connected" : `${n} connected`;
+  controllerSwitchModeCount = sn;
+  el.padLed.className = n > 0 ? "led on" : (sn > 0 ? "led warn" : "led off");
+  el.padValue.textContent = _ctrlStatusText(n, sn);
 
   await refreshBackups();
   await refreshMemories();
@@ -497,10 +517,12 @@ async function pollStatus() {
   try { data = await api().detect(); } catch (e) { return; }
 
   const n = data.controllers || 0;
-  const controllerChanged = n !== controllerCount;
+  const sn = data.controllers_switch_mode || 0;
+  const controllerChanged = n !== controllerCount || sn !== controllerSwitchModeCount;
   controllerCount = n;
-  el.padLed.className = n > 0 ? "led on" : "led off";
-  el.padValue.textContent = n === 0 ? "none connected" : `${n} connected`;
+  controllerSwitchModeCount = sn;
+  el.padLed.className = n > 0 ? "led on" : (sn > 0 ? "led warn" : "led off");
+  el.padValue.textContent = _ctrlStatusText(n, sn);
 
   const cardSig = (data.cards || []).map((c) => c.path).join(",");
   if (lastCardSig !== null && cardSig !== lastCardSig) {

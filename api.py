@@ -22,7 +22,7 @@ import webbrowser
 import analogue3d
 from analogue3d import sdcard, controller, savestates, labels, saves, config, ui, updates
 
-APP_VERSION = "0.3.1"
+APP_VERSION = "0.3.2"
 
 # Demo / fake-data mode: when A3D_DEMO=1, the read-only methods (detect, versions,
 # list_backups, list_memories, list_snapshots, cart_art_games, controller_versions)
@@ -478,7 +478,13 @@ class Api:
                 self._step_note(4, "")
             else:
                 self._step(4, "skip")
-                print("No controller connected - skipped.")
+                sn = controller.connected_in_switch_mode_count()
+                if sn:
+                    pl = "controller" if sn == 1 else "controllers"
+                    self._step_note(4, f"{sn} in S mode")
+                    print(f"{sn} {pl} detected in Switch mode. Flip the back switch to D (DInput) to update firmware.")
+                else:
+                    print("No controller connected - skipped.")
             print("\nAll done. Safely eject the card.")
         return _run(task)
 
@@ -846,6 +852,10 @@ class Api:
         # controller: read the connected pad vs latest from 8BitDo
         try:
             out["controllers"] = controller.connected_count()
+            # Surface controllers stuck in Switch-emulation (S position on the
+            # back switch) so the UI can explain a 0-count instead of failing
+            # silently — the engine helper exists in analogue3d 0.6.6+.
+            out["controllers_switch_mode"] = controller.connected_in_switch_mode_count()
         except Exception:
             pass
         if out["controllers"]:
