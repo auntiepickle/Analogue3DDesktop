@@ -786,6 +786,15 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   margin-top: 8px;
   padding: 0 2px;
 }
+/* Empty-state nudge — only visible when no controllers are plugged in,
+   so a first-timer doesn't go looking for a way to update via the console. */
+.min-port-hint {
+  text-align: center;
+  margin-top: 8px;
+  color: var(--dim);
+  font-size: var(--fs-secondary);
+  font-style: italic;
+}
 .min-port-cell {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   font-family: var(--mono);

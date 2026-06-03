@@ -164,8 +164,13 @@ function _renderThemePicker() {
 function renderControllerPorts(devs) {
   const svg = document.getElementById("minCtrlPorts");
   const row = document.getElementById("minPortStatus");
+  const hint = document.getElementById("minPortHint");
   if (!svg || !row) return;
   devs = (devs || []).slice(0, 4);
+  // When nothing is plugged in, surface a one-liner instead of four dashes —
+  // a real user assumed they had to plug the pad into the Analogue 3D itself
+  // to update. Empty-state hint nudges them to the PC instead.
+  if (hint) hint.classList.toggle("hidden", devs.length > 0);
   const ports = svg.querySelectorAll(".port");
   const cells = row.querySelectorAll(".min-port-cell");
   for (let i = 0; i < ports.length; i++) {
@@ -851,7 +856,8 @@ async function refreshVersions() {
   // line when only one pad is connected (the most common case).
   const appDevs = (v.controller_devices || []).filter((d) => d.mode === "app");
   if (!v.controllers) {
-    el.ctrlVer.innerHTML = '<span class="muted">no controller connected</span>';
+    el.ctrlVer.innerHTML = '<span class="muted">no controller connected</span>'
+      + ' <span class="muted hint">— plug a controller into the PC</span>';
   } else if (appDevs.length > 1) {
     // The #1/#2 numbering is USB-enumeration order, NOT physical-port
     // position on the Analogue 3D — Windows can re-order pads between
