@@ -773,6 +773,8 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   font-size: var(--fs-control-mono);
   line-height: 1.1;
   color: var(--dim);
+  min-width: 0;         /* let the grid cell shrink below text intrinsic width */
+  overflow: hidden;     /* clip any pathological overflow rather than bleed into siblings */
 }
 .min-port-dot {
   width: 7px; height: 7px; border-radius: 50%;

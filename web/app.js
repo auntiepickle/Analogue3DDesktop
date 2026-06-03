@@ -183,9 +183,14 @@ function renderControllerPorts(devs) {
     if (d.mode === "switch") {
       port.classList.add("lit", "port-bad");
       dot.classList.add("bad");
-      text.textContent = "S MODE";
+      // Just "S" — the red dot already conveys the alarm and "S MODE"
+      // overflowed the cell at narrow widths, blurring sibling labels into
+      // a "S MODE S MODE S MODE" run-on. The tooltip below carries the long form.
+      text.textContent = "S";
+      cell.title = "Switch-emulation (S) mode — flip the back switch to D to update";
       continue;
     }
+    cell.title = "";
     // mode === "app"
     port.classList.add("lit");
     if (d.version_str) {
