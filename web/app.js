@@ -1227,17 +1227,25 @@ async function deleteSelectedStates() {
 async function checkAppUpdate(force) {
   let info = null;
   try { info = await api().update_check(!!force); } catch (e) {}
-  const btns = [el.appUpdate, el.minAppUpdate].filter(Boolean);
+  // Two pills: el.appUpdate sits in the narrow Tinker rail (compact text),
+  // el.minAppUpdate sits in the wider Minimal header (full text). The CSS
+  // shrinks the rail pill, but the SHORT TEXT here is what keeps the layout
+  // from overflowing — even after shrink, "Update available:" alone is
+  // ~70-100px of pill before ellipsis can kick in.
+  const pills = [
+    { btn: el.appUpdate,    text: info ? `↑ v${info.latest}` : "" },
+    { btn: el.minAppUpdate, text: info ? `Update available: v${info.latest}` : "" },
+  ].filter((p) => p.btn);
   if (info && info.update_available) {
-    btns.forEach((btn) => {
-      btn.textContent = `Update available: v${info.latest}`;
+    pills.forEach(({ btn, text }) => {
+      btn.textContent = text;
       btn.title = `You have v${info.current} — v${info.latest} is out. Click to download and install it.`;
       btn.onclick = () => startSelfUpdate(info);
       btn.classList.remove("hidden");
     });
     log(`A newer version is available: v${info.latest} (you have v${info.current}).`, "sys");
   } else {
-    btns.forEach((btn) => btn.classList.add("hidden"));
+    pills.forEach(({ btn }) => btn.classList.add("hidden"));
     if (force && info) {
       log(`v${info.current} — up to date.`, "sys");
     } else if (force) {

@@ -1358,6 +1358,20 @@ body.mode-tinker .tinker-view {
 }
 .adv-rail .topbar .mode-toggle-tinker { flex: 0 0 auto; font-size: 9px; padding: 3px 5px; letter-spacing: 1.5px; }
 .adv-rail .topbar .cog { flex: 0 0 auto; font-size: 14px; }
+/* Update-pill in the rail — match the surrounding 9px chrome so the long
+   "Update available: vX.Y.Z" string from minimal mode doesn't push the
+   wordmark off-screen and overflow the rail's bounding box. JS feeds this
+   pill a compact "↑ vX.Y.Z" form so the shortening isn't CSS-illusion. */
+.adv-rail .topbar .update-pill {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 9px;
+  letter-spacing: 0.4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 /* Rail status: each stat is its own inline pair (LED left of label+value).
    Adjudicator Conflict B: IA wins. A status LED is a prefix indicator,
    semantically "[OK] SD: ready"; stacking vertically wastes height + breaks
