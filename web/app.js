@@ -1229,9 +1229,10 @@ async function checkAppUpdate(force) {
     log(`A newer version is available: v${info.latest} (you have v${info.current}).`, "sys");
   } else {
     btns.forEach((btn) => btn.classList.add("hidden"));
-    if (force) {
-      const ver = (info && info.current) || (el.version && el.version.textContent.replace(/^v/, "")) || "";
-      log(`v${ver} — up to date.`, "sys");
+    if (force && info) {
+      log(`v${info.current} — up to date.`, "sys");
+    } else if (force) {
+      log("Couldn't check for updates (offline?).", "err");
     }
   }
 }
