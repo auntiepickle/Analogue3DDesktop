@@ -298,19 +298,16 @@ function _syncMinimal() {
   if (fwBadge) fwBadge.remove();
 
   // -- CONTROLLER --
+  // (The per-port status row beneath the SVG carries the actual versions
+  // now; #minCtrlValue is hidden and we stopped writing to it. The .status
+  // span above the SVG is the only one that still gets a label.)
   el.minCtrlLed.className = el.padLed.className;
   if (controllerCount > 0) {
     el.minCtrlStatus.textContent = "connected";
-    el.minCtrlValue.innerHTML = el.ctrlVer.innerHTML;
-    const cBadge = el.minCtrlValue.querySelector(".badge");
-    if (cBadge) cBadge.remove();
   } else if (controllerSwitchModeCount > 0) {
     el.minCtrlStatus.textContent = "in S mode";
-    const pl = controllerSwitchModeCount === 1 ? "controller" : "controllers";
-    el.minCtrlValue.textContent = `${controllerSwitchModeCount} ${pl} — flip back switch to D`;
   } else {
     el.minCtrlStatus.textContent = "none";
-    el.minCtrlValue.textContent = "—";
   }
 }
 
@@ -856,10 +853,15 @@ async function refreshVersions() {
   if (!v.controllers) {
     el.ctrlVer.innerHTML = '<span class="muted">no controller connected</span>';
   } else if (appDevs.length > 1) {
+    // The #1/#2 numbering is USB-enumeration order, NOT physical-port
+    // position on the Analogue 3D — Windows can re-order pads between
+    // sessions or hub plug-ins. Surfaced as a tooltip on each row so a
+    // user doesn't try to map #2 to "the pad in port 2".
+    const tip = "USB-enumeration order, not physical port — Windows may re-order between sessions.";
     el.ctrlVer.innerHTML = appDevs.map((d, i) => {
       const cur = d.version_str || "unknown";
       const upd = d.version_int != null && v.ctrl_latest && d.up_to_date === false;
-      return `<div class="ver-multi"><span class="muted">#${i + 1}</span> `
+      return `<div class="ver-multi" title="${tip}"><span class="muted">#${i + 1}</span> `
         + verLine(cur, v.ctrl_latest, upd, "unknown") + `</div>`;
     }).join("");
   } else {
@@ -1069,27 +1071,40 @@ function closeSettings() {
 }
 
 /* ---------- styled confirm modal ---------- */
-/* Tiny GitHub-flavoured-markdown subset → HTML for the release-notes block
-   in the update confirm modal. Handles: headings (#…######), bullets (-/*),
-   inline `code`, **bold**, *italic*, blank lines as paragraph breaks. The
-   release body is trusted (only repo maintainers can write it), but we still
-   escape ALL HTML in the source before applying our own narrow set of tags,
-   so a stray `<script>` in a note can never execute. */
+/* Tiny GitHub-flavoured-markdown subset → HTML for the release-notes block.
+   Handles: headings (#…######), bullets (-/*), fenced code blocks (```), inline
+   `code`, **bold**, *italic*, blank lines as paragraph breaks. The release body
+   is trusted (only repo maintainers can write it), but we still escape ALL HTML
+   in the source before applying our own narrow set of tags, so a stray
+   `<script>` in a note can never execute. */
 function renderMarkdown(md) {
   if (!md) return "";
   // 1) Escape all HTML in the source — we only inject the tags we generate.
   let s = md.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  // 2) Inline transforms — apply on each line later so they don't span blocks.
+  // 2) Inline transforms — apply per line so they don't span blocks. Italic
+  //    uses lookarounds so chained `*a* *b*` and adjacent `*a**b*` both work:
+  //    no stray `*` allowed immediately before or after the matched pair.
   const inline = (t) => t
     .replace(/`([^`\n]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>");
-  // 3) Block parse — group bullets into a single <ul>, treat headings on
-  //    their own, everything else gets paragraph-wrapped.
+    .replace(/(?<!\*)\*(?!\*)([^*\n]+?)(?<!\*)\*(?!\*)/g, "<em>$1</em>");
+  // 3) Block parse — fenced code first (everything inside is literal), then
+  //    headings, bullets, paragraphs.
   const out = [];
   let inList = false;
+  let inCode = false;
+  const codeBuf = [];
   const closeList = () => { if (inList) { out.push("</ul>"); inList = false; } };
+  const closeCode = () => {
+    if (inCode) { out.push(`<pre><code>${codeBuf.join("\n")}</code></pre>`);
+      codeBuf.length = 0; inCode = false; }
+  };
   for (const raw of s.split(/\r?\n/)) {
+    if (/^\s*```/.test(raw)) {
+      if (inCode) { closeCode(); } else { closeList(); inCode = true; }
+      continue;
+    }
+    if (inCode) { codeBuf.push(raw); continue; }
     const line = raw.replace(/\s+$/, "");
     if (!line) { closeList(); continue; }
     const head = line.match(/^(#{1,6})\s+(.*)$/);
@@ -1109,6 +1124,7 @@ function renderMarkdown(md) {
     out.push(`<p>${inline(line)}</p>`);
   }
   closeList();
+  closeCode();   // tolerate an unclosed fence at EOF
   return out.join("");
 }
 
