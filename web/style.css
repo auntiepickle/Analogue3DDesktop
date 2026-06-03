@@ -720,6 +720,44 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   animation: a3d-port-breathe 4.2s ease-in-out infinite;
 }
 .n64-ports .port.lit .port-pin { fill: var(--gold); }
+/* Port state overrides for warn (update available) + bad (S-mode) — the
+   stroke + glow + pins switch to the matching status colour so the per-port
+   row beneath echoes the visual you read above. */
+.n64-ports .port.lit.port-warn .port-ring,
+.n64-ports .port.lit.port-warn .port-socket { stroke: var(--gold-soft); filter: drop-shadow(0 0 3px var(--gold-soft)); }
+.n64-ports .port.lit.port-warn .port-pin { fill: var(--gold-soft); }
+.n64-ports .port.lit.port-bad .port-ring,
+.n64-ports .port.lit.port-bad .port-socket { stroke: var(--red); filter: drop-shadow(0 0 3px var(--red)); animation: none; }
+.n64-ports .port.lit.port-bad .port-pin { fill: var(--red); }
+
+/* Per-port status row — 4 cells beneath the SVG ports, equal width,
+   small mono labels matching the rail's "9-12px chrome" rhythm. */
+.min-port-status {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-top: 8px;
+  padding: 0 2px;
+}
+.min-port-cell {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  font-family: var(--mono);
+  font-size: var(--fs-control-mono);
+  line-height: 1.1;
+  color: var(--dim);
+}
+.min-port-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.14);
+}
+.min-port-dot.ok   { background: var(--green); border-color: var(--green); box-shadow: 0 0 4px var(--green); }
+.min-port-dot.warn { background: var(--gold-soft); border-color: var(--gold-soft); box-shadow: 0 0 4px var(--gold-soft); }
+.min-port-dot.bad  { background: var(--red); border-color: var(--red); box-shadow: 0 0 4px var(--red); }
+.min-port-text { white-space: nowrap; letter-spacing: 0.05em; }
+.min-port-dot.ok ~ .min-port-text { color: var(--green); }
+.min-port-dot.warn ~ .min-port-text { color: var(--gold-soft); }
+.min-port-dot.bad ~ .min-port-text { color: var(--red); }
 /* Slightest-bit-alive: a slow ambient breathe on lit ports + connected LEDs.
    ~4s cycle, just enough motion to read as "powered, live". Killed by
    @media (prefers-reduced-motion: reduce) at the bottom of this file. */

@@ -151,13 +151,70 @@ function _renderThemePicker() {
 /* Light up the N64-front 4-port indicator according to how many controllers
    are detected. The SVG sits in minimal mode's CONTROLLER instrument; lit
    ports use the .lit class which CSS handles for glow + theme color. */
-function updateControllerPorts(n) {
+/* Per-port renderer. Takes a list of device dicts from versions().controller_devices
+   (or synthesises one from detect()'s counts when versions() hasn't been called
+   yet) and lights the SVG ports + populates the status row beneath them.
+
+   Per-port status:
+     mode=app, up_to_date=true       → green dot, version string
+     mode=app, up_to_date=false      → amber dot, version string (update available)
+     mode=app, version_int=null      → grey dot, "?" (version read failed)
+     mode=switch                     → red dot, "S MODE"
+     empty slot                      → off dot, "—" */
+function renderControllerPorts(devs) {
   const svg = document.getElementById("minCtrlPorts");
-  if (!svg) return;
-  svg.querySelectorAll(".port").forEach((p) => {
-    const i = parseInt(p.dataset.port, 10);
-    p.classList.toggle("lit", i <= n);
-  });
+  const row = document.getElementById("minPortStatus");
+  if (!svg || !row) return;
+  devs = (devs || []).slice(0, 4);
+  const ports = svg.querySelectorAll(".port");
+  const cells = row.querySelectorAll(".min-port-cell");
+  for (let i = 0; i < ports.length; i++) {
+    const d = devs[i];
+    const port = ports[i];
+    const cell = cells[i];
+    const dot = cell.querySelector(".min-port-dot");
+    const text = cell.querySelector(".min-port-text");
+    port.classList.remove("lit", "port-warn", "port-bad");
+    dot.classList.remove("ok", "warn", "bad");
+    if (!d) {                                               // empty slot
+      text.textContent = "—";
+      continue;
+    }
+    if (d.mode === "switch") {
+      port.classList.add("lit", "port-bad");
+      dot.classList.add("bad");
+      text.textContent = "S MODE";
+      continue;
+    }
+    // mode === "app"
+    port.classList.add("lit");
+    if (d.version_str) {
+      if (d.up_to_date === false) {
+        port.classList.add("port-warn");
+        dot.classList.add("warn");
+      } else {
+        dot.classList.add("ok");
+      }
+      text.textContent = d.version_str;
+    } else {
+      text.textContent = "?";
+    }
+  }
+}
+
+// Sync the port row to whatever's known right now. Prefers the cached rich
+// per-device list from versions(); falls back to count-only synthesis from
+// detect()'s controllers + controllers_switch_mode if versions() hasn't fired
+// yet (or if hardware just changed).
+function updateControllerPorts(n) {
+  if (controllerDevs && controllerDevs.length === (n + controllerSwitchModeCount)) {
+    renderControllerPorts(controllerDevs);
+    return;
+  }
+  const devs = [];
+  for (let i = 0; i < (n || 0); i++) devs.push({ mode: "app" });
+  for (let i = 0; i < controllerSwitchModeCount; i++) devs.push({ mode: "switch" });
+  renderControllerPorts(devs);
 }
 
 /* Mirror the tinker-view status into the minimal instruments so a user who
@@ -305,6 +362,10 @@ function log(text, cls) {
 let consoleUpToDate = false;
 let controllerCount = 0;
 let controllerSwitchModeCount = 0;     // pads stuck in S-mode (Nintendo emulation)
+// Cached rich per-device list from the last versions() call — has mode,
+// version_int, up_to_date per controller. Stays around between polls so the
+// 2.5s status refresh doesn't clobber it with count-only data.
+let controllerDevs = null;
 
 /* Status text for the controller surface. A pad in the S position on the
    back switch reports as a Nintendo N64 controller and the flash protocol
@@ -529,6 +590,9 @@ async function pollStatus() {
   const controllerChanged = n !== controllerCount || sn !== controllerSwitchModeCount;
   controllerCount = n;
   controllerSwitchModeCount = sn;
+  // Cached rich device list goes stale the moment counts shift — discard
+  // so the next paint synthesises from counts until versions() refills it.
+  if (controllerChanged) controllerDevs = null;
   el.padLed.className = n > 0 ? "led on" : (sn > 0 ? "led warn" : "led off");
   el.padValue.textContent = _ctrlStatusText(n, sn);
 
@@ -776,6 +840,15 @@ async function refreshVersions() {
   consoleUpToDate = !!(v.console_current && v.console_latest && !v.console_update);
   applyGating();
   await populateCtrlVersions();
+  // Drive the per-port LEDs + version labels off the rich per-device list when
+  // we have it (versions() opens each controller to read its firmware). detect()'s
+  // 2.5s poll only gives counts, so this fills in green/amber state once on demand.
+  if (v.controller_devices) {
+    controllerDevs = v.controller_devices;
+    renderControllerPorts(controllerDevs);
+  } else {
+    controllerDevs = null;
+  }
   _syncMinimal();
 }
 

@@ -22,7 +22,7 @@ import webbrowser
 import analogue3d
 from analogue3d import sdcard, controller, savestates, labels, saves, config, ui, updates
 
-APP_VERSION = "0.3.4"
+APP_VERSION = "0.3.5"
 
 # Demo / fake-data mode: when A3D_DEMO=1, the read-only methods (detect, versions,
 # list_backups, list_memories, list_snapshots, cart_art_games, controller_versions)
@@ -864,33 +864,41 @@ class Api:
             out["console_latest"] = "%d.%d.%d" % latest
         if cur and latest:
             out["console_update"] = latest > cur
-        # controller: read the connected pad vs latest from 8BitDo
+        # Controller summary: per-device list + counts + latest firmware.
+        # connected_devices() opens each app-mode controller briefly to read its
+        # version — slower than connected_count() but caller (versions()) is
+        # invoked on-demand, not on the 2.5s status poll.
         try:
             out["controllers"] = controller.connected_count()
-            # Surface controllers stuck in Switch-emulation (S position on the
-            # back switch) so the UI can explain a 0-count instead of failing
-            # silently — the engine helper exists in analogue3d 0.6.6+.
             out["controllers_switch_mode"] = controller.connected_in_switch_mode_count()
         except Exception:
             pass
-        if out["controllers"]:
-            cur_int = None
-            try:
-                dev = controller.EightBitDo64().open()
-                try:
-                    cur_int = dev.read_version()
-                finally:
-                    dev.close()
+        latest_int = None
+        try:
+            top = controller.fetch_firmware_list()[0]
+            latest_int = top["version_int"]
+            out["ctrl_latest"] = controller.format_version(latest_int)
+        except Exception:
+            pass
+        try:
+            devs = controller.connected_devices()
+        except Exception:
+            devs = []
+        if devs:
+            # Annotate each app-mode device with up-to-date status so the UI
+            # can colour the per-port LED without re-comparing client-side.
+            for d in devs:
+                if d.get("mode") == "app" and latest_int is not None and d.get("version_int") is not None:
+                    d["up_to_date"] = d["version_int"] >= latest_int
+            out["controller_devices"] = devs
+            # Back-compat fields the existing UI still reads — take the first
+            # readable app-mode device's version as the headline current.
+            cur_int = next((d.get("version_int") for d in devs
+                            if d.get("mode") == "app" and d.get("version_int") is not None), None)
+            if cur_int is not None:
                 out["ctrl_current"] = controller.format_version(cur_int)
-            except Exception:
-                pass
-            try:
-                top = controller.fetch_firmware_list()[0]
-                out["ctrl_latest"] = controller.format_version(top["version_int"])
-                if cur_int is not None:
-                    out["ctrl_update"] = top["version_int"] > cur_int
-            except Exception:
-                pass
+                if latest_int is not None:
+                    out["ctrl_update"] = latest_int > cur_int
         return out
 
     def controller_versions(self):
