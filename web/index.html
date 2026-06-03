@@ -112,7 +112,17 @@
                 <circle cx="215" cy="23" r="1.4" class="port-pin"/>
               </g>
             </svg>
-            <div class="min-instr-value" id="minCtrlValue"><span class="muted">none connected</span></div>
+            <!-- Per-port status row: 4 columns aligned under the SVG ports
+                 above. Each cell carries a coloured dot (green = up-to-date,
+                 amber = update available, red = S mode) and a short label
+                 (firmware version, "S MODE", or "—" for empty). -->
+            <div class="min-port-status" id="minPortStatus" aria-label="per-port status">
+              <span class="min-port-cell" data-port="1"><span class="min-port-dot"></span><span class="min-port-text">—</span></span>
+              <span class="min-port-cell" data-port="2"><span class="min-port-dot"></span><span class="min-port-text">—</span></span>
+              <span class="min-port-cell" data-port="3"><span class="min-port-dot"></span><span class="min-port-text">—</span></span>
+              <span class="min-port-cell" data-port="4"><span class="min-port-dot"></span><span class="min-port-text">—</span></span>
+            </div>
+            <div class="min-instr-value hidden" id="minCtrlValue"></div>
           </div>
 
         </div>
