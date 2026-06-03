@@ -11,15 +11,49 @@ import os
 import sys
 import json
 
-# Pin pythonnet's runtime to .NET Framework BEFORE any pywebview / pythonnet
-# import. clr_loader 0.3.x defaults to CoreCLR (.NET 5+), which on a typical
-# Windows machine resolves to a .NET 9 host that isn't actually installed —
-# the bundled exe then throws "Could not load type 'System.Object' from
-# assembly 'System.Private.CoreLib, Version=9.0.0.0'" at class-body load
-# time inside webview/platforms/winforms.py. netfx (.NET Framework 4.x)
-# ships with Windows 10/11 and is universally present.
+# Windows .NET runtime: force .NET Framework (netfx) and LOAD it NOW, before
+# any pywebview / pythonnet import. pywebview's WinForms backend opens with:
+#       try:
+#           import clr
+#       except Exception:
+#           os.environ['PYTHONNET_RUNTIME'] = 'coreclr'   # <- silent downgrade
+#           import clr
+# so if the FIRST `import clr` throws for ANY reason, pywebview forces CoreCLR
+# (.NET 5+). CoreCLR then resolves a .NET 9 WinForms whose parent
+# 'System.Private.CoreLib, Version=9.0.0.0' can't be bound on a machine without
+# a usable .NET Desktop Runtime — the "Could not load type 'System.Object' ...
+# because the parent does not exist" crash at winforms.py class-body load time.
+#
+# v0.3.1 only set PYTHONNET_RUNTIME=netfx, which that except block simply
+# overwrites (and which is a no-op if the var was already set). The robust fix
+# is to import clr OURSELVES under netfx first: a successful load sets
+# pythonnet._LOADED=True, so pywebview's later `import clr` is a cached no-op
+# that cannot throw — its coreclr branch becomes unreachable. If netfx genuinely
+# cannot load (e.g. .NET Framework disabled, or Windows-on-ARM, where no netfx
+# shim ships), fail LOUDLY here instead of degrading to a CoreCLR that crashes
+# deep inside pywebview with an unactionable message.
 if sys.platform == "win32":
-    os.environ.setdefault("PYTHONNET_RUNTIME", "netfx")
+    os.environ["PYTHONNET_RUNTIME"] = "netfx"      # hard set, not setdefault
+    try:
+        import pythonnet
+        pythonnet.load("netfx")   # raises if .NET Framework / the netfx shim is unavailable
+        import clr                # no-op now; confirms the runtime is live
+    except Exception as _netfx_err:
+        _msg = (
+            "Analogue 3D Desktop couldn't start the Windows .NET runtime.\n\n"
+            "This app needs Microsoft .NET Framework 4.7.2 or newer, which is\n"
+            "normally built into Windows 10 and 11. If this keeps happening:\n"
+            "  • Run Windows Update (it installs .NET Framework), then retry.\n"
+            "  • Reinstall Analogue 3D Desktop.\n"
+            "  • On a Windows-on-ARM (ARM64) PC this build isn't supported yet.\n\n"
+            "Please report this detail:\n" + repr(_netfx_err)
+        )
+        try:
+            import ctypes
+            ctypes.windll.user32.MessageBoxW(None, _msg, "Analogue 3D Desktop", 0x10)
+        except Exception:
+            sys.stderr.write(_msg + "\n")
+        sys.exit(1)
 
 _WIN_STATE = os.path.join(os.path.expanduser("~"), ".analogue3d", "desktop_window.json")
 _SINGLETON_MUTEX = None     # module-level so the handle survives main() return
