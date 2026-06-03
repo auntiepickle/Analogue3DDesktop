@@ -14,6 +14,12 @@ import ctypes
 import ctypes.wintypes as wt
 import threading
 
+# Same Windows runtime fix the shipping app applies — clr_loader 0.3.x's
+# CoreCLR default tries to resolve a .NET 9 host that may not be installed.
+import sys as _sys
+if _sys.platform == "win32":
+    os.environ.setdefault("PYTHONNET_RUNTIME", "netfx")
+
 # Demo + theme + mode — set BEFORE the engine imports read env
 os.environ.setdefault("A3D_DEMO", "1")
 os.environ.setdefault("A3D_THEME", "gold")
