@@ -11,6 +11,16 @@ import os
 import sys
 import json
 
+# Pin pythonnet's runtime to .NET Framework BEFORE any pywebview / pythonnet
+# import. clr_loader 0.3.x defaults to CoreCLR (.NET 5+), which on a typical
+# Windows machine resolves to a .NET 9 host that isn't actually installed —
+# the bundled exe then throws "Could not load type 'System.Object' from
+# assembly 'System.Private.CoreLib, Version=9.0.0.0'" at class-body load
+# time inside webview/platforms/winforms.py. netfx (.NET Framework 4.x)
+# ships with Windows 10/11 and is universally present.
+if sys.platform == "win32":
+    os.environ.setdefault("PYTHONNET_RUNTIME", "netfx")
+
 _WIN_STATE = os.path.join(os.path.expanduser("~"), ".analogue3d", "desktop_window.json")
 _SINGLETON_MUTEX = None     # module-level so the handle survives main() return
 
