@@ -653,6 +653,23 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   word-break: break-word;
   margin-bottom: 20px;
 }
+/* Release notes / detail block — scrollable, bounded, mono so markdown
+   reads as a changelog rather than an unwrapped wall of text. */
+.modal-notes {
+  font-family: var(--mono);
+  font-size: var(--fs-control-mono);
+  line-height: 1.55;
+  color: var(--dim);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 12px 14px;
+  margin: 0 0 18px;
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 .modal-actions {
   display: flex;
   justify-content: flex-end;

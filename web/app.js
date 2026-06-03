@@ -976,10 +976,19 @@ function confirmDialog(message, opts) {
     $("modalTitle").textContent = opts.title || "Confirm";   /* pillar #4 — assume competence, no "Please" */
     ok.textContent = opts.okText || "Confirm";
     ok.classList.toggle("danger", !!opts.danger);
+    // Optional release-notes / detail block (textContent so any markdown is
+    // shown verbatim — no HTML injection risk from upstream).
+    const notesEl = $("modalNotes");
+    if (notesEl) {
+      const notes = (opts.notes || "").trim();
+      if (notes) { notesEl.textContent = notes; notesEl.classList.remove("hidden"); }
+      else { notesEl.textContent = ""; notesEl.classList.add("hidden"); }
+    }
     modal.classList.remove("hidden");
     ok.focus();
     const close = (val) => {
       modal.classList.add("hidden");
+      if (notesEl) { notesEl.classList.add("hidden"); notesEl.textContent = ""; }
       ok.removeEventListener("click", onOk);
       cancel.removeEventListener("click", onCancel);
       document.removeEventListener("keydown", onKey);
@@ -1238,9 +1247,10 @@ async function checkAppUpdate(force) {
 }
 
 async function startSelfUpdate(info) {
+  const notes = (info && info.notes || "").trim();
   if (!(await confirmDialog(
     `Update to v${info.latest}?\nThe app will download it and restart itself.`,
-    { okText: "Update now" }))) return;
+    { okText: "Update now", notes: notes }))) return;
   setBusy(true, `Downloading update v${info.latest}…`);
   log(`\n> Updating to v${info.latest}`, "sys");
   let res;
