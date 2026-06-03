@@ -698,6 +698,25 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   border-radius: 2px;
   color: var(--gold-soft);
 }
+.modal-notes pre {
+  font-family: var(--mono);
+  font-size: var(--fs-control-mono);
+  background: rgba(0,0,0,.35);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 10px 12px;
+  margin: 0 0 12px;
+  overflow-x: auto;
+  white-space: pre;
+  line-height: 1.45;
+  color: var(--text);
+}
+.modal-notes pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
 .modal-actions {
   display: flex;
   justify-content: flex-end;
