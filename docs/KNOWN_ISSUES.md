@@ -124,23 +124,37 @@ UPX has its own ARM64 quirks, so we keep it off. Size cost: ~29 MB → ~42 MB.
 
 ---
 
-## 4. CI installs runtime deps unpinned (reproducibility hazard)
+## 4. CI installed runtime deps unpinned (reproducibility hazard) — *fixed*
 
-`.github/workflows/release.yml` runs `pip install pywebview pythonnet` with no
-version pins, and `requirements.txt` doesn't pin `pythonnet`/`clr-loader` at all.
-The released artifact can therefore drift from the tested combination
-(`pywebview 6.2.1`, `pythonnet 3.1.0`, `clr-loader 0.3.1`). Recommended (not yet
-applied): pin those three in both `requirements.txt` and `release.yml`, plus
-`pyinstaller`. This isn't the current crash, but it prevents a future one.
+`.github/workflows/release.yml` previously ran `pip install pywebview pythonnet`
+with no version pins, and `requirements.txt` didn't pin `pythonnet`/`clr-loader`
+at all, so the released artifact could drift from the tested combination.
+Now pinned in both `requirements.txt` and `release.yml` to the verified set —
+`pyinstaller 6.20.0`, `pywebview 6.2.1`, `pythonnet 3.1.0`, `clr-loader 0.3.1`.
+`clr-loader` is the actual runtime selector, so it must be pinned too.
 
 ---
 
-## ARM64 — open question
+## ARM64 — resolved: the x64 build runs under emulation
 
-Once the trust block (issue 2) is bypassed by running from source, the open
-question is whether **netfx loads on Windows-on-ARM** (under x64 emulation).
-- If yes → the only ARM64 blocker is code-signing (issue 2); ship a signed x64
-  build that runs under emulation.
-- If no → netfx is unavailable on ARM64 (clr_loader ships no arm64 `ClrLoader.dll`);
-  the app.py fix shows a clear message, and real ARM64 support requires bundling
-  a self-contained .NET Desktop Runtime and using coreclr, or an ARM64-native build.
+The open question — does **netfx load on Windows-on-ARM** — has been answered on
+a Qualcomm ARM64 Win11 Enterprise machine:
+
+- With **x64 Python under WoW64 emulation** (the path the shipped x64 exe takes),
+  `pythonnet.load("netfx")` succeeds → `mscorlib | runtime: .NET Framework`.
+  **No CoreCLR rework, bundled runtime, or ARM64-native build is needed.**
+- With **ARM64-native Python**, netfx fails — but only because `clr_loader 0.3.1`
+  ships no `arm64\ClrLoader.dll` (`OSError 0xC1` loading the amd64 shim). This is
+  irrelevant to the shipped x64 binary; it just means a *native* ARM64 build is
+  not an option without an arm64 shim.
+
+So the **only** remaining blocker for ARM64 (and for any SAC/WDAC-enforced Win11
+machine) is issue 2 — **code-signing the Windows binaries**.
+
+### Aside — `hidapi` on ARM64 source installs
+
+`Analogue3DUtility` depends on `hidapi`, which needs MSVC to build and has no
+prebuilt arm64 wheel (`error: Microsoft Visual C++ 14.0 or greater is required`).
+This blocks *running from source* on ARM64, but not the packaged exe (which
+bundles it). Ship/point at a prebuilt arm64 wheel or a fallback if source runs on
+ARM64 need to be supported.

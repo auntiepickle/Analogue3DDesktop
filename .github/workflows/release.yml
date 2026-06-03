@@ -60,9 +60,12 @@ jobs:
         shell: bash
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller "git+https://github.com/auntiepickle/Analogue3DUtility.git"
-          if [ "${{ matrix.label }}" = "windows" ]; then pip install pywebview pythonnet; fi
-          if [ "${{ matrix.label }}" = "macos" ]; then pip install pywebview; fi
+          pip install pyinstaller==6.20.0 "git+https://github.com/auntiepickle/Analogue3DUtility.git"
+          # Pin the Windows runtime trio to the combination verified for the netfx
+          # fix (app.py). clr-loader is the runtime selector and must be pinned, or
+          # an unpinned upgrade could re-break the launch on end-user machines.
+          if [ "${{ matrix.label }}" = "windows" ]; then pip install pywebview==6.2.1 pythonnet==3.1.0 clr-loader==0.3.1; fi
+          if [ "${{ matrix.label }}" = "macos" ]; then pip install pywebview==6.2.1; fi
 
       - name: Build
         run: python build.py
