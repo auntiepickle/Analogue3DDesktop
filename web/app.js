@@ -834,9 +834,23 @@ async function refreshVersions() {
     return;
   }
   el.consoleVer.innerHTML = verLine(v.console_current, v.console_latest, v.console_update, "no firmware on card");
-  el.ctrlVer.innerHTML = v.controllers
-    ? verLine(v.ctrl_current, v.ctrl_latest, v.ctrl_update, "unknown")
-    : '<span class="muted">no controller connected</span>';
+  // Multi-controller-aware: when versions() returns a per-device list with
+  // more than one app-mode pad, render a line per pad so the user can see
+  // which one is behind. Falls back to the single ctrl_current/ctrl_latest
+  // line when only one pad is connected (the most common case).
+  const appDevs = (v.controller_devices || []).filter((d) => d.mode === "app");
+  if (!v.controllers) {
+    el.ctrlVer.innerHTML = '<span class="muted">no controller connected</span>';
+  } else if (appDevs.length > 1) {
+    el.ctrlVer.innerHTML = appDevs.map((d, i) => {
+      const cur = d.version_str || "unknown";
+      const upd = d.version_int != null && v.ctrl_latest && d.up_to_date === false;
+      return `<div class="ver-multi"><span class="muted">#${i + 1}</span> `
+        + verLine(cur, v.ctrl_latest, upd, "unknown") + `</div>`;
+    }).join("");
+  } else {
+    el.ctrlVer.innerHTML = verLine(v.ctrl_current, v.ctrl_latest, v.ctrl_update, "unknown");
+  }
   consoleUpToDate = !!(v.console_current && v.console_latest && !v.console_update);
   applyGating();
   await populateCtrlVersions();
@@ -1041,6 +1055,49 @@ function closeSettings() {
 }
 
 /* ---------- styled confirm modal ---------- */
+/* Tiny GitHub-flavoured-markdown subset → HTML for the release-notes block
+   in the update confirm modal. Handles: headings (#…######), bullets (-/*),
+   inline `code`, **bold**, *italic*, blank lines as paragraph breaks. The
+   release body is trusted (only repo maintainers can write it), but we still
+   escape ALL HTML in the source before applying our own narrow set of tags,
+   so a stray `<script>` in a note can never execute. */
+function renderMarkdown(md) {
+  if (!md) return "";
+  // 1) Escape all HTML in the source — we only inject the tags we generate.
+  let s = md.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // 2) Inline transforms — apply on each line later so they don't span blocks.
+  const inline = (t) => t
+    .replace(/`([^`\n]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+  // 3) Block parse — group bullets into a single <ul>, treat headings on
+  //    their own, everything else gets paragraph-wrapped.
+  const out = [];
+  let inList = false;
+  const closeList = () => { if (inList) { out.push("</ul>"); inList = false; } };
+  for (const raw of s.split(/\r?\n/)) {
+    const line = raw.replace(/\s+$/, "");
+    if (!line) { closeList(); continue; }
+    const head = line.match(/^(#{1,6})\s+(.*)$/);
+    if (head) {
+      closeList();
+      const level = Math.min(6, Math.max(4, head[1].length + 2));   // h3 -> h5, h4 -> h6, capped
+      out.push(`<h${level}>${inline(head[2])}</h${level}>`);
+      continue;
+    }
+    const bullet = line.match(/^\s*[-*]\s+(.*)$/);
+    if (bullet) {
+      if (!inList) { out.push("<ul>"); inList = true; }
+      out.push(`<li>${inline(bullet[1])}</li>`);
+      continue;
+    }
+    closeList();
+    out.push(`<p>${inline(line)}</p>`);
+  }
+  closeList();
+  return out.join("");
+}
+
 function confirmDialog(message, opts) {
   opts = opts || {};
   return new Promise((resolve) => {
@@ -1054,14 +1111,21 @@ function confirmDialog(message, opts) {
     const notesEl = $("modalNotes");
     if (notesEl) {
       const notes = (opts.notes || "").trim();
-      if (notes) { notesEl.textContent = notes; notesEl.classList.remove("hidden"); }
-      else { notesEl.textContent = ""; notesEl.classList.add("hidden"); }
+      if (notes) {
+        // renderMarkdown escapes input first then re-emits a narrow tag set,
+        // so this innerHTML write is safe against scripted release bodies.
+        notesEl.innerHTML = renderMarkdown(notes);
+        notesEl.classList.remove("hidden");
+      } else {
+        notesEl.innerHTML = "";
+        notesEl.classList.add("hidden");
+      }
     }
     modal.classList.remove("hidden");
     ok.focus();
     const close = (val) => {
       modal.classList.add("hidden");
-      if (notesEl) { notesEl.classList.add("hidden"); notesEl.textContent = ""; }
+      if (notesEl) { notesEl.classList.add("hidden"); notesEl.innerHTML = ""; }
       ok.removeEventListener("click", onOk);
       cancel.removeEventListener("click", onCancel);
       document.removeEventListener("keydown", onKey);

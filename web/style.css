@@ -216,6 +216,9 @@ select:focus, input[type=text]:focus { border-color: var(--gold-dim); }
 .block > .grid2 > .card { min-height: 160px; }
 .block > .grid2 > .card > :last-child { margin-top: auto; }
 
+.ver-multi { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+.ver-multi:last-child { margin-bottom: 0; }
+.ver-multi .muted { font-family: var(--mono); font-size: var(--fs-control-mono); min-width: 18px; }
 .ver-line {
   font-size: 13px; color: var(--text); flex: 1;
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -653,22 +656,47 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   word-break: break-word;
   margin-bottom: 20px;
 }
-/* Release notes / detail block — scrollable, bounded, mono so markdown
-   reads as a changelog rather than an unwrapped wall of text. */
+/* Release notes / detail block — scrollable, bounded, renders the
+   markdown-converted HTML emitted by renderMarkdown() in app.js. */
 .modal-notes {
-  font-family: var(--mono);
-  font-size: var(--fs-control-mono);
-  line-height: 1.55;
-  color: var(--dim);
+  font-family: var(--sans);
+  font-size: var(--fs-secondary);
+  line-height: 1.5;
+  color: var(--text);
   background: var(--panel-2);
   border: 1px solid var(--border);
   border-radius: 2px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   margin: 0 0 18px;
-  max-height: 320px;
+  max-height: 360px;
   overflow: auto;
-  white-space: pre-wrap;
   word-break: break-word;
+}
+.modal-notes > *:first-child { margin-top: 0; }
+.modal-notes > *:last-child  { margin-bottom: 0; }
+.modal-notes h4,
+.modal-notes h5,
+.modal-notes h6 {
+  font-family: var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-size: var(--fs-control-mono);
+  font-weight: 600;
+  margin: 14px 0 8px;
+}
+.modal-notes p  { margin: 0 0 10px; }
+.modal-notes ul { margin: 0 0 10px; padding-left: 18px; }
+.modal-notes li { margin: 0 0 4px; }
+.modal-notes strong { color: var(--text); font-weight: 700; }
+.modal-notes em     { color: var(--text); font-style: italic; }
+.modal-notes code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  background: rgba(255,255,255,.06);
+  padding: 1px 5px;
+  border-radius: 2px;
+  color: var(--gold-soft);
 }
 .modal-actions {
   display: flex;
@@ -751,12 +779,16 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   background: rgba(255,255,255,.10);
   border: 1px solid rgba(255,255,255,.14);
 }
+/* Status colours are semantic and intentionally NOT theme-relative — in the
+   Watermelon theme `--gold-soft` collapses to a soft red that's
+   indistinguishable from `--red`, so an "update available" pad looked like a
+   broken "S-mode" pad. Hardcoded amber here. */
 .min-port-dot.ok   { background: var(--green); border-color: var(--green); box-shadow: 0 0 4px var(--green); }
-.min-port-dot.warn { background: var(--gold-soft); border-color: var(--gold-soft); box-shadow: 0 0 4px var(--gold-soft); }
+.min-port-dot.warn { background: #f0b340; border-color: #f0b340; box-shadow: 0 0 4px #f0b340; }
 .min-port-dot.bad  { background: var(--red); border-color: var(--red); box-shadow: 0 0 4px var(--red); }
 .min-port-text { white-space: nowrap; letter-spacing: 0.05em; }
 .min-port-dot.ok ~ .min-port-text { color: var(--green); }
-.min-port-dot.warn ~ .min-port-text { color: var(--gold-soft); }
+.min-port-dot.warn ~ .min-port-text { color: #f0b340; }
 .min-port-dot.bad ~ .min-port-text { color: var(--red); }
 /* Slightest-bit-alive: a slow ambient breathe on lit ports + connected LEDs.
    ~4s cycle, just enough motion to read as "powered, live". Killed by
