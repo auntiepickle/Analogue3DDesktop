@@ -67,6 +67,20 @@ Verified with a 3-way harness (simulating a machine where netfx can't load):
 - new code, netfx healthy + env adversarially poisoned to `coreclr` → stays on
   .NET Framework, winforms imports fine.
 
+**Open: why does netfx throw on the affected machine?** The confirmed-affected
+end user is **not** on ARM64, so the missing-arm64-shim explanation does not
+apply to them. Leading hypothesis: the **released build was UPX-compressed**
+(CI's runner has UPX on `PATH`), and UPX corrupts managed .NET assemblies —
+including `clr_loader`'s `ClrLoader.dll` (the netfx shim) and pythonnet's
+`Python.Runtime.dll`. A corrupted shim makes the first `import clr` throw →
+pywebview's coreclr fallback → this crash. Local dev builds were never
+UPX-compressed (UPX isn't installed), which is why the dev couldn't reproduce.
+The `--noupx` change (issue 3) should therefore fix the non-ARM64 crash as well;
+if anything netfx-related still fails, the new fail-loud dialog reports the exact
+reason. Other unconfirmed candidates: .NET Framework 4.x disabled/corrupt;
+`PYTHONNET_RUNTIME` preset to `coreclr` in the user's environment; security
+software blocking the shim load. *Follow-up investigation pending.*
+
 ---
 
 ## 2. Smart App Control / WDAC blocks the unsigned one-file exe → "Bad Image"
