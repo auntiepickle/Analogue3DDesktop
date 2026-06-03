@@ -145,11 +145,15 @@ class Api:
     def version(self):
         return APP_VERSION
 
-    def update_check(self):
+    def update_check(self, force=False):
         """Is a newer desktop-app release out? Cached hourly, silent offline.
-        Returns {current, latest, url, update_available} or None."""
+        Returns {current, latest, url, update_available} or None.
+
+        ``force`` bypasses the cache — used when the user clicks the version
+        pill to re-check on demand."""
         try:
-            return updates.check(APP_VERSION, updates.GUI_REPO)
+            return updates.check(APP_VERSION, updates.GUI_REPO,
+                                 use_cache=not force)
         except Exception:
             return None
 

@@ -471,10 +471,18 @@ async function refresh() {
   el.sdSelect.appendChild(manualOpt);
 
   const strong = cards.find((c) => c.strong);
-  if (prev && [...el.sdSelect.options].some((o) => o.value === prev)) {
+  const prevIsStrongCard = prev && cards.some((c) => c.path === prev && c.strong);
+  const prevIsAvailable = prev && [...el.sdSelect.options].some((o) => o.value === prev);
+  // Strong (auto-detected) match beats a stale weak prev pick — so plugging
+  // in a real Analogue 3D card after the app was sitting on some other drive
+  // actually switches the picker. A strong prev still wins, though, so a
+  // multi-card scenario keeps the user's explicit choice.
+  if (prevIsStrongCard) {
     el.sdSelect.value = prev;
   } else if (strong) {
     el.sdSelect.value = strong.path;
+  } else if (prevIsAvailable) {
+    el.sdSelect.value = prev;
   } else if (cards.length) {
     el.sdSelect.value = cards[0].path;
   } else {
@@ -1207,9 +1215,9 @@ async function deleteSelectedStates() {
   run("Deleting selected save states", () => api().delete_memories(r, items));
 }
 
-async function checkAppUpdate() {
+async function checkAppUpdate(force) {
   let info = null;
-  try { info = await api().update_check(); } catch (e) {}
+  try { info = await api().update_check(!!force); } catch (e) {}
   const btns = [el.appUpdate, el.minAppUpdate].filter(Boolean);
   if (info && info.update_available) {
     btns.forEach((btn) => {
@@ -1221,6 +1229,10 @@ async function checkAppUpdate() {
     log(`A newer version is available: v${info.latest} (you have v${info.current}).`, "sys");
   } else {
     btns.forEach((btn) => btn.classList.add("hidden"));
+    if (force) {
+      const ver = (info && info.current) || (el.version && el.version.textContent.replace(/^v/, "")) || "";
+      log(`v${ver} — up to date.`, "sys");
+    }
   }
 }
 
@@ -1277,6 +1289,18 @@ function init() {
   $("refreshBtn").addEventListener("click", refresh);
   const minRefresh = $("minRefreshBtn");
   if (minRefresh) minRefresh.addEventListener("click", refresh);
+  // Click either version pill to force-recheck for a new release (bypasses
+  // the engine's 1h cache). Useful when the user just cut a release and
+  // wants to see the update-available pill appear right away.
+  const onVersionClick = () => { log("Checking for updates…", "sys"); checkAppUpdate(true); };
+  [el.version, el.minVersion].filter(Boolean).forEach((v) => {
+    v.style.cursor = "pointer";
+    v.title = "Click to check for a newer release";
+    v.setAttribute("role", "button");
+    v.setAttribute("tabindex", "0");
+    v.addEventListener("click", onVersionClick);
+    v.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onVersionClick(); } });
+  });
   $("clearBtn").addEventListener("click", () => { el.console.innerHTML = ""; });
   $("memRefresh").addEventListener("click", refreshMemories);
   $("checkUpdates").addEventListener("click", refreshVersions);
