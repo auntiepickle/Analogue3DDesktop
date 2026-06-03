@@ -362,7 +362,15 @@ class Api:
             controllers = controller.connected_count()
         except Exception:
             controllers = 0
-        return {"cards": cards, "controllers": controllers}
+        # Same field the versions() endpoint surfaces — drives the live status
+        # strip's S-mode hint (warn LED + "flip the back switch" copy). Guarded
+        # against older engines that lack the helper.
+        try:
+            controllers_switch_mode = controller.connected_in_switch_mode_count()
+        except (AttributeError, Exception):
+            controllers_switch_mode = 0
+        return {"cards": cards, "controllers": controllers,
+                "controllers_switch_mode": controllers_switch_mode}
 
     def list_backups(self):
         if DEMO: return demo.list_backups()
@@ -478,7 +486,10 @@ class Api:
                 self._step_note(4, "")
             else:
                 self._step(4, "skip")
-                sn = controller.connected_in_switch_mode_count()
+                try:
+                    sn = controller.connected_in_switch_mode_count()
+                except (AttributeError, Exception):
+                    sn = 0
                 if sn:
                     pl = "controller" if sn == 1 else "controllers"
                     self._step_note(4, f"{sn} in S mode")
