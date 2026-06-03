@@ -93,6 +93,12 @@ elif sys.platform == "darwin":
 args = [
     sys.executable, "-m", "PyInstaller",
     "--noconfirm", "--clean",
+    # Never UPX-compress. PyInstaller auto-uses UPX when it's on PATH (it is on
+    # GitHub's windows-latest runner), but UPX-packed DLLs fail to load under
+    # ARM64's x64 emulation: Windows rejects e.g. the bundled ucrtbase.dll as a
+    # "Bad Image" with UPX error status 0xc0e90002, before Python even starts.
+    # The size win isn't worth bricking the app on Windows-on-ARM.
+    "--noupx",
     "--name", "Analogue3DDesktop",
     *mode_args,
     "--add-data", f"web{SEP}web",

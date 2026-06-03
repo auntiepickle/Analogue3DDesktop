@@ -1,4 +1,11 @@
-pywebview>=5.0
+pywebview==6.2.1
+
+# Windows GUI backend: pywebview drives the Edge WebView2 host through pythonnet
+# (.NET Framework). Pinned to the combination verified against the netfx fix in
+# app.py — clr-loader is the actual runtime selector, so it must be pinned too,
+# or a silent upgrade can change runtime resolution and re-break the launch.
+pythonnet==3.1.0 ; sys_platform == "win32"
+clr-loader==0.3.1 ; sys_platform == "win32"
 
 # The engine. For end users (once the core is published):
 analogue3d @ git+https://github.com/auntiepickle/Analogue3DUtility.git

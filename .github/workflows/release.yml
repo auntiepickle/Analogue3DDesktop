@@ -41,6 +41,7 @@ jobs:
       # Surfaced so the signing/notarization steps can gate on `env.X != ''`
       # (secrets can't be referenced directly in step `if:` conditions).
       APPLE_DEV_ID_CERT_P12: ${{ secrets.APPLE_DEV_ID_CERT_P12 }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
     strategy:
       fail-fast: false
       matrix:
@@ -60,9 +61,12 @@ jobs:
         shell: bash
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller "git+https://github.com/auntiepickle/Analogue3DUtility.git"
-          if [ "${{ matrix.label }}" = "windows" ]; then pip install pywebview pythonnet; fi
-          if [ "${{ matrix.label }}" = "macos" ]; then pip install pywebview; fi
+          pip install pyinstaller==6.20.0 "git+https://github.com/auntiepickle/Analogue3DUtility.git"
+          # Pin the Windows runtime trio to the combination verified for the netfx
+          # fix (app.py). clr-loader is the runtime selector and must be pinned, or
+          # an unpinned upgrade could re-break the launch on end-user machines.
+          if [ "${{ matrix.label }}" = "windows" ]; then pip install pywebview==6.2.1 pythonnet==3.1.0 clr-loader==0.3.1; fi
+          if [ "${{ matrix.label }}" = "macos" ]; then pip install pywebview==6.2.1; fi
 
       - name: Build
         run: python build.py
@@ -73,6 +77,35 @@ jobs:
         run: |
           mkdir -p out
           cp "dist/Analogue3DDesktop.exe" "out/Analogue3DDesktop-windows.exe"
+
+      - name: Code sign (Windows, Azure Trusted Signing)
+        # Authenticode-sign the released .exe so it passes Windows SmartScreen and
+        # Smart App Control. Opt-in: runs only when the Azure secrets are present
+        # (same pattern as the macOS signing above). Required repo secrets:
+        #   AZURE_TENANT_ID              Entra (Azure AD) tenant ID
+        #   AZURE_CLIENT_ID              service-principal (app) ID
+        #   AZURE_CLIENT_SECRET          service-principal client secret
+        #   AZURE_CODE_SIGNING_ENDPOINT  region endpoint, e.g. https://eus.codesigning.azure.net/
+        #   AZURE_CODE_SIGNING_ACCOUNT   Trusted Signing account name
+        #   AZURE_CERT_PROFILE           certificate profile name
+        # The service principal needs the "Trusted Signing Certificate Profile
+        # Signer" role on the account. NOTE: this satisfies consumer SmartScreen /
+        # Smart App Control; a strict *enterprise WDAC allowlist* may still block an
+        # unapproved signer (an org-policy matter, not fixable from here).
+        if: matrix.label == 'windows' && env.AZURE_CLIENT_ID != ''
+        uses: azure/trusted-signing-action@v0.5.0
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ secrets.AZURE_CODE_SIGNING_ENDPOINT }}
+          trusted-signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE }}
+          files-folder: ${{ github.workspace }}\out
+          files-folder-filter: exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
 
       - name: Code sign (macOS)
         if: matrix.label == 'macos'
