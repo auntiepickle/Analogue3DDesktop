@@ -171,10 +171,10 @@ function _syncMinimal() {
 
   // -- SD CARD --
   el.minSdLed.className = el.sdLed.className;
-  const sdText = el.sdValue.textContent || "";
+  const sdText = (el.sdValue.textContent || "").toLowerCase();
   if (el.sdLed.className.indexOf("on") !== -1) {
     el.minSdStatus.textContent = "connected";
-  } else if (sdText.toLowerCase().indexOf("not detected") !== -1) {
+  } else if (sdText.indexOf("not detected") !== -1 || sdText.indexOf("no analogue") !== -1) {
     el.minSdStatus.textContent = "not found";
   } else {
     el.minSdStatus.textContent = "pick a drive";
@@ -489,7 +489,7 @@ async function refresh() {
     el.sdValue.textContent = `${strong.path}${strong.label ? " [" + strong.label + "]" : ""}`;
   } else if (cards.length) {
     el.sdLed.className = "led off";
-    el.sdValue.textContent = `${cards.length} drive(s) - pick the right one`;
+    el.sdValue.textContent = "no Analogue 3D SD card detected";
   } else {
     el.sdLed.className = "led off";
     el.sdValue.textContent = "not detected (enter a path)";
