@@ -171,10 +171,10 @@ function _syncMinimal() {
 
   // -- SD CARD --
   el.minSdLed.className = el.sdLed.className;
-  const sdText = el.sdValue.textContent || "";
+  const sdText = (el.sdValue.textContent || "").toLowerCase();
   if (el.sdLed.className.indexOf("on") !== -1) {
     el.minSdStatus.textContent = "connected";
-  } else if (sdText.toLowerCase().indexOf("not detected") !== -1) {
+  } else if (sdText.indexOf("not detected") !== -1 || sdText.indexOf("no analogue") !== -1) {
     el.minSdStatus.textContent = "not found";
   } else {
     el.minSdStatus.textContent = "pick a drive";
@@ -237,11 +237,15 @@ function _syncMinimal() {
 
   // -- CONTROLLER --
   el.minCtrlLed.className = el.padLed.className;
-  if (el.padLed.className.indexOf("on") !== -1) {
+  if (controllerCount > 0) {
     el.minCtrlStatus.textContent = "connected";
     el.minCtrlValue.innerHTML = el.ctrlVer.innerHTML;
     const cBadge = el.minCtrlValue.querySelector(".badge");
     if (cBadge) cBadge.remove();
+  } else if (controllerSwitchModeCount > 0) {
+    el.minCtrlStatus.textContent = "in S mode";
+    const pl = controllerSwitchModeCount === 1 ? "controller" : "controllers";
+    el.minCtrlValue.textContent = `${controllerSwitchModeCount} ${pl} — flip back switch to D`;
   } else {
     el.minCtrlStatus.textContent = "none";
     el.minCtrlValue.textContent = "—";
@@ -300,6 +304,20 @@ function log(text, cls) {
 /* ---------- busy state + live progress ---------- */
 let consoleUpToDate = false;
 let controllerCount = 0;
+let controllerSwitchModeCount = 0;     // pads stuck in S-mode (Nintendo emulation)
+
+/* Status text for the controller surface. A pad in the S position on the
+   back switch reports as a Nintendo N64 controller and the flash protocol
+   can't reach it — when N == 0 but switch-mode > 0, tell the user instead
+   of silently saying "none connected." */
+function _ctrlStatusText(n, switchN) {
+  if (n > 0) return `${n} connected`;
+  if (switchN > 0) {
+    const pl = switchN === 1 ? "controller" : "controllers";
+    return `${switchN} ${pl} in S mode — flip the back switch to D to update`;
+  }
+  return "none connected";
+}
 let busyNow = false;
 let lastCardSig = null;
 let flashTarget = null;
@@ -453,10 +471,18 @@ async function refresh() {
   el.sdSelect.appendChild(manualOpt);
 
   const strong = cards.find((c) => c.strong);
-  if (prev && [...el.sdSelect.options].some((o) => o.value === prev)) {
+  const prevIsStrongCard = prev && cards.some((c) => c.path === prev && c.strong);
+  const prevIsAvailable = prev && [...el.sdSelect.options].some((o) => o.value === prev);
+  // Strong (auto-detected) match beats a stale weak prev pick — so plugging
+  // in a real Analogue 3D card after the app was sitting on some other drive
+  // actually switches the picker. A strong prev still wins, though, so a
+  // multi-card scenario keeps the user's explicit choice.
+  if (prevIsStrongCard) {
     el.sdSelect.value = prev;
   } else if (strong) {
     el.sdSelect.value = strong.path;
+  } else if (prevIsAvailable) {
+    el.sdSelect.value = prev;
   } else if (cards.length) {
     el.sdSelect.value = cards[0].path;
   } else {
@@ -471,16 +497,18 @@ async function refresh() {
     el.sdValue.textContent = `${strong.path}${strong.label ? " [" + strong.label + "]" : ""}`;
   } else if (cards.length) {
     el.sdLed.className = "led off";
-    el.sdValue.textContent = `${cards.length} drive(s) - pick the right one`;
+    el.sdValue.textContent = "no Analogue 3D SD card detected";
   } else {
     el.sdLed.className = "led off";
     el.sdValue.textContent = "not detected (enter a path)";
   }
 
   const n = data.controllers || 0;
+  const sn = data.controllers_switch_mode || 0;
   controllerCount = n;
-  el.padLed.className = n > 0 ? "led on" : "led off";
-  el.padValue.textContent = n === 0 ? "none connected" : `${n} connected`;
+  controllerSwitchModeCount = sn;
+  el.padLed.className = n > 0 ? "led on" : (sn > 0 ? "led warn" : "led off");
+  el.padValue.textContent = _ctrlStatusText(n, sn);
 
   await refreshBackups();
   await refreshMemories();
@@ -497,10 +525,12 @@ async function pollStatus() {
   try { data = await api().detect(); } catch (e) { return; }
 
   const n = data.controllers || 0;
-  const controllerChanged = n !== controllerCount;
+  const sn = data.controllers_switch_mode || 0;
+  const controllerChanged = n !== controllerCount || sn !== controllerSwitchModeCount;
   controllerCount = n;
-  el.padLed.className = n > 0 ? "led on" : "led off";
-  el.padValue.textContent = n === 0 ? "none connected" : `${n} connected`;
+  controllerSwitchModeCount = sn;
+  el.padLed.className = n > 0 ? "led on" : (sn > 0 ? "led warn" : "led off");
+  el.padValue.textContent = _ctrlStatusText(n, sn);
 
   const cardSig = (data.cards || []).map((c) => c.path).join(",");
   if (lastCardSig !== null && cardSig !== lastCardSig) {
@@ -1185,9 +1215,9 @@ async function deleteSelectedStates() {
   run("Deleting selected save states", () => api().delete_memories(r, items));
 }
 
-async function checkAppUpdate() {
+async function checkAppUpdate(force) {
   let info = null;
-  try { info = await api().update_check(); } catch (e) {}
+  try { info = await api().update_check(!!force); } catch (e) {}
   const btns = [el.appUpdate, el.minAppUpdate].filter(Boolean);
   if (info && info.update_available) {
     btns.forEach((btn) => {
@@ -1199,6 +1229,11 @@ async function checkAppUpdate() {
     log(`A newer version is available: v${info.latest} (you have v${info.current}).`, "sys");
   } else {
     btns.forEach((btn) => btn.classList.add("hidden"));
+    if (force && info) {
+      log(`v${info.current} — up to date.`, "sys");
+    } else if (force) {
+      log("Couldn't check for updates (offline?).", "err");
+    }
   }
 }
 
@@ -1255,6 +1290,18 @@ function init() {
   $("refreshBtn").addEventListener("click", refresh);
   const minRefresh = $("minRefreshBtn");
   if (minRefresh) minRefresh.addEventListener("click", refresh);
+  // Click either version pill to force-recheck for a new release (bypasses
+  // the engine's 1h cache). Useful when the user just cut a release and
+  // wants to see the update-available pill appear right away.
+  const onVersionClick = () => { log("Checking for updates…", "sys"); checkAppUpdate(true); };
+  [el.version, el.minVersion].filter(Boolean).forEach((v) => {
+    v.style.cursor = "pointer";
+    v.title = "Click to check for a newer release";
+    v.setAttribute("role", "button");
+    v.setAttribute("tabindex", "0");
+    v.addEventListener("click", onVersionClick);
+    v.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onVersionClick(); } });
+  });
   $("clearBtn").addEventListener("click", () => { el.console.innerHTML = ""; });
   $("memRefresh").addEventListener("click", refreshMemories);
   $("checkUpdates").addEventListener("click", refreshVersions);

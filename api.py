@@ -22,7 +22,7 @@ import webbrowser
 import analogue3d
 from analogue3d import sdcard, controller, savestates, labels, saves, config, ui, updates
 
-APP_VERSION = "0.3.1"
+APP_VERSION = "0.3.2"
 
 # Demo / fake-data mode: when A3D_DEMO=1, the read-only methods (detect, versions,
 # list_backups, list_memories, list_snapshots, cart_art_games, controller_versions)
@@ -145,11 +145,15 @@ class Api:
     def version(self):
         return APP_VERSION
 
-    def update_check(self):
+    def update_check(self, force=False):
         """Is a newer desktop-app release out? Cached hourly, silent offline.
-        Returns {current, latest, url, update_available} or None."""
+        Returns {current, latest, url, update_available} or None.
+
+        ``force`` bypasses the cache — used when the user clicks the version
+        pill to re-check on demand."""
         try:
-            return updates.check(APP_VERSION, updates.GUI_REPO)
+            return updates.check(APP_VERSION, updates.GUI_REPO,
+                                 use_cache=not force)
         except Exception:
             return None
 
@@ -362,7 +366,15 @@ class Api:
             controllers = controller.connected_count()
         except Exception:
             controllers = 0
-        return {"cards": cards, "controllers": controllers}
+        # Same field the versions() endpoint surfaces — drives the live status
+        # strip's S-mode hint (warn LED + "flip the back switch" copy). Guarded
+        # against older engines that lack the helper.
+        try:
+            controllers_switch_mode = controller.connected_in_switch_mode_count()
+        except (AttributeError, Exception):
+            controllers_switch_mode = 0
+        return {"cards": cards, "controllers": controllers,
+                "controllers_switch_mode": controllers_switch_mode}
 
     def list_backups(self):
         if DEMO: return demo.list_backups()
@@ -478,7 +490,16 @@ class Api:
                 self._step_note(4, "")
             else:
                 self._step(4, "skip")
-                print("No controller connected - skipped.")
+                try:
+                    sn = controller.connected_in_switch_mode_count()
+                except (AttributeError, Exception):
+                    sn = 0
+                if sn:
+                    pl = "controller" if sn == 1 else "controllers"
+                    self._step_note(4, f"{sn} in S mode")
+                    print(f"{sn} {pl} detected in Switch mode. Flip the back switch to D (DInput) to update firmware.")
+                else:
+                    print("No controller connected - skipped.")
             print("\nAll done. Safely eject the card.")
         return _run(task)
 
@@ -846,6 +867,10 @@ class Api:
         # controller: read the connected pad vs latest from 8BitDo
         try:
             out["controllers"] = controller.connected_count()
+            # Surface controllers stuck in Switch-emulation (S position on the
+            # back switch) so the UI can explain a 0-count instead of failing
+            # silently — the engine helper exists in analogue3d 0.6.6+.
+            out["controllers_switch_mode"] = controller.connected_in_switch_mode_count()
         except Exception:
             pass
         if out["controllers"]:
