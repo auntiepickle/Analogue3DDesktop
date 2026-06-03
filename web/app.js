@@ -417,7 +417,16 @@ window.deskProgress = function (pct, block, nblocks) {
   el.busyBar.style.width = pct + "%";
   const prefix = flashTarget && flashTarget.total > 1
     ? `controller ${flashTarget.idx}/${flashTarget.total}  ·  ` : "";
-  el.busyProgLabel.textContent = `${prefix}${pct}%  (block ${block}/${nblocks})`;
+  // After the last block flashes the engine sits in _wait_until_ready(),
+  // polling each controller for a response before re-enumerating. Without
+  // a label swap the busy overlay stayed frozen at "100% (block 35/35)"
+  // and looked stuck. Tell the user we're waiting on the controller now.
+  if (block >= nblocks && pct >= 100) {
+    el.busyProgLabel.textContent = `${prefix}flashed — verifying controller…`;
+    el.busySpin.classList.remove("hidden");
+  } else {
+    el.busyProgLabel.textContent = `${prefix}${pct}%  (block ${block}/${nblocks})`;
+  }
 };
 
 window.deskFlashTarget = function (idx, total) {
