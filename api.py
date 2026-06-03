@@ -22,7 +22,7 @@ import webbrowser
 import analogue3d
 from analogue3d import sdcard, controller, savestates, labels, saves, config, ui, updates
 
-APP_VERSION = "0.3.5"
+APP_VERSION = "0.3.6"
 
 # Demo / fake-data mode: when A3D_DEMO=1, the read-only methods (detect, versions,
 # list_backups, list_memories, list_snapshots, cart_art_games, controller_versions)
@@ -482,12 +482,32 @@ class Api:
 
             n = controller.connected_count()
             if n:
-                self._step(4, "active")
-                self._step_note(4, f"{n} connected")
-                controller.update_all(progress=self._progress_cb(),
-                                      announce=self._flash_announce(n, step_index=4))
-                self._step(4, "done")
-                self._step_note(4, "")
+                # Count only the controllers actually behind the latest — the
+                # engine's update_all() already skips up-to-date ones, but the
+                # announce callback was being told total=N (all connected), so
+                # the busy-overlay read "updating #1 of 2" even when only one
+                # of two pads needed flashing.
+                needs = n
+                try:
+                    devs = controller.connected_devices()
+                    latest_int = controller.fetch_firmware_list()[0]["version_int"]
+                    needs = sum(1 for d in devs
+                                if d.get("mode") == "app"
+                                and d.get("version_int") is not None
+                                and d["version_int"] < latest_int)
+                except Exception:
+                    pass
+                if needs == 0:
+                    self._step(4, "skip")
+                    self._step_note(4, f"{n} already current")
+                    print(f"All {n} controller{'s' if n != 1 else ''} already at the latest firmware.")
+                else:
+                    self._step(4, "active")
+                    self._step_note(4, f"{needs} of {n} need update")
+                    controller.update_all(progress=self._progress_cb(),
+                                          announce=self._flash_announce(needs, step_index=4))
+                    self._step(4, "done")
+                    self._step_note(4, "")
             else:
                 self._step(4, "skip")
                 try:
