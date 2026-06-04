@@ -11,42 +11,67 @@ import os
 import sys
 import json
 
-# Windows .NET runtime: force .NET Framework (netfx) and LOAD it NOW, before
-# any pywebview / pythonnet import. pywebview's WinForms backend opens with:
+# Windows .NET runtime: force .NET Framework (netfx) before any pywebview import.
+# pywebview's WinForms backend opens with:
 #       try:
 #           import clr
 #       except Exception:
 #           os.environ['PYTHONNET_RUNTIME'] = 'coreclr'   # <- silent downgrade
 #           import clr
-# so if the FIRST `import clr` throws for ANY reason, pywebview forces CoreCLR
-# (.NET 5+). CoreCLR then resolves a .NET 9 WinForms whose parent
-# 'System.Private.CoreLib, Version=9.0.0.0' can't be bound on a machine without
-# a usable .NET Desktop Runtime — the "Could not load type 'System.Object' ...
-# because the parent does not exist" crash at winforms.py class-body load time.
+# so if the first `import clr` throws, pywebview forces CoreCLR (.NET 5+), which
+# then resolves a .NET 9 WinForms whose parent 'System.Private.CoreLib,
+# Version=9.0.0.0' can't be bound — the "Could not load type 'System.Object'"
+# crash at winforms.py load time.
 #
-# v0.3.1 only set PYTHONNET_RUNTIME=netfx, which that except block simply
-# overwrites (and which is a no-op if the var was already set). The robust fix
-# is to import clr OURSELVES under netfx first: a successful load sets
-# pythonnet._LOADED=True, so pywebview's later `import clr` is a cached no-op
-# that cannot throw — its coreclr branch becomes unreachable. If netfx genuinely
-# cannot load (e.g. .NET Framework disabled, or Windows-on-ARM, where no netfx
-# shim ships), fail LOUDLY here instead of degrading to a CoreCLR that crashes
-# deep inside pywebview with an unactionable message.
+# IMPORTANT: `pythonnet.load("netfx")` is NOT sufficient. pythonnet.load() ignores
+# its runtime argument if a runtime was already *selected* — it silently runs on
+# whatever was chosen (e.g. CoreCLR), with no exception. So we must (1) force the
+# netfx runtime explicitly with set_runtime() — which overrides a prior selection —
+# and (2) VERIFY the live runtime really is .NET Framework, failing LOUD if not.
+# That makes "silently running on CoreCLR" impossible. A breadcrumb is written to
+# ~/.analogue3d/netfx-startup.log so a failing run is self-diagnosing even if the
+# dialog path is somehow bypassed.
 if sys.platform == "win32":
     os.environ["PYTHONNET_RUNTIME"] = "netfx"      # hard set, not setdefault
+    _netfx_err = None
+    _runtime_kind = None
     try:
         import pythonnet
-        pythonnet.load("netfx")   # raises if .NET Framework / the netfx shim is unavailable
-        import clr                # no-op now; confirms the runtime is live
-    except Exception as _netfx_err:
+        from clr_loader import get_netfx
+        try:
+            # Force the netfx runtime, overriding anything already selected.
+            # Raises "already been loaded" if a runtime is *loaded* (can't switch);
+            # raises something else if .NET Framework / the netfx shim is missing.
+            pythonnet.set_runtime(get_netfx())
+        except RuntimeError as _se:
+            if "already" not in str(_se).lower():
+                raise                              # netfx genuinely unavailable -> fail loud
+        pythonnet.load()
+        import clr  # noqa: F401  (no-op now; confirms the runtime is live)
+        _ri = pythonnet.get_runtime_info()
+        _runtime_kind = _ri.kind if _ri else None
+        if not _runtime_kind or "Framework" not in _runtime_kind:
+            raise RuntimeError("active .NET runtime is %r, not .NET Framework" % (_runtime_kind,))
+    except Exception as _e:
+        _netfx_err = _e
+    try:
+        _logdir = os.path.join(os.path.expanduser("~"), ".analogue3d")
+        os.makedirs(_logdir, exist_ok=True)
+        with open(os.path.join(_logdir, "netfx-startup.log"), "w", encoding="utf-8") as _lf:
+            _lf.write("runtime=%r\nerror=%s\n" % (_runtime_kind,
+                      repr(_netfx_err) if _netfx_err is not None else "none"))
+    except Exception:
+        pass
+    if _netfx_err is not None:
         _msg = (
-            "Analogue 3D Desktop couldn't start the Windows .NET runtime.\n\n"
-            "This app needs Microsoft .NET Framework 4.7.2 or newer, which is\n"
-            "normally built into Windows 10 and 11. If this keeps happening:\n"
+            "Analogue 3D Desktop couldn't start on the Windows .NET Framework runtime.\n\n"
+            "It ended up on: %s\n\n"
+            "This app needs Microsoft .NET Framework 4.7.2 or newer, which is normally\n"
+            "built into Windows 10 and 11. If this keeps happening:\n"
             "  • Run Windows Update (it installs .NET Framework), then retry.\n"
             "  • Reinstall Analogue 3D Desktop.\n"
             "  • On a Windows-on-ARM (ARM64) PC this build isn't supported yet.\n\n"
-            "Please report this detail:\n" + repr(_netfx_err)
+            "Please report this detail:\n%s" % (_runtime_kind or "unknown", repr(_netfx_err))
         )
         try:
             import ctypes
