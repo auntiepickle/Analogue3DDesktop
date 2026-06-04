@@ -32,6 +32,49 @@ import json
 # ~/.analogue3d/netfx-startup.log so a failing run is self-diagnosing even if the
 # dialog path is somehow bypassed.
 if sys.platform == "win32":
+    # A stray .NET assembly (e.g. System.Windows.Forms.dll) sitting in the SAME
+    # folder as the exe gets loaded by .NET instead of Windows' own copy, because
+    # .NET always probes the exe's own directory — pywebview then crashes at startup
+    # ("Could not load type 'System.Object' ..."). The probe base can't be changed
+    # in place, so if such a file is next to a frozen exe, relaunch a copy of
+    # ourselves from a clean temp folder. Falls back to a clear, no-delete message
+    # if the relaunch can't be performed. No user files are ever touched.
+    if getattr(sys, "frozen", False) and not os.environ.get("A3D_CLEANRUN"):
+        _exedir = os.path.dirname(os.path.abspath(sys.executable))
+        _shadow = next((n for n in ("System.Windows.Forms.dll", "System.Drawing.dll",
+                                    "System.Drawing.Common.dll")
+                        if os.path.isfile(os.path.join(_exedir, n))), None)
+        if _shadow:
+            _relaunched = False
+            try:
+                import tempfile, shutil, subprocess
+                _cleandir = os.path.join(tempfile.gettempdir(), "Analogue3D")
+                os.makedirs(_cleandir, exist_ok=True)
+                _cleanexe = os.path.join(_cleandir, os.path.basename(sys.executable))
+                if not (os.path.isfile(_cleanexe) and
+                        os.path.getsize(_cleanexe) == os.path.getsize(sys.executable)):
+                    shutil.copy2(sys.executable, _cleanexe)
+                _env = {k: v for k, v in os.environ.items()
+                        if not (k.startswith("_MEIPASS") or k.startswith("_PYI"))}
+                _env["A3D_CLEANRUN"] = "1"
+                subprocess.Popen([_cleanexe], cwd=_cleandir, env=_env, close_fds=True)
+                _relaunched = True
+            except Exception:
+                _relaunched = False
+            if _relaunched:
+                sys.exit(0)
+            _m = ("Analogue 3D Desktop can't start from this folder.\n\n"
+                  'A file named "%s" in the same folder as the app is being loaded '
+                  "instead of Windows' own copy, which stops the app from starting.\n\n"
+                  "To fix it (no need to delete anything): make a new empty folder, "
+                  "move Analogue3DDesktop.exe into it, and run it from there.\n\n"
+                  "Folder: %s" % (_shadow, _exedir))
+            try:
+                import ctypes
+                ctypes.windll.user32.MessageBoxW(None, _m, "Analogue 3D Desktop", 0x30)
+            except Exception:
+                sys.stderr.write(_m + "\n")
+            sys.exit(1)
     os.environ["PYTHONNET_RUNTIME"] = "netfx"      # hard set, not setdefault
     _netfx_err = None
     _runtime_kind = None
@@ -39,9 +82,9 @@ if sys.platform == "win32":
         import pythonnet
         from clr_loader import get_netfx
         try:
-            # Force the netfx runtime, overriding anything already selected.
-            # Raises "already been loaded" if a runtime is *loaded* (can't switch);
-            # raises something else if .NET Framework / the netfx shim is missing.
+            # Force the netfx runtime, overriding anything already selected. Raises
+            # "already been loaded" if a runtime is *loaded* (can't switch); raises
+            # something else if .NET Framework / the netfx shim is unavailable.
             pythonnet.set_runtime(get_netfx())
         except RuntimeError as _se:
             if "already" not in str(_se).lower():
