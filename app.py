@@ -54,12 +54,40 @@ if sys.platform == "win32":
             raise RuntimeError("active .NET runtime is %r, not .NET Framework" % (_runtime_kind,))
     except Exception as _e:
         _netfx_err = _e
+    # Pre-resolve WinForms + diagnose. Even under netfx, pywebview later does
+    # Assembly.LoadWithPartialName('System.Windows.Forms') + GetType('...OpenFileDialog');
+    # on some Win10 boxes with an incomplete .NET Framework GAC, fusion falls through to a
+    # .NET 9 WinForms whose parent 'System.Private.CoreLib 9.0.0.0' can't bind -> crash.
+    # Force-load the FRAMEWORK WinForms by strong name so pywebview reuses that one, and
+    # record what actually resolves so a failing run is diagnosable from the log.
+    _wf_info = "skipped"
+    if _netfx_err is None:
+        _wf_parts = []
+        try:
+            clr.AddReference("System.Windows.Forms, Version=4.0.0.0, Culture=neutral, "
+                             "PublicKeyToken=b77a5c561934e089")
+            _wf_parts.append("strongref=OK")
+        except Exception as _e1:
+            _wf_parts.append("strongref=ERR:%r" % (_e1,))
+        try:
+            from System.Reflection import Assembly as _Asm
+            _wf = _Asm.LoadWithPartialName("System.Windows.Forms")
+            _wf_parts.append("resolved=%s" % (_wf.FullName if _wf else "None",))
+            _wf_parts.append("loc=%s" % (_wf.Location if _wf else "?",))
+            try:
+                _ofd = _wf.GetType("System.Windows.Forms.OpenFileDialog")
+                _wf_parts.append("OpenFileDialog=%s" % ("OK" if _ofd else "None",))
+            except Exception as _e3:
+                _wf_parts.append("GetType=ERR:%r" % (_e3,))
+        except Exception as _e2:
+            _wf_parts.append("LoadWithPartialName=ERR:%r" % (_e2,))
+        _wf_info = " | ".join(_wf_parts)
     try:
         _logdir = os.path.join(os.path.expanduser("~"), ".analogue3d")
         os.makedirs(_logdir, exist_ok=True)
         with open(os.path.join(_logdir, "netfx-startup.log"), "w", encoding="utf-8") as _lf:
-            _lf.write("runtime=%r\nerror=%s\n" % (_runtime_kind,
-                      repr(_netfx_err) if _netfx_err is not None else "none"))
+            _lf.write("runtime=%r\nerror=%s\nwinforms=%s\n" % (_runtime_kind,
+                      repr(_netfx_err) if _netfx_err is not None else "none", _wf_info))
     except Exception:
         pass
     if _netfx_err is not None:
