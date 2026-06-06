@@ -190,11 +190,14 @@ class Api:
         review before committing."""
         if not settings_pack:
             return []
-        try:
-            return settings_pack.preview_apply(root, collection_ids or [])
-        except Exception as e:
-            print(f"Settings preview failed: {e}")
-            return []
+        # Serialize with apply/revert/reset (which hold _lock via _run) so a
+        # preview can never read the card mid-write and report stale results.
+        with _lock:
+            try:
+                return settings_pack.preview_apply(root, collection_ids or [])
+            except Exception as e:
+                print(f"Settings preview failed: {e}")
+                return []
 
     def settings_pack_apply(self, root, collection_ids, force=False, backup_first=True):
         """Apply the chosen collections to the card. Always backs up every
@@ -260,17 +263,14 @@ class Api:
     def settings_pack_reset_all(self, root):
         """Remove every settings.json on the card, returning all carts to the
         console's defaults — a full unapply (any collection, plus hand-set
-        values). Always takes a full card backup first (Library, Settings,
-        Memories — saves and all), so the user can restore from the Backups
-        list; nothing is deleted if that backup fails."""
+        values). Backs up the settings files first (the only thing it deletes);
+        saves and save states are not touched. Nothing is deleted if the backup
+        fails."""
         if not settings_pack:
             return {"reset": [], "skipped": [], "errors": [
                 {"cart_id": None, "title": None,
                  "error": "This Desktop build's engine is missing settings_pack — update the app."}]}
         def task():
-            print("Backing up your whole card first (Library, Settings, Memories)…")
-            sdcard.create_backup(root, "before reset to defaults",
-                                 progress=self._backup_progress_cb())
             summary = settings_pack.reset_all(root)
             n = len(summary.get("reset") or [])
             bak = summary.get("settings_backup")

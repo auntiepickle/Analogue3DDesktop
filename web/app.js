@@ -1159,8 +1159,8 @@ async function startSettingsPackResetAll() {
   if (!(await confirmDialog(
     "Remove ALL per-game settings from this card and return every cartridge to the "
     + "console's defaults? This clears settings on every cart — including any you set "
-    + "yourself or applied from other collections. Your whole card is backed up first "
-    + "(saves and all), so you can restore it from Backups.",
+    + "yourself or applied from other collections. Your settings are backed up first; "
+    + "your saves and save states are not affected.",
     { title: "Reset all carts to defaults", okText: "Reset all", danger: true }))) return;
   _spAnalysisKey = null;
   run("Backing up card, then resetting all to defaults", () =>
