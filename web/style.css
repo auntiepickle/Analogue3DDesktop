@@ -392,6 +392,130 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .section-head .muted { color: var(--dim); font-weight: 400; font-size: var(--fs-secondary); }
 .row-tools { display: flex; gap: 8px; align-items: center; }
 .muted { color: var(--dim); }
+
+/* ---------- game-paks tabs + settings pane ---------- */
+.paks-rail {
+  display: flex; align-items: flex-end; gap: 16px;
+  margin: -4px 0 10px;
+  border-bottom: 1px solid var(--border);
+}
+.paks-rail-tools {
+  margin-left: auto;
+  display: flex; gap: 8px; align-items: center;
+  padding-bottom: 6px;
+}
+.paks-rail-tools > span { display: flex; gap: 8px; align-items: center; }
+.paks-tabs {
+  display: flex; gap: 4px;
+}
+.paks-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: none;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: var(--fs-control-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+.paks-tab:hover { color: var(--text); }
+.paks-tab.active {
+  color: var(--gold);
+  border-color: var(--border);
+  border-bottom-color: var(--bg);
+  background: var(--panel);
+}
+.paks-pane { padding-top: 8px; }
+/* Breathing room between the filter row and the gallery below it (the wrapping
+   into tab panes dropped the gap this row used to get from the section flow). */
+#artControls:not(.hidden) { margin-bottom: 12px; }
+
+/* Settings pane: a single instrument row, no surrounding prose.
+   Mono labels, sans values — the brand pattern. */
+.pak-instr {
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  padding: 12px 16px;
+  border-radius: 2px;
+}
+.pak-instr-row {
+  display: flex; flex-wrap: wrap; gap: clamp(20px, 3vw, 48px);
+}
+.pak-instr-label {
+  font-family: var(--mono);
+  font-size: var(--fs-meta-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 2px;
+}
+.pak-instr-value {
+  font-family: var(--sans);
+  font-size: var(--fs-secondary);
+  color: var(--text);
+  line-height: 1.2;
+}
+
+/* Per-cart diff modal */
+.settings-pack-preview-body {
+  max-height: 50vh; overflow: auto;
+  border: 1px solid var(--border); border-radius: 2px;
+  padding: 10px 12px;
+  background: var(--panel-2);
+  margin: 0 0 14px;
+}
+.settings-pack-card {
+  border-bottom: 1px solid var(--border);
+  padding: 8px 0;
+}
+.settings-pack-card:first-child { padding-top: 0; }
+.settings-pack-card:last-child  { border-bottom: 0; padding-bottom: 0; }
+.settings-pack-card-head {
+  display: flex; align-items: center; gap: 8px;
+  font-size: var(--fs-control);
+  margin-bottom: 4px;
+}
+.settings-pack-thumb {
+  width: 26px; height: 26px; flex: 0 0 auto;
+  object-fit: cover; border-radius: 3px;
+  border: 1px solid var(--border); background: var(--panel);
+}
+
+/* The Settings tab's hand-raise: a count of carts that can be optimized. */
+.paks-tab-badge {
+  display: inline-block; margin-left: 6px; min-width: 18px; padding: 0 5px;
+  border-radius: 999px; font-size: var(--fs-meta); font-weight: 700;
+  line-height: 18px; text-align: center; background: var(--gold); color: #1a1206;
+}
+
+/* Settings-pack analysis (which carts still need the optimization) */
+.sp-hand {
+  font-size: var(--fs-secondary); margin: 2px 0 12px;
+  padding: 8px 12px; border-radius: 6px;
+  border: 1px solid var(--gold-line); border-left: 3px solid var(--gold);
+  background: rgba(232,185,35,.07);
+}
+.sp-hand.ok { border-color: var(--border); border-left-color: var(--green); background: transparent; color: var(--dim); }
+.sp-analysis-list { margin-top: 10px; max-height: 42vh; overflow: auto; }
+.sp-analysis-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 0; border-bottom: 1px solid var(--border);
+  font-size: var(--fs-control);
+}
+.sp-analysis-row:last-child { border-bottom: 0; }
+.sp-analysis-title { flex: 1 1 auto; }
+.settings-pack-card-head .mono { font-family: var(--mono); color: var(--gold); }
+.diff-line {
+  font-family: var(--mono); font-size: var(--fs-control-mono);
+  line-height: 1.6;
+  padding-left: 14px;
+}
+.diff-line .diff-key { color: var(--dim); }
+.diff-line .diff-from { color: var(--red); text-decoration: line-through; }
+.diff-line .diff-to   { color: var(--green); }
 .pad { padding: 8px 2px; margin: 0; }
 
 .mem-controls { display: flex; align-items: center; gap: 10px; }
@@ -1667,4 +1791,12 @@ body.mode-tinker .console-wrap {
   background: var(--panel);
   border: 1px solid var(--gold-line);
   border-radius: 2px;
+}
+
+/* ---------- experimental features pill (Game paks → Settings tab) ---------- */
+.paks-tab .exp-pill {
+  display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 999px;
+  font-size: var(--fs-meta); font-weight: 600; letter-spacing: .02em;
+  background: rgba(232,185,35,.16); color: var(--gold-dim);
+  border: 1px solid var(--gold-line); vertical-align: middle;
 }

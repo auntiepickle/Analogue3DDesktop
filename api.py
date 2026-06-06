@@ -21,6 +21,13 @@ import webbrowser
 
 import analogue3d
 from analogue3d import sdcard, controller, savestates, labels, saves, config, ui, updates
+# settings_pack landed in engine 0.6.9 (currently feat/settings-pack). Guard
+# the import so a Desktop dev env on an older engine still launches; the
+# Game-settings group degrades to "engine doesn't support this yet".
+try:
+    from analogue3d import settings_pack
+except ImportError:
+    settings_pack = None
 
 APP_VERSION = "0.4.3"
 
@@ -156,6 +163,93 @@ class Api:
                                  use_cache=not force)
         except Exception:
             return None
+
+    # ---------- settings pack ----------
+    def settings_pack_supported(self):
+        """True if the engine bundled with this binary has the settings_pack
+        module. Used by the UI to hide the Game-settings group on an older
+        engine instead of throwing an "endpoint not found" error."""
+        return settings_pack is not None
+
+    def settings_pack_collections(self, force=False):
+        """Indexed list of every collection available in the
+        auntiepickle/Analogue3DSettings repo:
+        [{id, name, description, version, updated, games_count, ...}, ...]
+        Cached 24h; ``force`` bypasses the cache."""
+        if not settings_pack:
+            return []
+        try:
+            return settings_pack.list_collections(use_cache=not force)
+        except Exception as e:
+            print(f"Couldn't list settings collections: {e}")
+            return []
+
+    def settings_pack_preview(self, root, collection_ids):
+        """Per-cart diff of what apply_collections would change against the
+        card at `root`. UI feeds this into the preview modal so the user can
+        review before committing."""
+        if not settings_pack:
+            return []
+        try:
+            return settings_pack.preview_apply(root, collection_ids or [])
+        except Exception as e:
+            print(f"Settings preview failed: {e}")
+            return []
+
+    def settings_pack_apply(self, root, collection_ids, force=False):
+        """Apply the chosen collections to the card. Backs up every existing
+        settings.json on the card first, so the user can recover their previous
+        settings (or use Revert to remove what a collection wrote)."""
+        if not settings_pack:
+            return {"applied": [], "skipped": [], "errors": [
+                {"cart_id": None, "title": None,
+                 "error": "This Desktop build's engine is missing settings_pack — update the app."}]}
+        def task():
+            summary = settings_pack.apply_collections(
+                root, collection_ids or [], snapshot=True, force=bool(force))
+            applied = len(summary.get("applied") or [])
+            skipped_list = summary.get("skipped") or []
+            already = sum(1 for s in skipped_list if s.get("reason") == "already_applied")
+            norec   = sum(1 for s in skipped_list if s.get("reason") == "no_recommendation")
+            bak = summary.get("settings_backup")
+            if bak:
+                print(f"Backed up {bak['count']} settings file(s) to "
+                      f"{os.path.basename(bak['path'])}.")
+            print(f"Applied to {applied} cart{'s' if applied != 1 else ''}.")
+            if already:
+                print(f"{already} cart{'s' if already != 1 else ''} already up to date — left untouched.")
+            if norec:
+                print(f"{norec} cart{'s' if norec != 1 else ''} skipped (no recommendation).")
+            for e in (summary.get("errors") or []):
+                title = e.get("title") or "(card)"
+                print(f"  error: {title}: {e.get('error')}")
+            return summary
+        return _run(task)
+
+    def settings_pack_revert(self, root, collection_ids):
+        """Undo a previous apply: remove the values these collections wrote from
+        each cart (only where the cart still holds them, so the user's own
+        changes are preserved). Carts left with no settings have the file
+        removed, reverting them to console defaults. Backs up every existing
+        settings.json on the card first."""
+        if not settings_pack:
+            return {"reverted": [], "skipped": [], "errors": [
+                {"cart_id": None, "title": None,
+                 "error": "This Desktop build's engine is missing settings_pack — update the app."}]}
+        def task():
+            summary = settings_pack.revert_collections(
+                root, collection_ids or [], snapshot=True)
+            reverted = len(summary.get("reverted") or [])
+            bak = summary.get("settings_backup")
+            if bak:
+                print(f"Backed up {bak['count']} settings file(s) to "
+                      f"{os.path.basename(bak['path'])}.")
+            print(f"Reverted {reverted} cart{'s' if reverted != 1 else ''}.")
+            for e in (summary.get("errors") or []):
+                title = e.get("title") or "(card)"
+                print(f"  error: {title}: {e.get('error')}")
+            return summary
+        return _run(task)
 
     def open_url(self, url):
         """Open a link in the user's default browser (not the embedded webview)."""

@@ -38,6 +38,7 @@ const MODE_KEY = "a3d:mode";
 const THEME_KEY = "a3d:theme";
 const CLEAR_KEY = "a3d:clear";
 const LAUNCH_TINKER_KEY = "a3d:launchTinker";
+const EXPERIMENTAL_KEY = "a3d:experimental";
 
 /* Mirrors Analogue 3D (Gold, White), Pocket (Glow), and N64 Funtastic
    accents. Each id maps to a `.theme-<id>` body class that overrides the
@@ -101,6 +102,27 @@ function setTheme(id) {
   document.body.classList.add("theme-" + id);
   try { localStorage.setItem(THEME_KEY, id); } catch (e) {}
   _renderThemePicker();
+}
+
+// Experimental features — a single binary opt-in (default OFF) that gates the
+// whole community cart-settings feature. When off, the Game paks → Settings
+// tab is hidden entirely; the cart-art feature is unaffected.
+function getExperimental() {
+  return localStorage.getItem(EXPERIMENTAL_KEY) === "1";
+}
+function setExperimental(on) {
+  try { localStorage.setItem(EXPERIMENTAL_KEY, on ? "1" : "0"); } catch (e) {}
+  const cb = $("experimentalToggle");
+  if (cb) cb.checked = !!on;
+  applyExperimentalGate();
+}
+function applyExperimentalGate() {
+  const on = getExperimental();
+  const tab = document.querySelector('.paks-tab[data-pak="settings"]');
+  if (tab) tab.classList.toggle("hidden", !on);
+  // If the feature was switched off while its pane was open, fall back to the
+  // Art tab so the user isn't stranded on a now-hidden tab.
+  if (!on && tab && tab.classList.contains("active")) switchPakTab("art");
 }
 
 function getLaunchTinker() {
@@ -590,6 +612,7 @@ async function refresh() {
   await refreshBackups();
   await refreshMemories();
   await refreshArt();
+  await refreshSettingsPack();
   _syncMinimal();
 }
 
@@ -954,6 +977,251 @@ function filteredArtGames() {
   return artGames.filter((g) => g.title.toLowerCase().includes(q) || g.cart_id.includes(q));
 }
 
+/* ---------- game paks tabs (art / settings) ---------- */
+
+function switchPakTab(name) {
+  const all = document.querySelectorAll(".paks-tab");
+  all.forEach((t) => {
+    const on = t.dataset.pak === name;
+    t.classList.toggle("active", on);
+    t.setAttribute("aria-selected", on ? "true" : "false");
+  });
+  $("paneArt").classList.toggle("hidden", name !== "art");
+  $("paneSettings").classList.toggle("hidden", name !== "settings");
+  document.querySelector(".paks-tools-art")
+    .classList.toggle("hidden", name !== "art");
+  document.querySelector(".paks-tools-settings")
+    .classList.toggle("hidden", name !== "settings");
+  if (name === "settings") refreshSettingsPack();
+}
+
+/* ---------- settings pack ---------- */
+let settingsPackCollections = [];
+let settingsPackSupported   = null;
+let settingsPackLoaded      = false;
+
+async function refreshSettingsPack() {
+  if (!getExperimental()) return;   // feature is gated off — don't even fetch
+  if (settingsPackSupported === null) {
+    try { settingsPackSupported = await api().settings_pack_supported(); }
+    catch (e) { settingsPackSupported = false; }
+  }
+  if (!settingsPackSupported) return;
+  if (!settingsPackLoaded) {
+    try { settingsPackCollections = await api().settings_pack_collections(false); }
+    catch (e) { settingsPackCollections = []; }
+    settingsPackLoaded = true;
+    _populateSettingsPackPicker();
+  }
+  _refreshSettingsPackButtons();
+  _autoAnalyze();
+}
+
+function _populateSettingsPackPicker() {
+  const sel = $("settingsPackPicker");
+  sel.innerHTML = "";
+  const usable = settingsPackCollections.filter((c) => (c.games_count || 0) > 0);
+  if (!usable.length) {
+    sel.innerHTML = '<option>(no collections)</option>';
+    sel.disabled = true; return;
+  }
+  usable.forEach((c) => {
+    const o = document.createElement("option");
+    o.value = c.id; o.textContent = c.name; sel.appendChild(o);
+  });
+  sel.disabled = false;
+}
+
+function _selectedCollectionId() {
+  const sel = $("settingsPackPicker");
+  return sel && !sel.disabled ? sel.value : null;
+}
+
+function _refreshSettingsPackButtons() {
+  const ok = !!(_selectedCollectionId() && getRoot());
+  $("settingsPackApply").disabled = !ok;
+  $("settingsPackPreview").disabled = !ok;
+  const rv = $("settingsPackRevert");
+  if (rv) rv.disabled = !ok;
+}
+
+// Lazy-load each cart's label art into its .settings-pack-thumb (same source as
+// the Art gallery: labels.db on the card). Carts with no art drop the img so
+// there's never a broken-image icon. Shared by the preview + analysis views.
+function _lazyCartThumbs(container) {
+  const root = getRoot();
+  container.querySelectorAll("img.settings-pack-thumb[data-cart]").forEach(async (img) => {
+    if (!root) { img.remove(); return; }
+    try {
+      const url = await api().cart_art(root, img.dataset.cart);
+      if (url) img.src = url; else img.remove();
+    } catch (e) { img.remove(); }
+  });
+}
+
+function _renderSettingsPackHero() {
+  const host = $("settingsPackList");
+  const cid = _selectedCollectionId();
+  if (!cid) { host.innerHTML = ""; return; }
+  const c = settingsPackCollections.find((x) => x.id === cid);
+  if (!c) { host.innerHTML = ""; return; }
+  // Single collection summary — instrument-panel labels, no surrounding prose.
+  host.innerHTML = `
+    <div class="pak-instr">
+      <div class="pak-instr-row">
+        <div><div class="pak-instr-label">Collection</div><div class="pak-instr-value">${escapeHtml(c.name)}</div></div>
+        <div><div class="pak-instr-label">Carts</div><div class="pak-instr-value">${c.games_count || 0}</div></div>
+        <div><div class="pak-instr-label">Updated</div><div class="pak-instr-value">${escapeHtml(c.updated || "—")}</div></div>
+      </div>
+    </div>`;
+}
+
+async function startSettingsPackPreview() {
+  const root = getRoot(); const cid = _selectedCollectionId();
+  if (!root || !cid) return;
+  setBusy(true, "Reading recommendations…");
+  let pv;
+  try { pv = await api().settings_pack_preview(root, [cid]); }
+  catch (e) { setBusy(false); log("Preview failed: " + e, "err"); return; }
+  setBusy(false);
+  _openSettingsPackPreviewModal(pv, [cid]);
+}
+
+function _openSettingsPackPreviewModal(rows, collectionIds) {
+  const modal = $("settingsPackPreviewModal");
+  const body  = $("settingsPackPreviewBody");
+  const changing = rows.filter((p) => !p.skipped && (p.diff || []).length > 0);
+  const apply = $("settingsPackPreviewApply");
+  apply.textContent = changing.length
+    ? `Apply to ${changing.length} cart${changing.length === 1 ? "" : "s"}`
+    : "Nothing to apply";
+  apply.disabled = changing.length === 0;
+  body.innerHTML = changing.length
+    ? changing.map((p) => {
+        const diff = p.diff.map(([k, a, b]) =>
+          `<div class="diff-line"><span class="diff-key">${escapeHtml(k)}</span> `
+          + `<span class="diff-from">${escapeHtml(String(a == null ? "—" : a))}</span> `
+          + `<span class="muted">→</span> `
+          + `<span class="diff-to">${escapeHtml(String(b))}</span></div>`).join("");
+        return `<div class="settings-pack-card">`
+          + `<div class="settings-pack-card-head" title="cart ${escapeHtml(p.cart_id)}">`
+          + `<img class="settings-pack-thumb" data-cart="${escapeHtml(p.cart_id)}" alt="" />`
+          + `<span>${escapeHtml(p.title)}</span> `
+          + `<span class="muted small">from ${escapeHtml(p.sources.join(", "))}</span></div>`
+          + diff + `</div>`;
+      }).join("")
+    : `<p class="muted pad">No carts on this card match any enabled collection — nothing would change.</p>`;
+  _lazyCartThumbs(body);
+  apply.onclick = async () => {
+    modal.classList.add("hidden");
+    await startSettingsPackApply(collectionIds);
+  };
+  $("settingsPackPreviewClose").onclick = () => modal.classList.add("hidden");
+  modal.classList.remove("hidden");
+}
+
+async function startSettingsPackApply(collectionIds) {
+  const root = getRoot();
+  if (!root || !collectionIds.length) return;
+  if (!(await confirmDialog("Apply?", { okText: "Apply" }))) return;
+  _spAnalysisKey = null;   // card is about to change — force a fresh hand-raise after refresh()
+  run("Applying community settings", () =>
+    api().settings_pack_apply(root, collectionIds, false), false);
+}
+
+async function startSettingsPackRevert() {
+  const root = getRoot(); const cid = _selectedCollectionId();
+  if (!root || !cid) return;
+  const c = settingsPackCollections.find((x) => x.id === cid);
+  const name = c ? c.name : "this collection";
+  if (!(await confirmDialog(
+    `Remove the settings ${name} wrote from your carts? Each cart reverts toward its `
+    + `defaults for the values this collection set — your own changes are kept. Your current `
+    + `settings are backed up first.`,
+    { title: "Revert applied settings", okText: "Revert", danger: true }))) return;
+  _spAnalysisKey = null;   // card is about to change — force a fresh hand-raise after refresh()
+  run("Reverting community settings", () =>
+    api().settings_pack_revert(root, [cid]), false);
+}
+
+// Auto coverage check — the app raises its own hand. Whenever a card + collection
+// are in play we compute the delta in the background (no button, no spinner),
+// badge the Settings tab with how many carts still miss the optimization, and
+// render the breakdown into the pane. Cached per card+collection so we don't redo
+// the work on every drive rescan; apply invalidates it so the count self-updates.
+let _spAnalysisKey = null;
+async function _autoAnalyze() {
+  const root = getRoot(); const cid = _selectedCollectionId();
+  if (!cid) { _spAnalysisKey = null; _setSettingsBadge(0); $("settingsPackList").innerHTML = ""; return; }
+  if (!root) { _spAnalysisKey = null; _setSettingsBadge(0); _renderSettingsPackHero(); return; }
+  const key = root + "|" + cid;
+  if (key === _spAnalysisKey) return;   // already current — no wasted work (apply/revert null this to force a recompute)
+  let rows;
+  try { rows = await api().settings_pack_preview(root, [cid]); }
+  catch (e) { return; }
+  if (root !== getRoot() || cid !== _selectedCollectionId()) return;   // selection moved on
+  // Empty result = no carts read or a swallowed backend error — don't claim
+  // "all up to date"; fall back to the collection summary instead.
+  if (!rows.length) { _spAnalysisKey = null; _setSettingsBadge(0); _renderSettingsPackHero(); return; }
+  _spAnalysisKey = key;
+  _renderSettingsPackAnalysis(rows, cid);
+}
+
+function _setSettingsBadge(n) {
+  const b = $("settingsPackBadge");
+  if (!b) return;
+  if (n > 0) { b.textContent = String(n); b.classList.remove("hidden"); }
+  else { b.classList.add("hidden"); b.textContent = ""; }
+}
+
+function _renderSettingsPackAnalysis(rows, cid) {
+  const host = $("settingsPackList");
+  const withRec  = rows.filter((p) => p.skipped !== "no_recommendation");
+  const missing  = withRec.filter((p) => (p.diff || []).length > 0);
+  const upToDate = withRec.length - missing.length;
+  const noRec    = rows.length - withRec.length;
+  _setSettingsBadge(missing.length);
+  const c = settingsPackCollections.find((x) => x.id === cid);
+  const collName = c ? c.name : "this collection";
+  const headline = missing.length
+    ? `<div class="sp-hand">${missing.length} cart${missing.length === 1 ? "" : "s"} can be optimized with ${escapeHtml(collName)} — Preview to review, Apply to write.</div>`
+    : `<div class="sp-hand ok">Every cart with a recommendation is already up to date.</div>`;
+
+  const instr = `<div class="pak-instr"><div class="pak-instr-row">
+      <div><div class="pak-instr-label">Missing</div><div class="pak-instr-value">${missing.length}</div></div>
+      <div><div class="pak-instr-label">Up to date</div><div class="pak-instr-value">${upToDate}</div></div>
+      <div><div class="pak-instr-label">No recommendation</div><div class="pak-instr-value">${noRec}</div></div>
+      <div><div class="pak-instr-label">Carts on card</div><div class="pak-instr-value">${rows.length}</div></div>
+    </div></div>`;
+
+  // Cap the rendered rows: each row lazy-loads a thumbnail (one bridge call),
+  // so a collector's card shouldn't fire hundreds at once. The summary counts
+  // above are still exact.
+  const CAP = 50;
+  const shown = missing.slice().sort((a, b) => b.diff.length - a.diff.length).slice(0, CAP);
+  const more = missing.length - shown.length;
+  const list = missing.length
+    ? `<div class="sp-analysis-list">`
+        + shown.map((p) =>
+          `<div class="sp-analysis-row" title="cart ${escapeHtml(p.cart_id)}">`
+          + `<img class="settings-pack-thumb" data-cart="${escapeHtml(p.cart_id)}" alt="" />`
+          + `<span class="sp-analysis-title">${escapeHtml(p.title)}</span>`
+          + `<span class="muted small">${p.diff.length} setting${p.diff.length === 1 ? "" : "s"} differ</span>`
+          + `</div>`).join("")
+        + (more > 0 ? `<div class="muted small pad">+${more} more cart${more === 1 ? "" : "s"}…</div>` : "")
+        + `</div>`
+    : "";
+
+  host.innerHTML = headline + instr + list;
+  _lazyCartThumbs(host);
+}
+
+function escapeHtml(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 function renderArtPage(root) {
   const games = filteredArtGames();
   const pages = Math.max(1, Math.ceil(games.length / ART_PAGE_SIZE));
@@ -1059,6 +1327,11 @@ function openSettings() {
   if (lt) {
     lt.checked = getLaunchTinker();
     lt.onchange = (e) => setLaunchTinker(e.target.checked);
+  }
+  const ex = $("experimentalToggle");
+  if (ex) {
+    ex.checked = getExperimental();
+    ex.onchange = (e) => setExperimental(e.target.checked);
   }
   const modal = $("settingsModal");
   modal.classList.remove("hidden");
@@ -1496,6 +1769,19 @@ function init() {
   $("clearBtn").addEventListener("click", () => { el.console.innerHTML = ""; });
   $("memRefresh").addEventListener("click", refreshMemories);
   $("checkUpdates").addEventListener("click", refreshVersions);
+  document.querySelectorAll(".paks-tab").forEach((t) =>
+    t.addEventListener("click", () => switchPakTab(t.dataset.pak)));
+  applyExperimentalGate();   // hide the Settings tab unless experimental is on
+  const spPreview = $("settingsPackPreview");
+  const spApply   = $("settingsPackApply");
+  const spPicker  = $("settingsPackPicker");
+  if (spPicker)  spPicker.addEventListener("change", () => { _refreshSettingsPackButtons(); _autoAnalyze(); });
+  if (spPreview) spPreview.addEventListener("click", startSettingsPackPreview);
+  if (spApply)   spApply.addEventListener("click", () => {
+    const cid = _selectedCollectionId(); if (cid) startSettingsPackApply([cid]);
+  });
+  const spRevert = $("settingsPackRevert");
+  if (spRevert) spRevert.addEventListener("click", startSettingsPackRevert);
   el.memSnapshotSelect.addEventListener("change", fillSnapshotGames);
   $("memSearch").addEventListener("input", () => { memPage = 0; renderMemPage(getRoot()); });
   $("memPrev").addEventListener("click", () => { memPage--; renderMemPage(getRoot()); });

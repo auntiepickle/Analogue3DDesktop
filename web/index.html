@@ -247,28 +247,52 @@
       </div>
     </section>
 
-    <!-- CARTRIDGE ART -->
-    <section class="block span2">
-      <div class="section-head">
-        <h2>Cartridge art</h2>
-        <div class="row-tools">
-          <select id="artSource" class="mini">
-            <option value="community">RetroGameCorps art pack</option>
-            <option value="url">Custom URL&hellip;</option>
-          </select>
-          <input type="text" id="artUrl" class="hidden mini-input" placeholder="https://.../labels.db" />
-          <button class="action" data-action="art">Install art pack</button>
+    <!-- GAME PAKS — per-cart customisation, tabbed (Art | Settings) -->
+    <section class="block span2" id="gamePaksBlock">
+      <div class="section-head"><h2>Game paks</h2></div>
+      <!-- One control rail: tabs left, tab-scoped tools right. Tools swap
+           with the active tab so the rail always carries the actions you'd
+           run against the pane below it. -->
+      <div class="paks-rail">
+        <div class="paks-tabs" role="tablist">
+          <button class="paks-tab active" data-pak="art" role="tab" aria-selected="true">Art</button>
+          <button class="paks-tab hidden" data-pak="settings" role="tab" aria-selected="false">Settings <span class="exp-pill">experimental</span><span class="paks-tab-badge hidden" id="settingsPackBadge" title="carts that can be optimized"></span></button>
+        </div>
+        <div class="paks-rail-tools">
+          <span class="paks-tools-art">
+            <select id="artSource" class="mini">
+              <option value="community">RetroGameCorps art pack</option>
+              <option value="url">Custom URL&hellip;</option>
+            </select>
+            <input type="text" id="artUrl" class="hidden mini-input" placeholder="https://.../labels.db" />
+            <button class="action" data-action="art">Install art pack</button>
+          </span>
+          <span class="paks-tools-settings hidden">
+            <select id="settingsPackPicker" class="mini" disabled><option>Loading&hellip;</option></select>
+            <button class="action" id="settingsPackPreview" disabled>Preview&hellip;</button>
+            <button class="primary" id="settingsPackApply" disabled>Apply</button>
+            <button class="ghost" id="settingsPackRevert" disabled>Revert&hellip;</button>
+          </span>
         </div>
       </div>
-      <div class="mem-controls hidden" id="artControls">
-        <input type="text" id="artSearch" class="mini-input" placeholder="Filter games by name or ID&hellip;" />
-        <span class="grow"></span>
-        <button class="ghost sm" id="artPrev">&lsaquo; Prev</button>
-        <span id="artPageInfo" class="muted"></span>
-        <button class="ghost sm" id="artNext">Next &rsaquo;</button>
+
+      <!-- ART pane -->
+      <div class="paks-pane" id="paneArt" role="tabpanel">
+        <div class="mem-controls hidden" id="artControls">
+          <input type="text" id="artSearch" class="mini-input" placeholder="Filter games by name or ID&hellip;" />
+          <span class="grow"></span>
+          <button class="ghost sm" id="artPrev">&lsaquo; Prev</button>
+          <span id="artPageInfo" class="muted"></span>
+          <button class="ghost sm" id="artNext">Next &rsaquo;</button>
+        </div>
+        <div id="artGallery" class="art-gallery">
+          <p class="muted pad">Select a card to see its cartridge art.</p>
+        </div>
       </div>
-      <div id="artGallery" class="art-gallery">
-        <p class="muted pad">Select a card to see its cartridge art.</p>
+
+      <!-- SETTINGS pane -->
+      <div class="paks-pane hidden" id="paneSettings" role="tabpanel">
+        <div id="settingsPackList" class="settings-pack-cards"></div>
       </div>
     </section>
 
@@ -363,6 +387,15 @@
         </div>
 
         <div class="settings-group">
+          <div class="settings-label">Experimental features</div>
+          <div class="settings-desc">Unverified features still in testing. Currently unlocks writing community settings to your cartridges (Game paks &rarr; Settings). Off by default.</div>
+          <label class="clear-toggle" for="experimentalToggle">
+            <input type="checkbox" id="experimentalToggle" />
+            <span class="clear-name">Enable experimental features</span>
+          </label>
+        </div>
+
+        <div class="settings-group">
           <div class="settings-label">Backup location</div>
           <div class="settings-desc">Where SD backups, save-state snapshots, and game-save backups are written.</div>
           <input type="text" id="backupRoot" class="settings-path" readonly />
@@ -396,6 +429,19 @@
         <div class="modal-actions">
           <button class="ghost" id="promptCancel">Cancel</button>
           <button class="primary" id="promptOk">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Per-cart diff modal for the settings-pack apply flow -->
+    <div class="modal hidden" id="settingsPackPreviewModal" role="dialog" aria-modal="true">
+      <div class="modal-box settings-box">
+        <div class="modal-title">Preview — community settings</div>
+        <div class="modal-msg muted" style="margin-bottom:14px">Each cart below would have these settings written into its <code>settings.json</code> when you apply. Your current settings are backed up first.</div>
+        <div id="settingsPackPreviewBody" class="settings-pack-preview-body"></div>
+        <div class="modal-actions">
+          <button class="ghost" id="settingsPackPreviewClose">Cancel</button>
+          <button class="primary" id="settingsPackPreviewApply">Apply now</button>
         </div>
       </div>
     </div>
