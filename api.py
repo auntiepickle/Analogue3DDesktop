@@ -257,6 +257,33 @@ class Api:
             return summary
         return _run(task)
 
+    def settings_pack_reset_all(self, root):
+        """Remove every settings.json on the card, returning all carts to the
+        console's defaults — a full unapply (any collection, plus hand-set
+        values). Always takes a full card backup first (Library, Settings,
+        Memories — saves and all), so the user can restore from the Backups
+        list; nothing is deleted if that backup fails."""
+        if not settings_pack:
+            return {"reset": [], "skipped": [], "errors": [
+                {"cart_id": None, "title": None,
+                 "error": "This Desktop build's engine is missing settings_pack — update the app."}]}
+        def task():
+            print("Backing up your whole card first (Library, Settings, Memories)…")
+            sdcard.create_backup(root, "before reset to defaults",
+                                 progress=self._backup_progress_cb())
+            summary = settings_pack.reset_all(root)
+            n = len(summary.get("reset") or [])
+            bak = summary.get("settings_backup")
+            if bak:
+                print(f"Backed up {bak['count']} settings file(s) to "
+                      f"{os.path.basename(bak['path'])}.")
+            print(f"Reset {n} cart{'s' if n != 1 else ''} to console defaults.")
+            for e in (summary.get("errors") or []):
+                title = e.get("title") or "(card)"
+                print(f"  error: {title}: {e.get('error')}")
+            return summary
+        return _run(task)
+
     def open_url(self, url):
         """Open a link in the user's default browser (not the embedded webview)."""
         try:

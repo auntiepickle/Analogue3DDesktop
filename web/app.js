@@ -1043,6 +1043,9 @@ function _refreshSettingsPackButtons() {
   $("settingsPackPreview").disabled = !ok;
   const rv = $("settingsPackRevert");
   if (rv) rv.disabled = !ok;
+  // Reset-all is card-wide, not collection-specific — only needs a card.
+  const ra = $("settingsPackResetAll");
+  if (ra) ra.disabled = !getRoot();
 }
 
 // Lazy-load each cart's label art into its .settings-pack-thumb (same source as
@@ -1148,6 +1151,20 @@ async function startSettingsPackRevert() {
   _spAnalysisKey = null;   // card is about to change — force a fresh hand-raise after refresh()
   run("Reverting community settings", () =>
     api().settings_pack_revert(root, [cid]), false);
+}
+
+async function startSettingsPackResetAll() {
+  const root = getRoot();
+  if (!root) return;
+  if (!(await confirmDialog(
+    "Remove ALL per-game settings from this card and return every cartridge to the "
+    + "console's defaults? This clears settings on every cart — including any you set "
+    + "yourself or applied from other collections. Your whole card is backed up first "
+    + "(saves and all), so you can restore it from Backups.",
+    { title: "Reset all carts to defaults", okText: "Reset all", danger: true }))) return;
+  _spAnalysisKey = null;
+  run("Backing up card, then resetting all to defaults", () =>
+    api().settings_pack_reset_all(root), false);
 }
 
 // Auto coverage check — the app raises its own hand. Whenever a card + collection
@@ -1788,6 +1805,8 @@ function init() {
   });
   const spRevert = $("settingsPackRevert");
   if (spRevert) spRevert.addEventListener("click", startSettingsPackRevert);
+  const spResetAll = $("settingsPackResetAll");
+  if (spResetAll) spResetAll.addEventListener("click", startSettingsPackResetAll);
   el.memSnapshotSelect.addEventListener("change", fillSnapshotGames);
   $("memSearch").addEventListener("input", () => { memPage = 0; renderMemPage(getRoot()); });
   $("memPrev").addEventListener("click", () => { memPage--; renderMemPage(getRoot()); });
