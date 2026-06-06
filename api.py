@@ -196,15 +196,21 @@ class Api:
             print(f"Settings preview failed: {e}")
             return []
 
-    def settings_pack_apply(self, root, collection_ids, force=False):
-        """Apply the chosen collections to the card. Backs up every existing
-        settings.json on the card first, so the user can recover their previous
-        settings (or use Revert to remove what a collection wrote)."""
+    def settings_pack_apply(self, root, collection_ids, force=False, backup_first=True):
+        """Apply the chosen collections to the card. Always backs up every
+        existing settings.json first. When `backup_first` (the default), also
+        takes a FULL card backup (Library, Settings, Memories — saves and all)
+        before writing, so the user can restore the whole card from the Backups
+        list. If that full backup fails, nothing is applied."""
         if not settings_pack:
             return {"applied": [], "skipped": [], "errors": [
                 {"cart_id": None, "title": None,
                  "error": "This Desktop build's engine is missing settings_pack — update the app."}]}
         def task():
+            if backup_first:
+                print("Backing up your whole card first (Library, Settings, Memories)…")
+                sdcard.create_backup(root, "before community settings",
+                                     progress=self._backup_progress_cb())
             summary = settings_pack.apply_collections(
                 root, collection_ids or [], snapshot=True, force=bool(force))
             applied = len(summary.get("applied") or [])

@@ -437,8 +437,12 @@
     <div class="modal hidden" id="settingsPackPreviewModal" role="dialog" aria-modal="true">
       <div class="modal-box settings-box">
         <div class="modal-title">Preview — community settings</div>
-        <div class="modal-msg muted" style="margin-bottom:14px">Each cart below would have these settings written into its <code>settings.json</code> when you apply. Your current settings are backed up first.</div>
+        <div class="modal-msg muted" style="margin-bottom:14px">Each cart below would have these settings written into its <code>settings.json</code> when you apply.</div>
         <div id="settingsPackPreviewBody" class="settings-pack-preview-body"></div>
+        <label class="clear-toggle" for="settingsPackFullBackup" style="margin:4px 0 14px">
+          <input type="checkbox" id="settingsPackFullBackup" checked />
+          <span class="clear-name">Back up my whole card first <span class="muted">(Library, Settings, Memories — saves and all; restore it any time from Backups)</span></span>
+        </label>
         <div class="modal-actions">
           <button class="ghost" id="settingsPackPreviewClose">Cancel</button>
           <button class="primary" id="settingsPackPreviewApply">Apply now</button>

@@ -1113,20 +1113,26 @@ function _openSettingsPackPreviewModal(rows, collectionIds) {
     : `<p class="muted pad">No carts on this card match any enabled collection — nothing would change.</p>`;
   _lazyCartThumbs(body);
   apply.onclick = async () => {
+    const fb = $("settingsPackFullBackup");
+    const fullBackup = !fb || fb.checked;
     modal.classList.add("hidden");
-    await startSettingsPackApply(collectionIds);
+    await startSettingsPackApply(collectionIds, { fullBackup });
   };
   $("settingsPackPreviewClose").onclick = () => modal.classList.add("hidden");
   modal.classList.remove("hidden");
 }
 
-async function startSettingsPackApply(collectionIds) {
+async function startSettingsPackApply(collectionIds, opts) {
   const root = getRoot();
   if (!root || !collectionIds.length) return;
-  if (!(await confirmDialog("Apply?", { okText: "Apply" }))) return;
+  const fullBackup = !opts || opts.fullBackup !== false;   // default on
+  const msg = fullBackup
+    ? "Your whole card is backed up first (Library, Settings, Memories — saves and all), then these settings are written. You can restore the card any time from Backups."
+    : "These settings are written without a full-card backup. Your settings.json files are still backed up, and Revert can undo this.";
+  if (!(await confirmDialog(msg, { title: "Apply community settings", okText: "Apply" }))) return;
   _spAnalysisKey = null;   // card is about to change — force a fresh hand-raise after refresh()
-  run("Applying community settings", () =>
-    api().settings_pack_apply(root, collectionIds, false), false);
+  run(fullBackup ? "Backing up card, then applying settings" : "Applying community settings", () =>
+    api().settings_pack_apply(root, collectionIds, false, fullBackup), false);
 }
 
 async function startSettingsPackRevert() {
