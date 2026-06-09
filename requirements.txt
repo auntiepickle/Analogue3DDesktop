@@ -8,7 +8,7 @@ pythonnet==3.1.0 ; sys_platform == "win32"
 clr-loader==0.3.1 ; sys_platform == "win32"
 
 # The engine. For end users (once the core is published):
-analogue3d @ git+https://github.com/auntiepickle/Analogue3DUtility.git
+analogue3d @ git+https://github.com/auntiepickle/Analogue3DUtility.git@fadf38c64b2478450eaef77c2574b226df546752
 
 # For local development against a checkout next door, instead run:
 #   pip install -e ../Analogue3DUtility
