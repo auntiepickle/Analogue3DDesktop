@@ -180,8 +180,28 @@ jobs:
           name: ${{ matrix.label }}
           path: out/*
 
+      # Use the annotated tag's message as the release body, so the in-app
+      # updater (which renders the release body as its notes) never shows an
+      # empty "Update to vX?" dialog. Falls back to the tag name for a
+      # lightweight tag. Deterministic across both matrix jobs (same text).
+      - name: Release notes from tag
+        if: startsWith(github.ref, 'refs/tags/')
+        id: notes
+        shell: bash
+        run: |
+          NOTES="$(git tag -l --format='%(contents)' "${GITHUB_REF_NAME}")"
+          if [ -z "${NOTES//[[:space:]]/}" ]; then
+            NOTES="Release ${GITHUB_REF_NAME}"
+          fi
+          {
+            echo "body<<__RELEASE_NOTES_EOF__"
+            echo "$NOTES"
+            echo "__RELEASE_NOTES_EOF__"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Attach to release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: out/*
+          body: ${{ steps.notes.outputs.body }}
