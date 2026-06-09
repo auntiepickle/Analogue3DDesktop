@@ -189,6 +189,10 @@ jobs:
         id: notes
         shell: bash
         run: |
+          # The tag-triggered checkout is shallow and may have only the commit,
+          # not the annotated tag object — re-fetch the tag so its message is
+          # actually available to read.
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}" || true
           NOTES="$(git tag -l --format='%(contents)' "${GITHUB_REF_NAME}")"
           if [ -z "${NOTES//[[:space:]]/}" ]; then
             NOTES="Release ${GITHUB_REF_NAME}"
