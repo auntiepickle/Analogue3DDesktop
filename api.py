@@ -29,7 +29,7 @@ try:
 except ImportError:
     settings_pack = None
 
-APP_VERSION = "0.4.3"
+APP_VERSION = "0.5.0"
 
 # Demo / fake-data mode: when A3D_DEMO=1, the read-only methods (detect, versions,
 # list_backups, list_memories, list_snapshots, cart_art_games, controller_versions)
@@ -190,11 +190,20 @@ class Api:
         review before committing."""
         if not settings_pack:
             return []
-        # Serialize with apply/revert/reset (which hold _lock via _run) so a
-        # preview can never read the card mid-write and report stale results.
+        ids = collection_ids or []
+        # Warm the collection cache OUTSIDE the lock: fetch_collection can do a
+        # ~20s network call on a cold cache, and holding the global _lock across
+        # it would freeze every other bridge action (apply/revert/reset/flash).
+        for cid in ids:
+            try:
+                settings_pack.fetch_collection(cid)
+            except Exception:
+                pass
+        # Then serialize only the card read with apply/revert/reset so a preview
+        # can't read the card mid-write (the fetch above means no network here).
         with _lock:
             try:
-                return settings_pack.preview_apply(root, collection_ids or [])
+                return settings_pack.preview_apply(root, ids)
             except Exception as e:
                 print(f"Settings preview failed: {e}")
                 return []
