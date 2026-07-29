@@ -61,7 +61,7 @@ jobs:
         shell: bash
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller==6.20.0 "git+https://github.com/auntiepickle/Analogue3DUtility.git@fadf38c64b2478450eaef77c2574b226df546752"
+          pip install pyinstaller==6.20.0 "git+https://github.com/auntiepickle/Analogue3DUtility.git@0c29862"
           # Pin the Windows runtime trio to the combination verified for the netfx
           # fix (app.py). clr-loader is the runtime selector and must be pinned, or
           # an unpinned upgrade could re-break the launch on end-user machines.

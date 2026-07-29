@@ -44,7 +44,7 @@ def _latest_tested_meta(vers):
     return vers[0] if vers else None
 
 
-APP_VERSION = "0.5.0"
+APP_VERSION = "0.5.1"
 
 # Demo / fake-data mode: when A3D_DEMO=1, the read-only methods (detect, versions,
 # list_backups, list_memories, list_snapshots, cart_art_games, controller_versions)
