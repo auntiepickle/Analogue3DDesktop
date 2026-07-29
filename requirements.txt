@@ -8,6 +8,10 @@ pythonnet==3.1.0 ; sys_platform == "win32"
 clr-loader==0.3.1 ; sys_platform == "win32"
 
 # The engine. For end users (once the core is published):
+# TODO(2.05): bump this pin once Analogue3DUtility's
+# fix/controller-v205-firmware-feed merges (8BitDo V2 firmware backend +
+# latest_tested(); pending hardware validation of the 2.05 flash). The api.py
+# tested-ceiling code degrades gracefully on this older pin until then.
 analogue3d @ git+https://github.com/auntiepickle/Analogue3DUtility.git@fadf38c64b2478450eaef77c2574b226df546752
 
 # For local development against a checkout next door, instead run:
