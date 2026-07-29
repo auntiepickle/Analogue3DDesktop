@@ -8,7 +8,9 @@ pythonnet==3.1.0 ; sys_platform == "win32"
 clr-loader==0.3.1 ; sys_platform == "win32"
 
 # The engine. For end users (once the core is published):
-analogue3d @ git+https://github.com/auntiepickle/Analogue3DUtility.git@fadf38c64b2478450eaef77c2574b226df546752
+# 0.7.0: 8BitDo V2 firmware backend (2.05+), latest_tested(), tested-ceiling
+# capped auto flows. 2.05 flash validated on real hardware.
+analogue3d @ git+https://github.com/auntiepickle/Analogue3DUtility.git@0c29862
 
 # For local development against a checkout next door, instead run:
 #   pip install -e ../Analogue3DUtility

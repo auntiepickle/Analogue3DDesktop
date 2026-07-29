@@ -896,6 +896,11 @@ async function refreshVersions() {
   } else {
     el.ctrlVer.innerHTML = verLine(v.ctrl_current, v.ctrl_latest, v.ctrl_update, "unknown");
   }
+  // A newer firmware exists but hasn't been validated by the engine yet —
+  // mention it without ambering pads that are as new as auto flows flash.
+  if (v.controllers && v.ctrl_newest_untested) {
+    el.ctrlVer.innerHTML += ` <span class="muted hint">&mdash; ${v.ctrl_newest_untested} available (untested; pick it from the version list)</span>`;
+  }
   consoleUpToDate = !!(v.console_current && v.console_latest && !v.console_update);
   applyGating();
   await populateCtrlVersions();

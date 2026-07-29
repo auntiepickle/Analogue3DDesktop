@@ -29,7 +29,22 @@ try:
 except ImportError:
     settings_pack = None
 
-APP_VERSION = "0.5.0"
+
+def _latest_tested_meta(vers):
+    """Newest firmware release the engine will actually flash in the auto
+    flows. Engines with the 8BitDo V2-feed fix export latest_tested() and cap
+    update_all() at MAX_TESTED_VERSION, so "up to date" must be computed
+    against that same ceiling — comparing against the absolute newest would
+    make the UI promise updates the engine then (correctly) declines to
+    flash. On an older engine the newest listed IS the flashable latest, so
+    fall back to that."""
+    fn = getattr(controller, "latest_tested", None)
+    if fn is not None:
+        return fn(vers)
+    return vers[0] if vers else None
+
+
+APP_VERSION = "0.5.1"
 
 # Demo / fake-data mode: when A3D_DEMO=1, the read-only methods (detect, versions,
 # list_backups, list_memories, list_snapshots, cart_art_games, controller_versions)
@@ -626,9 +641,11 @@ class Api:
                 needs = n
                 try:
                     devs = controller.connected_devices()
-                    latest_int = controller.fetch_firmware_list()[0]["version_int"]
+                    meta = _latest_tested_meta(controller.fetch_firmware_list())
+                    latest_int = meta["version_int"] if meta else None
                     needs = sum(1 for d in devs
-                                if d.get("mode") == "app"
+                                if latest_int is not None
+                                and d.get("mode") == "app"
                                 and d.get("version_int") is not None
                                 and d["version_int"] < latest_int)
                 except Exception:
@@ -1031,9 +1048,17 @@ class Api:
             pass
         latest_int = None
         try:
-            top = controller.fetch_firmware_list()[0]
-            latest_int = top["version_int"]
-            out["ctrl_latest"] = controller.format_version(latest_int)
+            vers = controller.fetch_firmware_list()
+            meta = _latest_tested_meta(vers)
+            if meta is not None:
+                latest_int = meta["version_int"]
+                out["ctrl_latest"] = controller.format_version(latest_int)
+            # A release newer than the tested ceiling is surfaced separately
+            # so the UI can mention it without ambering pads that are as new
+            # as the auto flows will actually flash.
+            newest_int = vers[0]["version_int"] if vers else None
+            if latest_int is not None and newest_int is not None and newest_int > latest_int:
+                out["ctrl_newest_untested"] = controller.format_version(newest_int)
         except Exception:
             pass
         try:
@@ -1063,9 +1088,19 @@ class Api:
             vers = controller.fetch_firmware_list()
         except Exception as e:
             return {"ok": False, "versions": [], "error": str(e)}
-        return {"ok": True, "versions": [
-            {"version_int": e["version_int"], "label": controller.format_version(e["version_int"])}
-            for e in vers]}
+        max_tested = getattr(controller, "MAX_TESTED_VERSION", None)
+        out = []
+        for e in vers:
+            untested = max_tested is not None and e["version_int"] > max_tested
+            out.append({
+                "version_int": e["version_int"],
+                # the picker and its confirm dialog render this label verbatim,
+                # so the suffix doubles as the untested warning
+                "label": controller.format_version(e["version_int"])
+                         + (" (untested)" if untested else ""),
+                "untested": untested,
+            })
+        return {"ok": True, "versions": out}
 
     def flash_controllers(self, version_int):
         def task():
