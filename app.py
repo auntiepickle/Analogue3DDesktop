@@ -254,8 +254,13 @@ def main():
     # persistence is unreliable through pywebview's resize events on scaled
     # displays, so we keep just the maximized state, which is solid.)
     st = _load_window_state()
-    win_kwargs = dict(width=1000, height=760, min_size=(860, 640),
-                      background_color="#0d0d0f")
+    win_kwargs = dict(width=1000, height=760, background_color="#0d0d0f")
+    # No min size on Linux: tiling compositors (Hyprland, sway) size the window
+    # to its tile, and when the tile is below min_size the oversized surface is
+    # scaled down to fit — squashing the UI horizontally (art tiles render ~12%
+    # too narrow). The CSS already reflows down to phone widths.
+    if sys.platform != "linux":
+        win_kwargs["min_size"] = (860, 640)
     if st.get("maximized"):
         win_kwargs["maximized"] = True
 
